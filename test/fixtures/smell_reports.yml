@@ -1,0 +1,17 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  user_hash: MyString
+  latitude: 1.5
+  longitude: 1.5
+  smell_value: 1
+  smell_description: MyText
+  feelings_symptoms: MyText
+
+two:
+  user_hash: MyString
+  latitude: 1.5
+  longitude: 1.5
+  smell_value: 1
+  smell_description: MyText
+  feelings_symptoms: MyText
