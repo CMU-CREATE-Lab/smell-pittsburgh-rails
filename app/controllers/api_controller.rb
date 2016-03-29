@@ -3,6 +3,7 @@ class ApiController < ApplicationController
   # protect_from_forgery with: :null_session
   skip_before_action :verify_authenticity_token, :only => [:smell_report_create]
 
+
   # POST /api/v1/smell_reports
   #
   # PARAMS
@@ -48,7 +49,9 @@ class ApiController < ApplicationController
   # PARAMS: none
   #
   def smell_report_index
-    render :inline => "smell_report_index"
+    @reports = SmellReport.all
+
+    render :json => @reports.to_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
   end
 
 
