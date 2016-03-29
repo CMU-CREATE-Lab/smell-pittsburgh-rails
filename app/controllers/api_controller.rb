@@ -6,34 +6,38 @@ class ApiController < ApplicationController
   # POST /api/v1/smell_reports
   #
   # PARAMS
-  # "latitude" : Double
-  # "longitude" : Double
-  # "hash" : String
-  # "smell_value" : Integer
+  # "latitude" : Double *
+  # "longitude" : Double *
+  # "user_hash" : String *
+  # "smell_value" : Integer *
   # "smell_description" : String
   # "feelings_symptoms" : String
   #
   def smell_report_create
-    # render :inline => "smell_report_create"
-    latitude = params["latitude"]
-    longitude = params["longitude"]
-    hash = params["hash"]
-    smell_value = params["smell_value"]
-    smell_description = params["smell_description"]
-    feelings_symptoms = params["feelings_symptoms"]
-
     smell_report = SmellReport.new
-    # TODO consruct smell report; model should check and only save for mandatory fields
-    smell_report.save
+    smell_report.latitude = params["latitude"].to_f unless params["latitude"].blank?
+    smell_report.longitude = params["longitude"].to_f unless params["longitude"].blank?
+    smell_report.user_hash = params["user_hash"] unless params["user_hash"].blank?
+    smell_report.smell_value = params["smell_value"].to_i unless params["smell_value"].blank?
+    smell_report.smell_description = params["smell_description"] unless params["smell_description"].blank?
+    smell_report.feelings_symptoms = params["feelings_symptoms"] unless params["feelings_symptoms"].blank?
 
-    response = {
-      :latitude => latitude,
-      :longitude => longitude,
-      :hash => hash,
-      :smell_value => smell_value,
-      :smell_description => smell_description,
-      :feelings_symptoms => feelings_symptoms
-    }
+    if smell_report.save
+      # success
+      response = {
+        :latitude => smell_report.latitude,
+        :longitude => smell_report.longitude,
+        :user_hash => smell_report.user_hash,
+        :smell_value => smell_report.smell_value,
+        :smell_description => smell_report.smell_description,
+        :feelings_symptoms => smell_report.feelings_symptoms
+      }
+    else
+      # fail
+      response = {
+        :error => "failed to create smell report from submitted form."
+      }
+    end
 
     render :json => response, :layout => false
   end
