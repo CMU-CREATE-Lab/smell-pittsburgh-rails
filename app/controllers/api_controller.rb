@@ -54,11 +54,4 @@ class ApiController < ApplicationController
     render :json => @reports.to_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
   end
 
-
-  # remove me later
-  def post_crash
-    # never executes unless :post_crash is added to "skip_before_action"
-    render :inline => "this crashes because protect from forgery"
-  end
-
 end
