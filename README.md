@@ -16,12 +16,12 @@ Responses will look like:
 ```json
 [
     {
-    "latitude" : 40.4406248,
-	"longitude" : -79.9958864,
-	"smell_value" : 1,
-	"smell_description" : "Description of the smell",
-	"feelings_symptoms" : "Symptoms or feelings associated with the smell",
-	"created_at" : "2016-03-29T15:49:53.000Z"
+	    "latitude" : 40.4406248,
+		"longitude" : -79.9958864,
+		"smell_value" : 1,
+		"smell_description" : "Description of the smell",
+		"feelings_symptoms" : "Symptoms or feelings associated with the smell",
+		"created_at" : "2016-03-29T15:49:53.000Z"
 	},
 	...
 ]
