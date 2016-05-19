@@ -49,7 +49,22 @@ class ApiController < ApplicationController
   # PARAMS: none
   #
   def smell_report_index
-    @reports = SmellReport.all
+    start_time = params["start_time"]
+    end_time = params["end_time"]
+
+    if start_time
+      start_datetime = Time.at(start_time.to_i).to_datetime if start_time
+    else
+      start_datetime = Time.at(0).to_datetime
+    end
+
+    if end_time
+      end_datetime = Time.at(end_time.to_i + 1).to_datetime if end_time
+    else
+      end_datetime = Time.now.to_datetime
+    end
+
+    @reports = SmellReport.where(:created_at => start_datetime...end_datetime)
 
     render :json => @reports.to_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
   end
