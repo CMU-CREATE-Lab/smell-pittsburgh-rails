@@ -51,6 +51,7 @@ class ApiController < ApplicationController
   def smell_report_index
     start_time = params["start_time"]
     end_time = params["end_time"]
+    aggregate = params["aggregate"]
 
     if start_time
       start_datetime = Time.at(start_time.to_i).to_datetime if start_time
@@ -64,7 +65,11 @@ class ApiController < ApplicationController
       end_datetime = Time.now.to_datetime
     end
 
-    @reports = SmellReport.where(:created_at => start_datetime...end_datetime).sort_by{|r| r.created_at}
+    @reports = SmellReport.where(:created_at => start_datetime...end_datetime)
+
+    if aggregate
+        @reports = @reports.sort_by{|r| r.created_at}
+    end
 
     render :json => @reports.to_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
   end
