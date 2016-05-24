@@ -64,7 +64,7 @@ class ApiController < ApplicationController
       end_datetime = Time.now.to_datetime
     end
 
-    @reports = SmellReport.where(:created_at => start_datetime...end_datetime)
+    @reports = SmellReport.where(:created_at => start_datetime...end_datetime).sort_by{|r| r.created_at}
 
     render :json => @reports.to_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
   end
