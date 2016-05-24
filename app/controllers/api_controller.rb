@@ -65,10 +65,14 @@ class ApiController < ApplicationController
       end_datetime = Time.now.to_datetime
     end
 
-    @reports = SmellReport.where(:created_at => start_datetime...end_datetime)
+    @reports = SmellReport.where(:created_at => start_datetime...end_datetime).order('created_at ASC')
 
     if aggregate
-        @reports = @reports.sort_by{|r| r.created_at}
+        reports_aggr = []
+        Date.today.beginning_of_month.upto(Date.today.end_of_month).each do |date|
+            reports_aggr << @reports.select{|u| u.created_at.to_date.to_s == date.to_s}
+        end
+        @reports = reports_aggr
     end
 
     render :json => @reports.to_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
