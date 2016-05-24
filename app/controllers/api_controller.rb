@@ -67,7 +67,7 @@ class ApiController < ApplicationController
 
     @reports = SmellReport.where(:created_at => start_datetime...end_datetime).order('created_at ASC')
 
-    if aggregate
+    if aggregate == "created_at"
         reports_aggr = []
         Date.today.beginning_of_month.upto(Date.today.end_of_month).each do |date|
             reports_aggr << @reports.select{|u| u.created_at.to_date.to_s == date.to_s}
