@@ -12,13 +12,13 @@
 <% end %>
 
 <% content_for :body do %>
-  <div id="page" data-role="page">
+  <div id="page" data-role="page" class="noselect">
     <div id="map-container">
       <div id="map"></div>
       <button id="home-btn" class="custom-button">Home</button>
     </div>
-    <div id="timeline-container">
-      <table id="timeline" class="noselect">
+    <div id="timeline-container" class="noselect">
+      <table id="timeline">
         <tr id="timeline-index"></tr>
         <tr id="timeline-date"></tr>
       </table>

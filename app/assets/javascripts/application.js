@@ -1,4 +1,5 @@
 var map;
+var infowindow;
 
 function init() {
   initMap();
@@ -49,11 +50,16 @@ function initMap() {
     map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
   });
 
+  // Set information window
+  infowindow = new google.maps.InfoWindow();
+
   // Get smell reports
-  var path = "http://api.smellpittsburgh.org/api/v1/smell_reports?";
+  var timezone_offset = new Date().getTimezoneOffset();
+  var api_url = "http://api.smellpittsburgh.org/api/v1/smell_reports?"
+  var api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=1462060800&end_time=1464652800";
+  //var api_paras = "aggregate=created_at&start_time=1462060800&end_time=1464652800";
   $.ajax({
-    url: path,
-    //url: path + "aggregate=created_at&start_time=1462060800&end_time=1464652800",
+    url: api_url + api_paras,
     success: function(report) {
       drawSmellReports(report);
       drawTimeline(report);
@@ -65,56 +71,56 @@ function initMap() {
 }
 
 function drawSmellReports(report) {
-  // Smell values and colors
   var color = ["00ff00", "f8e540", "da8800", "99004C", "7a003c"]
-
-  for (var i = 0; i < report.length; i++) {
-    var report_i = report[i];
-    // Add markers
-    var marker = new google.maps.Marker({
-      position: {"lat": report_i.latitude, "lng": report_i.longitude},
-      map: map,
-      // TODO: save images, do not use 3rd-party api
-      icon: "http://www.googlemapsmarkers.com/v1/" + color[report_i.smell_value - 1]
-    });
-    // Add information window
-    var infowindow = new google.maps.InfoWindow({
-      content: '<b>Date:</b> ' + report_i.created_at + '<br>'
-      + '<b>Smell Value:</b> ' + report_i.smell_value + '<br>'
-      + '<b>Feelings Symptoms:</b> ' + report_i.feelings_symptoms + '<br>'
-      + '<b>Smell Description:</b> ' + report_i.smell_description
-    });
-    marker.addListener("click", function() {
-      map.panTo(this.getPosition());
-      infowindow.open(map, this);
-    });
+  for (var k = 0; k < report.length; k++) {
+    var report_k = report[k];
+    if (report_k.length == 0) {
+      continue;
+    }
+    for (var i = 0; i < report_k.length; i++) {
+      var report_i = report_k[i];
+      // Add marker
+      var marker = new google.maps.Marker({
+        position: {"lat": report_i.latitude, "lng": report_i.longitude},
+        map: map,
+        content: '<b>Date:</b> ' + report_i.created_at + '<br>'
+        + '<b>Smell Value:</b> ' + report_i.smell_value + '<br>'
+        + '<b>Feelings Symptoms:</b> ' + report_i.feelings_symptoms + '<br>'
+        + '<b>Smell Description:</b> ' + report_i.smell_description,
+        // TODO: save images, do not use 3rd-party api
+        icon: "http://www.googlemapsmarkers.com/v1/" + color[report_i.smell_value - 1]
+      });
+      // Add marker event
+      marker.addListener("click", function() {
+        map.panTo(this.getPosition());
+        infowindow.setContent(this.content);
+        infowindow.open(map, this);
+      });
+    }
   }
 }
 
 function drawTimeline(report) {
   var $index = $("#timeline-index");
   var $date = $("#timeline-date");
-  var report_aggr = aggregateSmellReports(report);
-  var last_month_str;
-  for (var i = 0; i < report_aggr.length; i++) {
-    var report_aggr_i = report_aggr[i];
-    $index.append($('<td></td>'));
-    var date = new Date(report_aggr_i.created_at);
+  var is_first_date = true;
+  for (var k = 0; k < report.length; k++) {
+    var report_k = report[k];
+    if (report_k.length == 0) {
+      continue;
+    }
+    var opacity = Math.tanh(report_k.length / 10);
+    $index.append($('<td style="opacity: ' + opacity + '"></td>'));
+    var date = new Date(report_k[0].created_at);
     var date_str = date.toDateString();
     var date_str_seg = date_str.split(" ");
-    if (last_month_str == date_str_seg[1]) {
-      date_str_seg[1] = "";
+    if (is_first_date) {
+      is_first_date = false;
     } else {
-      last_month_str = date_str_seg[1];
+      date_str_seg[1] = "";
     }
     $date.append($('<td>' + date_str_seg[1] + " " + date_str_seg[2] + '</td>'));
   }
-}
-
-function aggregateSmellReports(report) {
-  var report_aggr = {};
-
-  return report;
 }
 
 function isMobile() {
