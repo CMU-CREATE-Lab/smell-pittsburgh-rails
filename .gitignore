@@ -20,5 +20,6 @@
 .idea/
 
 # Ignore other files
+/public/assets
 .DS_Store
 *~

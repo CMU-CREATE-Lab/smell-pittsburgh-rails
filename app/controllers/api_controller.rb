@@ -52,6 +52,7 @@ class ApiController < ApplicationController
     start_time = params["start_time"]
     end_time = params["end_time"]
     aggregate = params["aggregate"]
+    timezone_offset = params["timezone_offset"]
 
     if start_time
       start_datetime = Time.at(start_time.to_i).to_datetime if start_time
@@ -69,8 +70,19 @@ class ApiController < ApplicationController
 
     if aggregate == "created_at"
         reports_aggr = []
+        offset_str = "+00:00"
+        if timezone_offset
+            a = timezone_offset.to_i
+            # convert the timezone offset returned from JavaScript
+            # to a string for ruby's localtime method
+            timezone_sign = ((a <=> 0) ? "-" : "+").to_s # reverse the sign
+            timezone_hr = (a.abs/60).to_s.rjust(2, "0") # get the hour part
+            timezone_min = (a.abs%60).to_s.rjust(2, "0") # get the minute part
+            offset_str = timezone_sign + timezone_hr + ":" + timezone_min
+        end
         Date.today.beginning_of_month.upto(Date.today.end_of_month).each do |date|
-            reports_aggr << @reports.select{|u| u.created_at.to_date.to_s == date.to_s}
+            date_str = Time.at(date.to_datetime.utc).localtime(offset_str).to_date.to_s
+            reports_aggr << @reports.select{|u| u.created_at.utc.localtime(offset_str).to_date.to_s == date_str}
         end
         @reports = reports_aggr
     end
