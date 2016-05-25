@@ -71,7 +71,7 @@ function initMap() {
 }
 
 function drawSmellReports(report) {
-  var color = ["00ff00", "f8e540", "da8800", "99004C", "7a003c"]
+  var color = ["00ff00", "f8e540", "da8800", "ff0000", "99004C"]
   for (var k = 0; k < report.length; k++) {
     var report_k = report[k];
     if (report_k.length == 0) {
