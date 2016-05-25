@@ -13,3 +13,96 @@
  *= require_tree .
  *= require_self
  */
+
+#page {
+  width: 100%;
+  height: 100%;
+}
+
+#map-container {
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  top: 0px;
+  bottom: 100px;
+  width: auto;
+  height: auto;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+#timeline-container {
+  position: absolute;
+  left: 0px;
+  bottom: 0px;
+  right: 0px;
+  top: auto;
+  height: 100px;
+  width: auto;
+  overflow-x: scroll;
+}
+
+#timeline {
+  height: 100%;
+  text-align: center;
+}
+
+#timeline td {
+  min-width: 65px;
+  max-width: 65px;
+}
+
+#timeline-index {
+  height: 70%;
+}
+
+#timeline-index td {
+  background-color: rgb(0, 0, 0);
+  opacity: 0.5;
+}
+
+#home-btn {
+  position: absolute;
+  font-size: 11px;
+  left: 9px;
+  top: 4px;
+  width: 60px;
+  height: 31px;
+  outline: none;
+}
+
+.custom-button {
+  background-image: none !important;
+  background: white !important;
+  color: black !important;
+  font-family: 'Raleway', Helvetica, Arial, sans-serif !important;
+  outline: none !important;
+  border-radius: 2px !important;
+  border-color: #777777 !important;
+}
+
+.custom-button:focus {
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  background: white !important;
+}
+
+.custom-button:hover {
+  background: rgb(210, 210, 210) !important;
+}
+
+.custom-button:active {
+  background: white !important;
+}
+
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Chrome/Safari/Opera */
+  -khtml-user-select: none; /* Konqueror */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently not supported by any browser */
+}

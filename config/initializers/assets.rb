@@ -9,3 +9,6 @@ Rails.application.config.assets.version = '1.0'
 # Precompile additional assets.
 # application.js, application.css, and all non-JS/CSS in app/assets folder are already added.
 # Rails.application.config.assets.precompile += %w( search.js )
+
+# Now any manifest with *-bundle will be loaded and we never have to worry about precompiling under production
+Rails.application.config.assets.precompile += %w(*-bundle.* *.jpg *.png *.jpeg *.gif)
