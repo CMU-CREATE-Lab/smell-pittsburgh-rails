@@ -2,19 +2,23 @@ var map;
 var infowindow;
 var smell_reports;
 var smell_markers = [];
-var smell_color = ["00ff00", "f8e540", "da8800", "ff0000", "99004C"];
+var smell_color = ["smell_1.png", "smell_2.png", "smell_3.png", "smell_4.png", "smell_5.png"];
 
 function init() {
   initMap();
+
+  // Disable vertical bouncing effect on mobile browsers
+  $(document).on("scrollstart", function(e) {
+    e.preventDefault();
+  });
 }
 
 // This function initializes the Google Map
 function initMap() {
   // Parameters
-  init_zoom_desktop = 14;
-  init_zoom_mobile = 13;
-  init_latlng = {"lat": 40.443, "lng": -79.99};
-
+  init_zoom_desktop = 12;
+  init_zoom_mobile = 11;
+  init_latlng = {"lat": 40.42, "lng": -79.94};
   // Set Google map style
   var styleArray = [
     {
@@ -74,23 +78,33 @@ function initMap() {
 }
 
 function drawSingleSmellReport(report_i) {
+  var latlng = {"lat": report_i.latitude, "lng": report_i.longitude};
+
   // Add marker
   var marker = new google.maps.Marker({
-    position: {"lat": report_i.latitude, "lng": report_i.longitude},
+    position: latlng,
     map: map,
     content: '<b>Date:</b> ' + report_i.created_at + '<br>'
     + '<b>Smell Value:</b> ' + report_i.smell_value + '<br>'
     + '<b>Feelings Symptoms:</b> ' + report_i.feelings_symptoms + '<br>'
     + '<b>Smell Description:</b> ' + report_i.smell_description,
-    // TODO: save images, do not use 3rd-party api
-    icon: "http://www.googlemapsmarkers.com/v1/" + smell_color[report_i.smell_value - 1]
+    icon: {
+      url: "/assets/" + smell_color[report_i.smell_value - 1],
+      size: new google.maps.Size(18, 18),
+      origin: new google.maps.Point(0, 0),
+      anchor: new google.maps.Point(9, 9)
+    },
+    zIndex: report_i.smell_value,
+    opacity: 0.6
   });
+
   // Add marker event
   marker.addListener("click", function() {
     map.panTo(this.getPosition());
     infowindow.setContent(this.content);
     infowindow.open(map, this);
   });
+
   // Save markers
   smell_markers.push(marker);
 }
@@ -145,6 +159,7 @@ function drawTimeline() {
     $index.append($('<td><div style="background-color: ' + color_str + '" class="custom-td-button" data-day="' + parseInt(date_str_seg[2]) + '"></div></td>'));
     $date.append($('<td>' + date_str_seg[2] + '</td>'));
   }
+
   // Add clicking events
   $("#timeline-index .custom-td-button").on("click", function() {
     if (!$(this).hasClass("selected-td-btn")) {
