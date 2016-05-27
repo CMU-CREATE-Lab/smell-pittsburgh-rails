@@ -89,7 +89,7 @@ function drawSingleSmellReport(report_i) {
     + '<b>Feelings Symptoms:</b> ' + report_i.feelings_symptoms + '<br>'
     + '<b>Smell Description:</b> ' + report_i.smell_description,
     icon: {
-      url: "/assets/" + smell_color[report_i.smell_value - 1],
+      url: "/img/" + smell_color[report_i.smell_value - 1],
       size: new google.maps.Size(18, 18),
       origin: new google.maps.Point(0, 0),
       anchor: new google.maps.Point(9, 9)
