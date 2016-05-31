@@ -73,7 +73,7 @@ class ApiController < ApplicationController
         offset_str = "+00:00"
         if timezone_offset
             a = timezone_offset.to_i
-            # convert the timezone offset returned from JavaScript
+            # Convert the timezone offset returned from JavaScript
             # to a string for ruby's localtime method
             timezone_sign = ((a <=> 0) ? "-" : "+").to_s # reverse the sign
             timezone_hr = (a.abs/60).to_s.rjust(2, "0") # get the hour part
@@ -83,6 +83,13 @@ class ApiController < ApplicationController
         Date.today.beginning_of_month.upto(Date.today.end_of_month).each do |date|
             date_str = Time.at(date.to_datetime.utc).localtime(offset_str).to_date.to_s
             reports_aggr << @reports.select{|u| u.created_at.utc.localtime(offset_str).to_date.to_s == date_str}
+            #Rails.logger.info(date_str)
+        end
+        # Convert created_at to utc time string
+        for i in 0..reports_aggr.size()-1
+            for j in 0..reports_aggr[i].size()-1
+                reports_aggr[i][j].created_at = reports_aggr[i][j].created_at.utc.to_s
+            end
         end
         @reports = reports_aggr
     end
