@@ -74,10 +74,58 @@
   position: absolute;
   font-size: 11px;
   left: 9px;
-  top: 4px;
+  top: 9px;
   width: 60px;
-  height: 31px;
+  height: 37px;
   outline: none;
+  margin: 0;
+}
+
+#legend-smell-value {
+  position: absolute;
+  font-size: 11px;
+  right: 9px;
+  top: 9px;
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.6);
+  border: 1px solid #777777;
+  border-radius: 2px;
+  padding-top: 5px;
+  padding-right: 5px;
+  padding-left: 5px;
+  padding-bottom: 1px;
+}
+
+#legend-smell-value td {
+  font-size: 11px;
+  width: 20px;
+  height: 6px;
+  text-align: center;
+}
+
+#legend-smell-value .smell-color-td {
+  color: black;
+  opacity: 0.9;
+}
+
+.smell-color-1 {
+  background-color: #00ff00;
+}
+
+.smell-color-2 {
+  background-color: #f8e540;
+}
+
+.smell-color-3 {
+  background-color: #da8800;
+}
+
+.smell-color-4 {
+  background-color: #eb2667;
+}
+
+.smell-color-5 {
+  background-color: #5f0e36;
 }
 
 .custom-button {
