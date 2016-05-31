@@ -81,9 +81,9 @@ class ApiController < ApplicationController
             offset_str = timezone_sign + timezone_hr + ":" + timezone_min
         end
         Date.today.beginning_of_month.upto(Date.today.end_of_month).each do |date|
-            date_str = Time.at(date.to_datetime.utc).localtime(offset_str).to_date.to_s
+            date_str = date.to_s
             reports_aggr << @reports.select{|u| u.created_at.utc.localtime(offset_str).to_date.to_s == date_str}
-            #Rails.logger.info(date_str)
+            #Rails.logger.info(date.to_s)
         end
         # Convert created_at to utc time string
         for i in 0..reports_aggr.size()-1
