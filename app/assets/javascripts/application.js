@@ -3,6 +3,7 @@ var infowindow;
 var smell_reports;
 var smell_markers = [];
 var smell_color = ["smell_1.png", "smell_2.png", "smell_3.png", "smell_4.png", "smell_5.png"];
+var smell_value_text = ["Just fine!", "Barely noticeable", "Definitely noticeable", "It's getting pretty bad", "About as bad as it gets!"];
 
 function init() {
   initMap();
@@ -81,13 +82,17 @@ function drawSingleSmellReport(report_i) {
   var latlng = {"lat": report_i.latitude, "lng": report_i.longitude};
 
   // Add marker
+  var date = new Date(report_i.created_at).toLocaleString();
+  var smell_value = report_i.smell_value;
+  var feelings_symptoms = report_i.feelings_symptoms ? report_i.feelings_symptoms : "no data";
+  var smell_description = report_i.smell_description ? report_i.smell_description : "no data";
   var marker = new google.maps.Marker({
     position: latlng,
     map: map,
-    content: '<b>Date:</b> ' + report_i.created_at + '<br>'
-    + '<b>Smell Value:</b> ' + report_i.smell_value + '<br>'
-    + '<b>Feelings Symptoms:</b> ' + report_i.feelings_symptoms + '<br>'
-    + '<b>Smell Description:</b> ' + report_i.smell_description,
+    content: '<b>Date:</b> ' + date + '<br>'
+    + '<b>Smell Value:</b> ' + smell_value + " (" + smell_value_text[smell_value - 1] + ")" + '<br>'
+    + '<b>Feelings Symptoms:</b> ' + feelings_symptoms + '<br>'
+    + '<b>Smell Description:</b> ' + smell_description,
     icon: {
       url: "/img/" + smell_color[report_i.smell_value - 1],
       size: new google.maps.Size(18, 18),
@@ -95,7 +100,7 @@ function drawSingleSmellReport(report_i) {
       anchor: new google.maps.Point(9, 9)
     },
     zIndex: report_i.smell_value,
-    opacity: 0.6
+    opacity: 0.7
   });
 
   // Add marker event
