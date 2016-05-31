@@ -63,7 +63,7 @@ function initMap() {
   // Get smell reports
   var timezone_offset = new Date().getTimezoneOffset();
   var api_url = "http://api.smellpittsburgh.org/api/v1/smell_reports?"
-  var api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=1462060800&end_time=1464652800";
+  var api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=1462075200&end_time=1464753600";
   $.ajax({
     url: api_url + api_paras,
     success: function(data) {
@@ -168,7 +168,7 @@ function drawTimeline() {
       var day = $(this).data("day");
       if (day) {
         deleteAllSmellReports();
-        drawSmellReportsByDay(parseInt(day));
+        drawSmellReportsByDay(parseInt(day) - 1);
       } else {
         deleteAllSmellReports();
         drawAllSmellReports();
