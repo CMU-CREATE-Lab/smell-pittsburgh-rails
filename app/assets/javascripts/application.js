@@ -64,11 +64,13 @@ function initMap() {
   // Get smell reports
   var timezone_offset = new Date().getTimezoneOffset();
   var api_url = "http://api.smellpittsburgh.org/api/v1/smell_reports?"
-  var api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=1462075200&end_time=1464753600";
+  //var api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=1462075200&end_time=1464753600";
+  var api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=1462075200&end_time=1467331200";
   $.ajax({
     url: api_url + api_paras,
     success: function(data) {
       smell_reports = data;
+      console.log(api_url + api_paras);
       drawAllSmellReports();
       drawTimeline();
     },
@@ -161,8 +163,8 @@ function drawTimeline() {
       $date.append($('<td></td>'));
     }
     // Add the day block and text
-    $index.append($('<td><div style="background-color: ' + color_str + '" class="custom-td-button" data-day="' + parseInt(date_str_seg[2]) + '"></div></td>'));
-    $date.append($('<td>' + date_str_seg[2] + '</td>'));
+    $index.append($('<td><div style="background-color: ' + color_str + '" class="custom-td-button" data-day="' + k + '"></div></td>'));
+    $date.append($('<td>' + date_str_seg[1] + " " + date_str_seg[2] + '</td>'));
   }
 
   // Add clicking events
@@ -173,7 +175,7 @@ function drawTimeline() {
       var day = $(this).data("day");
       if (day) {
         deleteAllSmellReports();
-        drawSmellReportsByDay(parseInt(day) - 1);
+        drawSmellReportsByDay(parseInt(day));
       } else {
         deleteAllSmellReports();
         drawAllSmellReports();
