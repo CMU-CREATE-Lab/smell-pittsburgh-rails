@@ -80,7 +80,7 @@ class ApiController < ApplicationController
             timezone_min = (a.abs%60).to_s.rjust(2, "0") # get the minute part
             offset_str = timezone_sign + timezone_hr + ":" + timezone_min
         end
-        Date.new(2016,5,1).upto(Date.new(2016,7,1)).each do |date|
+        start_datetime.to_date.upto(end_datetime.to_date).each do |date|
             date_str = date.to_s
             reports_aggr << @reports.select{|u| u.created_at.utc.localtime(offset_str).to_date.to_s == date_str}
             #Rails.logger.info(date.to_s)
