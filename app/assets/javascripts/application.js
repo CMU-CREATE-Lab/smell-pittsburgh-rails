@@ -4,6 +4,7 @@ var smell_reports;
 var smell_markers = [];
 var smell_color = ["smell_1.png", "smell_2.png", "smell_3.png", "smell_4.png", "smell_5.png"];
 var smell_value_text = ["Just fine!", "Barely noticeable", "Definitely noticeable", "It's getting pretty bad", "About as bad as it gets!"];
+var staging_base_url = "http://staging.api.smellpittsburgh.org";
 
 function init() {
   initMap();
@@ -53,31 +54,49 @@ function initMap() {
   });
 
   // Set customized map controls
-  $("#home-btn").button().on("click", function() {
+  $("#home-btn").on("click", function() {
     map.setCenter(init_latlng);
     map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
+  });
+  $("#calendar-btn").on("click", function() {
+
   });
 
   // Set information window
   infowindow = new google.maps.InfoWindow();
 
   // Get smell reports
-  var timezone_offset = new Date().getTimezoneOffset();
-  var api_url = "http://api.smellpittsburgh.org/api/v1/smell_reports?"
-  //var api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=1462075200&end_time=1464753600";
-  var api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=1462075200&end_time=1467331200";
   $.ajax({
-    url: api_url + api_paras,
+    url: genSmellURL(new Date()),
+    //url: genSmellURL(new Date(2016, 4, 1)),
     success: function(data) {
       smell_reports = data;
-      console.log(api_url + api_paras);
       drawAllSmellReports();
+      drawCalendar();
       drawTimeline();
     },
     error: function(response) {
       console.log("server error:", response);
     }
   });
+}
+
+function genSmellURL(date_obj) {
+  date_obj = typeof date_obj == "undefined" ? new Date() : date_obj;
+  var timezone_offset = new Date().getTimezoneOffset();
+  var y = date_obj.getFullYear();
+  var m = date_obj.getMonth();
+  var first_day = new Date(y, m, 1).getTime() / 1000;
+  var last_day = new Date(y, m + 1, 0).getTime() / 1000;
+  var api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=" + first_day + "&end_time=" + last_day;
+  var url_hostname = window.location.origin;
+  var api_url = "/api/v1/smell_reports?";
+  if (url_hostname.indexOf("api.smellpittsburgh") >= 0) {
+    api_url = url_hostname + api_url;
+  } else {
+    api_url = staging_base_url + api_url;
+  }
+  return api_url + api_paras;
 }
 
 function drawSingleSmellReport(report_i) {
@@ -129,9 +148,11 @@ function drawAllSmellReports() {
 }
 
 function drawSmellReportsByDay(day) {
-  var report_k = smell_reports[day];
-  for (var i = 0; i < report_k.length; i++) {
-    drawSingleSmellReport(report_k[i]);
+  if (day) {
+    var report_k = smell_reports[day];
+    for (var i = 0; i < report_k.length; i++) {
+      drawSingleSmellReport(report_k[i]);
+    }
   }
 }
 
@@ -142,10 +163,13 @@ function deleteAllSmellReports() {
   smell_markers = [];
 }
 
+function drawCalendar() {
+
+}
+
 function drawTimeline() {
   var $index = $("#timeline-index");
   var $date = $("#timeline-date");
-  var is_first_date = true;
   for (var k = 0; k < smell_reports.length; k++) {
     var report_k = smell_reports[k];
     if (report_k.length == 0) {
@@ -156,12 +180,6 @@ function drawTimeline() {
     var date = new Date(report_k[0].created_at);
     var date_str = date.toDateString();
     var date_str_seg = date_str.split(" ");
-    if (is_first_date) {
-      is_first_date = false;
-      // Add the month block and text
-      $index.append($('<td id="timeline-td-month"><div class="custom-td-button selected-td-btn"><p id="timeline-month-txt">' + date_str_seg[1] + '</p></div></td>'));
-      $date.append($('<td></td>'));
-    }
     // Add the day block and text
     $index.append($('<td><div style="background-color: ' + color_str + '" class="custom-td-button" data-day="' + k + '"></div></td>'));
     $date.append($('<td>' + date_str_seg[1] + " " + date_str_seg[2] + '</td>'));
