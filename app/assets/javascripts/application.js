@@ -53,13 +53,31 @@ function initMap() {
     mapTypeId: google.maps.MapTypeId.ROADMAP
   });
 
+  // Create calendar dialog
+  $("#calendar-dialog").dialog({
+    autoOpen: false,
+    draggable: false,
+    modal: true,
+    width: 300,
+    dialogClass: "custom-dialog noselect",
+    buttons: {
+      Ok: {
+        class: "custom-dialog-button",
+        text: "Ok",
+        click: function() {
+          $(this).dialog("close");
+        }
+      }
+    }
+  });
+
   // Set customized map controls
   $("#home-btn").on("click", function() {
     map.setCenter(init_latlng);
     map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
   });
   $("#calendar-btn").on("click", function() {
-
+    $("#calendar-dialog").dialog("open");
   });
 
   // Set information window

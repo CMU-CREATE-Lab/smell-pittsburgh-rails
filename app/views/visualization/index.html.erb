@@ -2,6 +2,7 @@
   <%= stylesheet_link_tag "https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.css" %>
   <%= stylesheet_link_tag "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css" %>
   <%= stylesheet_link_tag "https://fonts.googleapis.com/css?family=Open+Sans:400,700" %>
+  <%= stylesheet_link_tag "https://fonts.googleapis.com/css?family=Raleway:400,700" %>
 <% end %>
 
 <% content_for :js do %>
@@ -41,6 +42,9 @@
         <tr id="timeline-index"></tr>
         <tr id="timeline-date"></tr>
       </table>
+    </div>
+    <div id="calendar-dialog" title="Calendar">
+      <p id="calendar-description">Select a month below to show the smell reports on the timeline.</p>
     </div>
   </div>
 <% end %>

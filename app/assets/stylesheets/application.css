@@ -17,6 +17,7 @@
 #page {
   width: 100%;
   height: 100%;
+  font-family: 'Open Sans', Helvetica, Arial, sans-serif;
 }
 
 #map-container {
@@ -52,6 +53,7 @@
 }
 
 #timeline td {
+  font-size: 14px;
   min-width: 60px;
   max-width: 60px;
 }
@@ -111,6 +113,11 @@
   opacity: 0.9;
 }
 
+#calendar-description {
+  margin-top: 0px;
+  margin-bottom: 6px;
+}
+
 .smell-color-1 {
   background-color: #00ff00;
 }
@@ -134,7 +141,7 @@
 .custom-button {
   background-color: white;
   color: black;
-  font-family: 'Raleway', Helvetica, Arial, sans-serif;
+  font-family: 'Open Sans', Helvetica, Arial, sans-serif;
   outline: none;
   border: 1px solid #777777;
   border-radius: 2px;
@@ -171,7 +178,7 @@
   background-color: white;
   background-image: none;
   color: black;
-  font-family: 'Raleway', Helvetica, Arial, sans-serif;
+  font-family: 'Open Sans', Helvetica, Arial, sans-serif;
   outline: none;
   border-radius: 0px;
   cursor: pointer;
@@ -181,6 +188,76 @@
 .custom-td-button:focus {
   box-shadow: none;
   -webkit-box-shadow: none;
+}
+
+.custom-dialog {
+  font-family: 'Open Sans', Helvetica, Arial, sans-serif !important;
+  font-size: 16px !important;
+  background-color: white !important;
+  padding: 0 !important;
+  border-radius: 3px !important;
+  border: 1px solid #777777 !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  padding-left: 12px !important;
+  padding-right: 10px !important;
+}
+
+.custom-dialog .ui-button {
+  outline: none !important;
+}
+
+.custom-dialog .ui-dialog-titlebar {
+  background-color: white !important;
+  background-image: none !important;
+  border-bottom-left-radius: 0px !important;
+  border-bottom-right-radius: 0px !important;
+  border-top-left-radius: 3px !important;
+  border-top-right-radius: 3px !important;
+  border: 0px !important;
+  color: #2E2F30 !important;
+  padding-top: 15px !important;
+  padding-bottom: 10px !important;
+}
+
+.custom-dialog .ui-dialog-title {
+  text-align: center !important;
+  margin-left: 10px !important;
+  font-size: 18px !important;
+}
+
+.custom-dialog .ui-dialog-titlebar-close {
+  background-image: none !important;
+  background-color: transparent !important;
+  border-radius: 0px !important;
+  border: 0px !important;
+  opacity: 0.8 !important;
+  margin-right: 12px !important;
+  margin-top: -9px !important;
+}
+
+.custom-dialog .ui-dialog-buttonpane {
+  border-width: 0 !important;
+  padding-top: 0px !important;
+}
+
+.custom-dialog .custom-dialog-button {
+  background-image: none !important;
+  background-color: #777777 !important;
+  color: white !important;
+  font-size: 15px !important;
+  margin-top: 10px !important;
+  margin-bottom: 7px !important;
+  margin-right: 0px !important;
+  margin-left: 0px !important;
+  width: 269px !important;
+  border-radius: 3px !important;
+}
+
+.ui-widget-overlay {
+  opacity: 0.6;
+  background-image: none;
+  background-color: black;
 }
 
 .selected-td-btn {
