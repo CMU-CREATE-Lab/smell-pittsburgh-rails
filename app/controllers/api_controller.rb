@@ -13,6 +13,8 @@ class ApiController < ApplicationController
   # "smell_value" : Integer *
   # "smell_description" : String
   # "feelings_symptoms" : String
+  # "horizontal_accuracy" : Double
+  # "vertical_accuracy" : Double
   #
   def smell_report_create
     smell_report = SmellReport.new
@@ -22,6 +24,8 @@ class ApiController < ApplicationController
     smell_report.smell_value = params["smell_value"].to_i unless params["smell_value"].blank?
     smell_report.smell_description = params["smell_description"] unless params["smell_description"].blank?
     smell_report.feelings_symptoms = params["feelings_symptoms"] unless params["feelings_symptoms"].blank?
+    smell_report.horizontal_accuracy = params["horizontal_accuracy"] unless params["horizontal_accuracy"].blank?
+    smell_report.vertical_accuracy = params["vertical_accuracy"] unless params["vertical_accuracy"].blank?
 
     if smell_report.save
       # success
@@ -31,7 +35,9 @@ class ApiController < ApplicationController
         :user_hash => smell_report.user_hash,
         :smell_value => smell_report.smell_value,
         :smell_description => smell_report.smell_description,
-        :feelings_symptoms => smell_report.feelings_symptoms
+        :feelings_symptoms => smell_report.feelings_symptoms,
+        :horizontal_accuracy => smell_report.horizontal_accuracy,
+        :vertical_accuracy => smell_report.vertical_accuracy
       }
     else
       # fail
