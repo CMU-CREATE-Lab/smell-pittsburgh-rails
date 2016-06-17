@@ -3,9 +3,14 @@ var infowindow;
 var smell_reports;
 var smell_markers = [];
 var smell_color = ["smell_1.png", "smell_2.png", "smell_3.png", "smell_4.png", "smell_5.png"];
-var smell_value_text = ["Just fine!", "Barely noticeable", "Definitely noticeable", "It's getting pretty bad", "About as bad as it gets!"];
+var smell_value_text = ["Just fine!", "Barely noticeable", "Definitely noticeable",
+  "It's getting pretty bad", "About as bad as it gets!"
+];
 var staging_base_url = "http://staging.api.smellpittsburgh.org";
 var $calendar_dialog;
+var month_names = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
 
 function init() {
   initMap();
@@ -86,8 +91,18 @@ function initMap() {
     success: function(data) {
       smell_reports = data;
       drawAllSmellReports();
-      drawCalendar();
       drawTimeline();
+    },
+    error: function(response) {
+      console.log("server error:", response);
+    }
+  });
+
+  // Get calendar
+  $.ajax({
+    url: genSmellURL(),
+    success: function(data) {
+      drawCalendar(data);
     },
     error: function(response) {
       console.log("server error:", response);
@@ -96,13 +111,18 @@ function initMap() {
 }
 
 function genSmellURL(date_obj) {
-  date_obj = typeof date_obj == "undefined" ? new Date() : date_obj;
-  var timezone_offset = new Date().getTimezoneOffset();
-  var y = date_obj.getFullYear();
-  var m = date_obj.getMonth();
-  var first_day = new Date(y, m, 1).getTime() / 1000;
-  var last_day = new Date(y, m + 1, 0).getTime() / 1000;
-  var api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=" + first_day + "&end_time=" + last_day;
+  var api_paras;
+  if (typeof date_obj == "undefined") {
+    api_paras = "aggregate=month";
+  } else {
+    var timezone_offset = new Date().getTimezoneOffset();
+    var y = date_obj.getFullYear();
+    var m = date_obj.getMonth();
+    var first_day = new Date(y, m, 1).getTime() / 1000;
+    var last_day = new Date(y, m + 1, 0).getTime() / 1000;
+    api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=" + first_day + "&end_time=" + last_day;
+  }
+
   var url_hostname = window.location.origin;
   var api_url = "/api/v1/smell_reports?";
   if (url_hostname.indexOf("api.smellpittsburgh") >= 0) {
@@ -177,8 +197,13 @@ function deleteAllSmellReports() {
   smell_markers = [];
 }
 
-function drawCalendar() {
-
+function drawCalendar(data) {
+  var $calendar = $("#calendar");
+  var month = data.month;
+  for (var i = 0; i < month.length; i++) {
+    var date = new Date(month[i][0], month[i][1]);
+    $calendar.append($("<option>" + month_names[date.getMonth()] + " " + date.getFullYear() + "</option>"));
+  }
 }
 
 function drawTimeline() {
