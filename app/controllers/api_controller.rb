@@ -98,9 +98,12 @@ class ApiController < ApplicationController
             end
         end
         @reports = reports_aggr
+    elsif aggregate == "month"
+        reports_aggr = SmellReport.order('created_at ASC').group("year(created_at)").group("month(created_at)").count
+        @reports = {month: reports_aggr.keys}
     end
 
-    render :json => @reports.to_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
+    render :json => @reports.to_json(:only => [:month, :latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
   end
 
 end
