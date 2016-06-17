@@ -5,6 +5,7 @@ var smell_markers = [];
 var smell_color = ["smell_1.png", "smell_2.png", "smell_3.png", "smell_4.png", "smell_5.png"];
 var smell_value_text = ["Just fine!", "Barely noticeable", "Definitely noticeable", "It's getting pretty bad", "About as bad as it gets!"];
 var staging_base_url = "http://staging.api.smellpittsburgh.org";
+var $calendar_dialog;
 
 function init() {
   initMap();
@@ -54,30 +55,25 @@ function initMap() {
   });
 
   // Create calendar dialog
-  $("#calendar-dialog").dialog({
+  $calendar_dialog = $("#calendar-dialog");
+  $calendar_dialog.dialog({
     autoOpen: false,
     draggable: false,
     modal: true,
-    width: 300,
-    dialogClass: "custom-dialog noselect",
-    buttons: {
-      Ok: {
-        class: "custom-dialog-button",
-        text: "Ok",
-        click: function() {
-          $(this).dialog("close");
-        }
-      }
-    }
+    width: 260,
+    dialogClass: "custom-dialog noselect"
+  });
+  $("#dialog-ok-button").on("vclick", function() {
+    $calendar_dialog.dialog("close");
   });
 
   // Set customized map controls
-  $("#home-btn").on("click", function() {
+  $("#home-btn").on("vclick", function() {
     map.setCenter(init_latlng);
     map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
   });
-  $("#calendar-btn").on("click", function() {
-    $("#calendar-dialog").dialog("open");
+  $("#calendar-btn").on("vclick", function() {
+    $calendar_dialog.dialog("open");
   });
 
   // Set information window
@@ -134,9 +130,9 @@ function drawSingleSmellReport(report_i) {
     + '<b>Smell Description:</b> ' + smell_description,
     icon: {
       url: "/img/" + smell_color[report_i.smell_value - 1],
-      size: new google.maps.Size(18, 18),
+      size: new google.maps.Size(20, 20),
       origin: new google.maps.Point(0, 0),
-      anchor: new google.maps.Point(9, 9)
+      anchor: new google.maps.Point(10, 10)
     },
     zIndex: report_i.smell_value,
     opacity: 0.7
@@ -204,7 +200,7 @@ function drawTimeline() {
   }
 
   // Add clicking events
-  $("#timeline-index .custom-td-button").on("click", function() {
+  $("#timeline-index .custom-td-button").on("vclick", function() {
     if (!$(this).hasClass("selected-td-btn")) {
       clearTimelineBtnSelection();
       $(this).addClass("selected-td-btn");

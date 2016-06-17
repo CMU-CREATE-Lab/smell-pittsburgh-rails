@@ -70,9 +70,9 @@
   position: absolute;
   font-size: 11px;
   left: 9px;
-  top: 57px;
-  width: 40px;
-  height: 40px;
+  top: 72px;
+  width: 50px;
+  height: 50px;
   opacity: 0.75;
 }
 
@@ -81,8 +81,8 @@
   font-size: 11px;
   left: 9px;
   top: 9px;
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   opacity: 0.75;
 }
 
@@ -169,7 +169,7 @@
   background-image: url(/img/calendar.png);
   background-size: 26px 26px;
   background-repeat: no-repeat;
-  background-position: center 6px;
+  background-position: center center;
 }
 
 .custom-td-button {
@@ -241,17 +241,24 @@
   padding-top: 0px !important;
 }
 
-.custom-dialog .custom-dialog-button {
-  background-image: none !important;
-  background-color: #777777 !important;
-  color: white !important;
-  font-size: 15px !important;
-  margin-top: 10px !important;
-  margin-bottom: 7px !important;
-  margin-right: 0px !important;
-  margin-left: 0px !important;
-  width: 269px !important;
-  border-radius: 3px !important;
+#dialog-ok-button {
+  font-family: 'Open Sans', Helvetica, Arial, sans-serif;
+  background-image: none;
+  background-color: #777777;
+  color: white;
+  font-size: 15px;
+  margin-top: 22px;
+  margin-bottom: 7px;
+  margin-right: 0px;
+  margin-left: 0px;
+  padding-top: 1px;
+  padding-bottom: 0px;
+  padding-right: 0px;
+  padding-left: 0px;
+  width: 227px;
+  height: 35px;
+  border-radius: 3px;
+  border: 0px;
 }
 
 .ui-widget-overlay {
