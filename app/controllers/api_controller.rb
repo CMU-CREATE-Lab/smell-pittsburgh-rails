@@ -63,7 +63,7 @@ class ApiController < ApplicationController
     if start_time
       start_datetime = Time.at(start_time.to_i).to_datetime if start_time
     else
-      start_datetime = Time.at(0).to_datetime
+      start_datetime = Time.at(SmellReport.first.created_at).to_datetime
     end
 
     if end_time
