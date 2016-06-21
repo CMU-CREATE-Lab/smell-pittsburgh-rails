@@ -14,6 +14,7 @@ var $calendar_dialog;
 var $calendar;
 var $timeline_index;
 var $timeline_date;
+var $dialog_ok_button
 
 function init() {
   // Store objects
@@ -21,6 +22,7 @@ function init() {
   $timeline_date = $("#timeline-date");
   $calendar = $("#calendar");
   $calendar_dialog = $("#calendar-dialog");
+  $dialog_ok_button = $("#dialog-ok-button");
 
   // Create the page
   createGoogleMap();
@@ -84,6 +86,7 @@ function createToolbar() {
   });
   $("#calendar-btn").on("vclick", function() {
     $calendar_dialog.dialog("open");
+    $dialog_ok_button.focus();
   });
 }
 
@@ -95,7 +98,7 @@ function createCalendarDialog() {
     width: 260,
     dialogClass: "custom-dialog noselect"
   });
-  $("#dialog-ok-button").on("vclick", function() {
+  $dialog_ok_button.on("vclick", function() {
     $calendar_dialog.dialog("close");
     deleteAllSmellReports();
     deleteTimeline();
