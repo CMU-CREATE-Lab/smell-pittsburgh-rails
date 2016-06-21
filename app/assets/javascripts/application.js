@@ -14,7 +14,8 @@ var $calendar_dialog;
 var $calendar;
 var $timeline_index;
 var $timeline_date;
-var $dialog_ok_button
+var $dialog_ok_button;
+var $timeline_container;
 
 function init() {
   // Store objects
@@ -23,6 +24,7 @@ function init() {
   $calendar = $("#calendar");
   $calendar_dialog = $("#calendar-dialog");
   $dialog_ok_button = $("#dialog-ok-button");
+  $timeline_container = $("#timeline-container");
 
   // Create the page
   createGoogleMap();
@@ -126,8 +128,8 @@ function loadSmellReports(date) {
     url: genSmellURL(date),
     success: function(data) {
       smell_reports = data;
-      drawAllSmellReports();
       drawTimeline();
+      selectMostRecentDate();
     },
     error: function(response) {
       console.log("server error:", response);
@@ -156,6 +158,10 @@ function genSmellURL(date_obj) {
     api_url = staging_base_url + api_url;
   }
   return api_url + api_paras;
+}
+
+function selectMostRecentDate() {
+  selectTimelineBtn($timeline_index.children().last().children().first(), true);
 }
 
 function drawSingleSmellReport(report_i) {
@@ -254,19 +260,22 @@ function drawTimeline() {
 
   // Add clicking events
   $("#timeline-index .custom-td-button").on("vclick", function() {
-    if (!$(this).hasClass("selected-td-btn")) {
-      clearTimelineBtnSelection();
-      $(this).addClass("selected-td-btn");
-      var day = $(this).data("day");
-      if (day) {
-        deleteAllSmellReports();
-        drawSmellReportsByDay(parseInt(day));
-      } else {
-        deleteAllSmellReports();
-        drawAllSmellReports();
-      }
-    }
+    selectTimelineBtn($(this));
   });
+}
+
+function selectTimelineBtn($ele, auto_scroll) {
+  if (!$ele.hasClass("selected-td-btn")) {
+    clearTimelineBtnSelection();
+    $ele.addClass("selected-td-btn");
+    var day = $ele.data("day");
+    deleteAllSmellReports();
+    drawSmellReportsByDay(parseInt(day));
+    // Scroll to the position
+    if (auto_scroll) {
+      $timeline_container.scrollLeft(Math.round($ele.parent().position().left - $timeline_container.width() / 5));
+    }
+  }
 }
 
 function clearTimelineBtnSelection() {

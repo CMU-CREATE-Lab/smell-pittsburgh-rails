@@ -50,12 +50,13 @@
 #timeline {
   height: 100%;
   text-align: center;
+  position: relative;
 }
 
 #timeline td {
   font-size: 14px;
-  min-width: 60px;
-  max-width: 60px;
+  min-width: 55px;
+  max-width: 55px;
 }
 
 #timeline-index {
