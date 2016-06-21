@@ -7,13 +7,27 @@ var smell_value_text = ["Just fine!", "Barely noticeable", "Definitely noticeabl
   "It's getting pretty bad", "About as bad as it gets!"
 ];
 var staging_base_url = "http://staging.api.smellpittsburgh.org";
-var $calendar_dialog;
 var month_names = ["January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
 ];
+var $calendar_dialog;
+var $calendar;
+var $timeline_index;
+var $timeline_date;
 
 function init() {
-  initMap();
+  // Store objects
+  $timeline_index = $("#timeline-index");
+  $timeline_date = $("#timeline-date");
+  $calendar = $("#calendar");
+  $calendar_dialog = $("#calendar-dialog");
+
+  // Create the page
+  createGoogleMap();
+  createToolbar();
+  createCalendarDialog();
+  loadSmellReports(new Date());
+  loadCalendar();
 
   // Disable vertical bouncing effect on mobile browsers
   $(document).on("scrollstart", function(e) {
@@ -21,12 +35,12 @@ function init() {
   });
 }
 
-// This function initializes the Google Map
-function initMap() {
+function createGoogleMap() {
   // Parameters
   init_zoom_desktop = 12;
   init_zoom_mobile = 11;
   init_latlng = {"lat": 40.42, "lng": -79.94};
+
   // Set Google map style
   var styleArray = [
     {
@@ -59,8 +73,21 @@ function initMap() {
     mapTypeId: google.maps.MapTypeId.ROADMAP
   });
 
-  // Create calendar dialog
-  $calendar_dialog = $("#calendar-dialog");
+  // Set smell report information window
+  infowindow = new google.maps.InfoWindow();
+}
+
+function createToolbar() {
+  $("#home-btn").on("vclick", function() {
+    map.setCenter(init_latlng);
+    map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
+  });
+  $("#calendar-btn").on("vclick", function() {
+    $calendar_dialog.dialog("open");
+  });
+}
+
+function createCalendarDialog() {
   $calendar_dialog.dialog({
     autoOpen: false,
     draggable: false,
@@ -70,39 +97,34 @@ function initMap() {
   });
   $("#dialog-ok-button").on("vclick", function() {
     $calendar_dialog.dialog("close");
+    deleteAllSmellReports();
+    deleteTimeline();
+    var selected = $calendar.find(":selected");
+    var month = selected.data("month");
+    var year = selected.data("year");
+    loadSmellReports(new Date(year, month - 1, 1));
   });
+}
 
-  // Set customized map controls
-  $("#home-btn").on("vclick", function() {
-    map.setCenter(init_latlng);
-    map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
-  });
-  $("#calendar-btn").on("vclick", function() {
-    $calendar_dialog.dialog("open");
-  });
-
-  // Set information window
-  infowindow = new google.maps.InfoWindow();
-
-  // Get smell reports
+function loadCalendar() {
   $.ajax({
-    url: genSmellURL(new Date()),
-    //url: genSmellURL(new Date(2016, 4, 1)),
+    url: genSmellURL(),
     success: function(data) {
-      smell_reports = data;
-      drawAllSmellReports();
-      drawTimeline();
+      drawCalendar(data);
     },
     error: function(response) {
       console.log("server error:", response);
     }
   });
+}
 
-  // Get calendar
+function loadSmellReports(date) {
   $.ajax({
-    url: genSmellURL(),
+    url: genSmellURL(date),
     success: function(data) {
-      drawCalendar(data);
+      smell_reports = data;
+      drawAllSmellReports();
+      drawTimeline();
     },
     error: function(response) {
       console.log("server error:", response);
@@ -198,17 +220,20 @@ function deleteAllSmellReports() {
 }
 
 function drawCalendar(data) {
-  var $calendar = $("#calendar");
-  var month = data.month;
-  for (var i = 0; i < month.length; i++) {
-    var date = new Date(month[i][0], month[i][1]);
-    $calendar.append($("<option>" + month_names[date.getMonth()] + " " + date.getFullYear() + "</option>"));
+  var month_arr = data.month;
+  for (var i = 0; i < month_arr.length; i++) {
+    var year = month_arr[i][0];
+    var month = month_arr[i][1];
+    $calendar.append($("<option data-year='" + year + "' data-month='" + month + "'>" + month_names[month - 1] + " " + year + "</option>"));
   }
 }
 
+function deleteTimeline() {
+  $timeline_index.children().remove();
+  $timeline_date.children().remove();
+}
+
 function drawTimeline() {
-  var $index = $("#timeline-index");
-  var $date = $("#timeline-date");
   for (var k = 0; k < smell_reports.length; k++) {
     var report_k = smell_reports[k];
     if (report_k.length == 0) {
@@ -220,8 +245,8 @@ function drawTimeline() {
     var date_str = date.toDateString();
     var date_str_seg = date_str.split(" ");
     // Add the day block and text
-    $index.append($('<td><div style="background-color: ' + color_str + '" class="custom-td-button" data-day="' + k + '"></div></td>'));
-    $date.append($('<td>' + date_str_seg[1] + " " + date_str_seg[2] + '</td>'));
+    $timeline_index.append($('<td><div style="background-color: ' + color_str + '" class="custom-td-button" data-day="' + k + '"></div></td>'));
+    $timeline_date.append($('<td>' + date_str_seg[1] + " " + date_str_seg[2] + '</td>'));
   }
 
   // Add clicking events
