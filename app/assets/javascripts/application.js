@@ -1,6 +1,7 @@
 var map;
 var infowindow;
 var smell_reports;
+var smell_reports_jump_index = [];
 var smell_markers = [];
 var smell_color = ["smell_1.png", "smell_2.png", "smell_3.png", "smell_4.png", "smell_5.png"];
 var smell_value_text = ["Just fine!", "Barely noticeable", "Definitely noticeable",
@@ -100,14 +101,16 @@ function createCalendarDialog() {
     width: 260,
     dialogClass: "custom-dialog noselect"
   });
+  $calendar.on("change", function() {
+    $calendar_dialog.dialog("close");
+    var $selected = $calendar.find(":selected");
+    var desired_index = smell_reports_jump_index[$selected.val()];
+    if (typeof desired_index != "undefined") {
+      selectTimelineBtn($timeline_index.find("div[data-value=" + desired_index + "]"), true);
+    }
+  });
   $dialog_ok_button.on("vclick", function() {
     $calendar_dialog.dialog("close");
-    deleteAllSmellReports();
-    deleteTimeline();
-    var selected = $calendar.find(":selected");
-    var month = selected.data("month");
-    var year = selected.data("year");
-    loadSmellReports(new Date(year, month - 1, 1));
   });
 }
 
@@ -143,11 +146,15 @@ function genSmellURL(date_obj) {
     api_paras = "aggregate=month";
   } else {
     var timezone_offset = new Date().getTimezoneOffset();
-    var y = date_obj.getFullYear();
-    var m = date_obj.getMonth();
-    var first_day = new Date(y, m, 1).getTime() / 1000;
-    var last_day = new Date(y, m + 1, 0).getTime() / 1000;
-    api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=" + first_day + "&end_time=" + last_day;
+    api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset;
+    // An alternative usage is to add starting time, ending time, and timezone offset
+    // (see the following code)
+    //var timezone_offset = new Date().getTimezoneOffset();
+    //var y = date_obj.getFullYear();
+    //var m = date_obj.getMonth();
+    //var first_day = new Date(y, m, 1).getTime() / 1000;
+    //var last_day = new Date(y, m + 1, 0).getTime() / 1000;
+    //api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=" + first_day + "&end_time=" + last_day;
   }
 
   var url_hostname = window.location.origin;
@@ -212,9 +219,9 @@ function drawAllSmellReports() {
   }
 }
 
-function drawSmellReportsByDay(day) {
-  if (day) {
-    var report_k = smell_reports[day];
+function drawSmellReportsByIndex(index) {
+  if (index) {
+    var report_k = smell_reports[index];
     for (var i = 0; i < report_k.length; i++) {
       drawSingleSmellReport(report_k[i]);
     }
@@ -233,7 +240,7 @@ function drawCalendar(data) {
   for (var i = 0; i < month_arr.length; i++) {
     var year = month_arr[i][0];
     var month = month_arr[i][1];
-    $calendar.append($("<option data-year='" + year + "' data-month='" + month + "'>" + month_names[month - 1] + " " + year + "</option>"));
+    $calendar.append($('<option value="' + i + '" data-year="' + year + '" data-month="' + month + '">' + month_names[month - 1] + ' ' + year + '</option>'));
   }
 }
 
@@ -243,6 +250,8 @@ function deleteTimeline() {
 }
 
 function drawTimeline() {
+  var last_month;
+  var td_count = 0;
   for (var k = 0; k < smell_reports.length; k++) {
     var report_k = smell_reports[k];
     if (report_k.length == 0) {
@@ -254,8 +263,15 @@ function drawTimeline() {
     var date_str = date.toDateString();
     var date_str_seg = date_str.split(" ");
     // Add the day block and text
-    $timeline_index.append($('<td><div style="background-color: ' + color_str + '" class="custom-td-button" data-day="' + k + '"></div></td>'));
+    $timeline_index.append($('<td><div style="background-color: ' + color_str + '" class="custom-td-button" data-value="' + td_count + '" data-index="' + k + '"></div></td>'));
     $timeline_date.append($('<td>' + date_str_seg[1] + " " + date_str_seg[2] + '</td>'));
+    // Save the index if necessary
+    var month = date.getMonth();
+    if (last_month != month) {
+      smell_reports_jump_index.push(td_count);
+      last_month = month;
+    }
+    td_count++;
   }
 
   // Add clicking events
@@ -265,12 +281,12 @@ function drawTimeline() {
 }
 
 function selectTimelineBtn($ele, auto_scroll) {
-  if (!$ele.hasClass("selected-td-btn")) {
+  if ($ele && !$ele.hasClass("selected-td-btn")) {
     clearTimelineBtnSelection();
     $ele.addClass("selected-td-btn");
-    var day = $ele.data("day");
+    var index = $ele.data("index");
     deleteAllSmellReports();
-    drawSmellReportsByDay(parseInt(day));
+    drawSmellReportsByIndex(parseInt(index));
     // Scroll to the position
     if (auto_scroll) {
       $timeline_container.scrollLeft(Math.round($ele.parent().position().left - $timeline_container.width() / 5));
