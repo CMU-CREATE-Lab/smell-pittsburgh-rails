@@ -18,6 +18,22 @@ var $timeline_date;
 var $dialog_ok_button;
 var $timeline_container;
 
+// tanh is not defined before Chrome 38
+// which means that Android <= 4.4.x will
+// throw an error when we attempt to use it;
+// so here is a pollyfill.
+var tanh_func = function (x) {
+  if (x === Infinity) {
+    return 1;
+  } else if (x === -Infinity) {
+    return -1;
+  } else {
+    var y = Math.exp(2 * x);
+    return (y - 1) / (y + 1);
+  }
+};
+Math.tanh = Math.tanh || tanh_func;
+
 function init() {
   // Store objects
   $timeline_index = $("#timeline-index");
@@ -35,7 +51,7 @@ function init() {
   loadCalendar();
 
   // Disable vertical bouncing effect on mobile browsers
-  $(document).on("scrollstart", function(e) {
+  $(document).on("scrollstart", function (e) {
     e.preventDefault();
   });
 }
@@ -83,11 +99,11 @@ function createGoogleMap() {
 }
 
 function createToolbar() {
-  $("#home-btn").on("vclick", function() {
+  $("#home-btn").on("vclick", function () {
     map.setCenter(init_latlng);
     map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
   });
-  $("#calendar-btn").on("vclick", function() {
+  $("#calendar-btn").on("vclick", function () {
     $calendar_dialog.dialog("open");
     $dialog_ok_button.focus();
   });
@@ -101,7 +117,7 @@ function createCalendarDialog() {
     width: 260,
     dialogClass: "custom-dialog noselect"
   });
-  $calendar.on("change", function() {
+  $calendar.on("change", function () {
     $calendar_dialog.dialog("close");
     var $selected = $calendar.find(":selected");
     var desired_index = smell_reports_jump_index[$selected.val()];
@@ -109,7 +125,7 @@ function createCalendarDialog() {
       selectTimelineBtn($timeline_index.find("div[data-value=" + desired_index + "]"), true);
     }
   });
-  $dialog_ok_button.on("vclick", function() {
+  $dialog_ok_button.on("vclick", function () {
     $calendar_dialog.dialog("close");
   });
 }
@@ -117,10 +133,10 @@ function createCalendarDialog() {
 function loadCalendar() {
   $.ajax({
     url: genSmellURL(),
-    success: function(data) {
+    success: function (data) {
       drawCalendar(data);
     },
-    error: function(response) {
+    error: function (response) {
       console.log("server error:", response);
     }
   });
@@ -129,12 +145,12 @@ function loadCalendar() {
 function loadSmellReports(date) {
   $.ajax({
     url: genSmellURL(date),
-    success: function(data) {
+    success: function (data) {
       smell_reports = data;
       drawTimeline();
       selectMostRecentDate();
     },
-    error: function(response) {
+    error: function (response) {
       console.log("server error:", response);
     }
   });
@@ -197,7 +213,7 @@ function drawSingleSmellReport(report_i) {
   });
 
   // Add marker event
-  marker.addListener("click", function() {
+  marker.addListener("click", function () {
     map.panTo(this.getPosition());
     infowindow.setContent(this.content);
     infowindow.open(map, this);
@@ -275,7 +291,7 @@ function drawTimeline() {
   }
 
   // Add clicking events
-  $("#timeline-index .custom-td-button").on("vclick", function() {
+  $("#timeline-index .custom-td-button").on("vclick", function () {
     selectTimelineBtn($(this));
   });
 }
