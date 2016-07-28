@@ -6,6 +6,7 @@ class SmellReport < ActiveRecord::Base
   # smell_value :integer
   # smell_description :text
   # feelings_symptoms :text
+  # submit_achd_form :boolean
 
   validates :user_hash, :latitude, :longitude, :smell_value, :presence => true
   validates :smell_value, :inclusion => { in: (1..5) }

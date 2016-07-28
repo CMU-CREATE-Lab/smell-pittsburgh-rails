@@ -15,6 +15,8 @@ class ApiController < ApplicationController
   # "feelings_symptoms" : String
   # "horizontal_accuracy" : Double
   # "vertical_accuracy" : Double
+  # "submit_achd_form" : Boolean
+  # "email" : String
   #
   def smell_report_create
     smell_report = SmellReport.new
@@ -26,6 +28,7 @@ class ApiController < ApplicationController
     smell_report.feelings_symptoms = params["feelings_symptoms"] unless params["feelings_symptoms"].blank?
     smell_report.horizontal_accuracy = params["horizontal_accuracy"] unless params["horizontal_accuracy"].blank?
     smell_report.vertical_accuracy = params["vertical_accuracy"] unless params["vertical_accuracy"].blank?
+    smell_report.submit_achd_form = params["submit_achd_form"] unless params["submit_achd_form"].blank?
 
     if smell_report.save
       # success
@@ -41,6 +44,11 @@ class ApiController < ApplicationController
       }
       # send push notifications for specific smell values (1-5)
       FirebasePushNotification.push_smell_report_to_topic(smell_report, "/topics/SmellReport-#{smell_report.smell_value}")
+      # send email
+      if smell_report.submit_achd_form
+        # TODO mailer
+        #if params["email"].blank?
+      end
     else
       # fail
       response = {

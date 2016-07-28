@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160617132926) do
+ActiveRecord::Schema.define(version: 20160728172536) do
 
   create_table "smell_reports", force: :cascade do |t|
     t.string   "user_hash",           limit: 255
@@ -20,10 +20,11 @@ ActiveRecord::Schema.define(version: 20160617132926) do
     t.integer  "smell_value",         limit: 4
     t.text     "smell_description",   limit: 65535
     t.text     "feelings_symptoms",   limit: 65535
-    t.datetime "created_at",                        null: false
-    t.datetime "updated_at",                        null: false
+    t.datetime "created_at",                                        null: false
+    t.datetime "updated_at",                                        null: false
     t.float    "horizontal_accuracy", limit: 24
     t.float    "vertical_accuracy",   limit: 24
+    t.boolean  "submit_achd_form",                  default: false
   end
 
 end
