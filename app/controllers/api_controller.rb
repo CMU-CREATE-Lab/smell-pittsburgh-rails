@@ -39,6 +39,8 @@ class ApiController < ApplicationController
         :horizontal_accuracy => smell_report.horizontal_accuracy,
         :vertical_accuracy => smell_report.vertical_accuracy
       }
+      # send push notifications for specific smell values (1-5)
+      FirebasePushNotification.push_smell_report_to_topic(smell_report, "/topics/SmellReport-#{smell_report.smell_value}")
     else
       # fail
       response = {

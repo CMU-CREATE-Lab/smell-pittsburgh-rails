@@ -5,21 +5,33 @@ class FirebasePushNotification < ActiveRecord::Base
 		"/topics/GlobalTopic"
 	end
 
-	def self.FIREBASE_AUTH_KEY
-		"DO-NOT-PUSH-ME"
-	end
-
 	def self.FIREBASE_URL
 		"https://fcm.googleapis.com/fcm/send"
 	end
 
 
-	def self.push_global(title, body, options=nil)
-		send_push_notification(self.GLOBAL_TOPIC, title, body, options)
+	def self.push_smell_report_to_topic(smell_report,topic)
+		title = "New Smell Report"
+		body = "A user has submitted a smell report (level #{smell_report.smell_value} of 5)."
+		self.push_topic(topic,title,body)
 	end
 
 
-	private def self.send_push_notification(to, title, body, options=nil)
+	# TODO add options
+	def self.push_global(title, body, options=nil)
+		self.send_push_notification(self.GLOBAL_TOPIC, title, body, options)
+	end
+
+
+	# TODO add options
+	def self.push_topic(topic, title, body, options=nil)
+		self.send_push_notification(topic, title, body, options)
+	end
+
+
+	# TODO add options
+	private
+	def self.send_push_notification(to, title, body, options=nil)
 		json = {}
 		json["to"] = to
 		json["notification"] = {
@@ -38,7 +50,7 @@ class FirebasePushNotification < ActiveRecord::Base
 
 		# HTTP request and response handler
 		request = "POST"
-		headers = '-H "Content-Type:application/json" -H "Authorization:key=' + self.FIREBASE_AUTH_KEY + '"'
+		headers = '-H "Content-Type:application/json" -H "Authorization:key=' + FIREBASE_AUTH_KEY + '"'
 		url = self.FIREBASE_URL
 		data = json.to_json
 		response = `curl -X POST #{headers} "#{url}" -d '#{data}'`
