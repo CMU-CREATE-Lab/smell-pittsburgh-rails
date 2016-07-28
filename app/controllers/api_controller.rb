@@ -46,8 +46,11 @@ class ApiController < ApplicationController
       FirebasePushNotification.push_smell_report_to_topic(smell_report, "/topics/SmellReport-#{smell_report.smell_value}")
       # send email
       if smell_report.submit_achd_form
-        # TODO mailer
-        #if params["email"].blank?
+        if params["email"].blank?
+          AchdForm.submit_form(smell_report)
+        else
+          AchdForm.submit_form(smell_report, params["email"])
+        end
       end
     else
       # fail
