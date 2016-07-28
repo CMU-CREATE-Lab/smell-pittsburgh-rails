@@ -48,3 +48,5 @@ group :development do
   gem 'tzinfo-data'
 end
 
+# Geokit Rails
+gem 'geokit-rails'
