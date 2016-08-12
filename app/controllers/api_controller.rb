@@ -17,6 +17,8 @@ class ApiController < ApplicationController
   # "vertical_accuracy" : Double
   # "submit_achd_form" : Boolean
   # "email" : String
+  # "name" : String
+  # "phone_number" : String
   #
   def smell_report_create
     smell_report = SmellReport.new
@@ -46,11 +48,12 @@ class ApiController < ApplicationController
       FirebasePushNotification.push_smell_report_to_topic(smell_report, "/topics/SmellReport-#{smell_report.smell_value}")
       # send email
       if smell_report.submit_achd_form
-        if params["email"].blank?
-          AchdForm.submit_form(smell_report)
-        else
-          AchdForm.submit_form(smell_report, params["email"])
-        end
+        options = {
+          "email": params["email"],
+          "name": params["name"],
+          "phone_number": params["phone_number"],
+        }
+        AchdForm.submit_form(smell_report,options)
       end
     else
       # fail
