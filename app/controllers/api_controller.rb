@@ -47,7 +47,8 @@ class ApiController < ApplicationController
       # send push notifications for specific smell values (1-5)
       FirebasePushNotification.push_smell_report_to_topic(smell_report, "/topics/SmellReport-#{smell_report.smell_value}")
       # send email
-      if smell_report.submit_achd_form
+      # TODO only send email if the smell value was greater than 1 AND we are not in a dev/staging environment
+      if smell_report.submit_achd_form and smell_report.smell_value > 1
         options = {
           "email": params["email"],
           "name": params["name"],
