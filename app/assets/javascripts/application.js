@@ -200,17 +200,17 @@ function drawSingleSmellReport(report_i) {
     position: latlng,
     map: map,
     content: '<b>Date:</b> ' + date + '<br>'
-    + '<b>Smell Value:</b> ' + smell_value + " (" + smell_value_text[smell_value - 1] + ")" + '<br>'
-    + '<b>Feelings Symptoms:</b> ' + feelings_symptoms + '<br>'
-    + '<b>Smell Description:</b> ' + smell_description,
+      + '<b>Smell Value:</b> ' + smell_value + " (" + smell_value_text[smell_value - 1] + ")" + '<br>'
+      + '<b>Feelings Symptoms:</b> ' + feelings_symptoms + '<br>'
+      + '<b>Smell Description:</b> ' + smell_description,
     icon: {
       url: "/img/" + smell_color[report_i.smell_value - 1],
-      size: new google.maps.Size(20, 20),
+      scaledSize: new google.maps.Size(24, 24),
       origin: new google.maps.Point(0, 0),
-      anchor: new google.maps.Point(10, 10)
+      anchor: new google.maps.Point(12, 12)
     },
     zIndex: report_i.smell_value,
-    opacity: 0.7
+    opacity: 0.85
   });
 
   // Add marker event
@@ -333,8 +333,8 @@ function loadAndDrawSingleSensor(time, feed_num) {
   $.when(
       $.getJSON(root_url, function (response) {
         var data = response["data"];
-        sensor["latitude"] = data["latitude"];
-        sensor["longitude"] = data["longitude"];
+        sensor["lat"] = data["latitude"];
+        sensor["lng"] = data["longitude"];
       }),
       $.getJSON(PM25_now_url, function (response) {
         var data = response["data"];
@@ -351,7 +351,34 @@ function loadAndDrawSingleSensor(time, feed_num) {
 }
 
 function drawSingleSensor(sensor) {
-  //console.log(sensor);
+  var latlng = {"lat": sensor.lat, "lng": sensor.lng};
+
+  // Add marker
+  var marker = new google.maps.Marker({
+    position: latlng,
+    map: map,
+    content: '<b>PM25_now:</b> ' + sensor.PM25_now + '<br>'
+      + '<b>PM25_daily_mean:</b> ' + sensor.PM25_daily_mean + '<br>'
+      + '<b>PM25_daily_max:</b> ' + sensor.PM25_daily_max + '<br>',
+    icon: {
+      url: "/img/sensor.png",
+      scaledSize: new google.maps.Size(24, 24),
+      origin: new google.maps.Point(0, 0),
+      anchor: new google.maps.Point(12, 12)
+    },
+    zIndex: 1,
+    opacity: 0.85
+  });
+
+  // Add marker event
+  marker.addListener("click", function () {
+    map.panTo(this.getPosition());
+    infowindow.setContent(this.content);
+    infowindow.open(map, this);
+  });
+
+  // Save markers
+  sensor_markers.push(marker);
 }
 
 $(document).on("pageinit", init);
