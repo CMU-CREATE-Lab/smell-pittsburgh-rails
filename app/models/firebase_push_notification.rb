@@ -53,13 +53,19 @@ class FirebasePushNotification < ActiveRecord::Base
 		headers = '-H "Content-Type:application/json" -H "Authorization:key=' + FIREBASE_AUTH_KEY + '"'
 		url = self.FIREBASE_URL
 		data = json.to_json
-		response = `curl -X POST #{headers} "#{url}" -d '#{data}'`
-		begin
-			json_response = JSON.parse(response)
-			unless json_response["message_id"].blank?
-				Rails.logger.info("Successfully sent push with id=#{json_response["message_id"]}")
-				return
+
+		# only push on production
+		if Rails.env == "production"
+			response = `curl -X POST #{headers} #{url} -d '#{data}'`
+			begin
+				json_response = JSON.parse(response)
+				unless json_response["message_id"].blank?
+					Rails.logger.info("Successfully sent push with id=#{json_response["message_id"]}")
+					return
+				end
 			end
+		else
+			Rails.logger.info("FirebasePushNotification (non-production): curl -X POST #{headers} #{url} -d '#{data}'")
 		end
 	end
 
