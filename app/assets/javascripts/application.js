@@ -301,9 +301,10 @@ function selectTimelineBtn($ele, auto_scroll) {
   if ($ele && !$ele.hasClass("selected-td-btn")) {
     clearTimelineBtnSelection();
     $ele.addClass("selected-td-btn");
+    infowindow.close();
     deleteAllSmellReports();
     drawSmellReportsByIndex(parseInt($ele.data("index")));
-    //loadAndDrawSingleSensor(parseInt($ele.data("time")), 29);
+    loadAndDrawSingleSensor(parseInt($ele.data("time")), 29);
     // Scroll to the position
     if (auto_scroll) {
       $timeline_container.scrollLeft(Math.round($ele.parent().position().left - $timeline_container.width() / 5));
@@ -338,28 +339,34 @@ function loadAndDrawSingleSensor(time, feed_num) {
       }),
       $.getJSON(PM25_now_url, function (response) {
         var data = response["data"];
-        sensor["PM25_now"] = data["channels"]["PM25_2__UG_M3"]["mostRecentDataSample"]["value"];
+        sensor["PM25_now"] = roundTo2(data["channels"]["PM25_2__UG_M3"]["mostRecentDataSample"]["value"]);
       }),
       $.getJSON(PM25_stat_url, function (response) {
         var data = response["data"][0];
-        sensor["PM25_daily_mean"] = data[1];
-        sensor["PM25_daily_max"] = data[2];
+        sensor["PM25_daily_mean"] = roundTo2(data[1]);
+        sensor["PM25_daily_max"] = roundTo2(data[2]);
       })
   ).then(function () {
     drawSingleSensor(sensor);
   }); 
 }
 
+function roundTo2(val) {
+  return Math.round(parseFloat(val) * 100) / 100;
+}
+
 function drawSingleSensor(sensor) {
   var latlng = {"lat": sensor.lat, "lng": sensor.lng};
+  var html = '';
+  html += '<b>PM2.5 now:</b> ' + sensor.PM25_now + '<br>';
+  html += '<b>PM2.5 daily mean:</b> ' + sensor.PM25_daily_mean + '<br>';
+  html += '<b>PM2.5 daily max:</b> ' + sensor.PM25_daily_max + '<br>';
 
   // Add marker
   var marker = new google.maps.Marker({
     position: latlng,
     map: map,
-    content: '<b>PM25_now:</b> ' + sensor.PM25_now + '<br>'
-      + '<b>PM25_daily_mean:</b> ' + sensor.PM25_daily_mean + '<br>'
-      + '<b>PM25_daily_max:</b> ' + sensor.PM25_daily_max + '<br>',
+    content: html,
     icon: {
       url: "/img/sensor.png",
       scaledSize: new google.maps.Size(24, 24),
