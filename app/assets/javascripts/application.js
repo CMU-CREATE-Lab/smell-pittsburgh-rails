@@ -7,6 +7,7 @@ var smell_color = ["smell_1.png", "smell_2.png", "smell_3.png", "smell_4.png", "
 var smell_value_text = ["Just fine!", "Barely noticeable", "Definitely noticeable",
   "It's getting pretty bad", "About as bad as it gets!"
 ];
+var sensor_markers = [];
 var staging_base_url = "http://staging.api.smellpittsburgh.org";
 var month_names = ["January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
@@ -199,17 +200,17 @@ function drawSingleSmellReport(report_i) {
     position: latlng,
     map: map,
     content: '<b>Date:</b> ' + date + '<br>'
-    + '<b>Smell Value:</b> ' + smell_value + " (" + smell_value_text[smell_value - 1] + ")" + '<br>'
-    + '<b>Feelings Symptoms:</b> ' + feelings_symptoms + '<br>'
-    + '<b>Smell Description:</b> ' + smell_description,
+      + '<b>Smell Value:</b> ' + smell_value + " (" + smell_value_text[smell_value - 1] + ")" + '<br>'
+      + '<b>Feelings Symptoms:</b> ' + feelings_symptoms + '<br>'
+      + '<b>Smell Description:</b> ' + smell_description,
     icon: {
       url: "/img/" + smell_color[report_i.smell_value - 1],
-      size: new google.maps.Size(20, 20),
+      scaledSize: new google.maps.Size(24, 24),
       origin: new google.maps.Point(0, 0),
-      anchor: new google.maps.Point(10, 10)
+      anchor: new google.maps.Point(12, 12)
     },
     zIndex: report_i.smell_value,
-    opacity: 0.7
+    opacity: 0.85
   });
 
   // Add marker event
@@ -235,9 +236,9 @@ function drawAllSmellReports() {
   }
 }
 
-function drawSmellReportsByIndex(index) {
-  if (index) {
-    var report_k = smell_reports[index];
+function drawSmellReportsByIndex(idx) {
+  if (idx) {
+    var report_k = smell_reports[idx];
     for (var i = 0; i < report_k.length; i++) {
       drawSingleSmellReport(report_k[i]);
     }
@@ -279,7 +280,7 @@ function drawTimeline() {
     var date_str = date.toDateString();
     var date_str_seg = date_str.split(" ");
     // Add the day block and text
-    $timeline_index.append($('<td><div style="background-color: ' + color_str + '" class="custom-td-button" data-value="' + td_count + '" data-index="' + k + '"></div></td>'));
+    $timeline_index.append($('<td><div style="background-color: ' + color_str + '" class="custom-td-button" data-value="' + td_count + '" data-index="' + k + '" data-time="' + (new Date(date_str)).getTime()/1000 + '"></div></td>'));
     $timeline_date.append($('<td>' + date_str_seg[1] + " " + date_str_seg[2] + '</td>'));
     // Save the index if necessary
     var month = date.getMonth();
@@ -300,9 +301,10 @@ function selectTimelineBtn($ele, auto_scroll) {
   if ($ele && !$ele.hasClass("selected-td-btn")) {
     clearTimelineBtnSelection();
     $ele.addClass("selected-td-btn");
-    var index = $ele.data("index");
+    infowindow.close();
     deleteAllSmellReports();
-    drawSmellReportsByIndex(parseInt(index));
+    drawSmellReportsByIndex(parseInt($ele.data("index")));
+    loadAndDrawSingleSensor(parseInt($ele.data("time")), 29);
     // Scroll to the position
     if (auto_scroll) {
       $timeline_container.scrollLeft(Math.round($ele.parent().position().left - $timeline_container.width() / 5));
@@ -320,6 +322,70 @@ function clearTimelineBtnSelection() {
 function isMobile() {
   var useragent = navigator.userAgent;
   return useragent.indexOf("iPhone") != -1 || useragent.indexOf("Android") != -1;
+}
+
+function loadAndDrawSingleSensor(time, feed_num) {
+  var root_url = "https://esdr.cmucreatelab.org/api/v1/feeds/" + feed_num;
+  var PM25_now_url = root_url + "/channels/PM25_2__UG_M3/most-recent";
+  var PM25_stat_url = root_url + "/channels/PM25_2__UG_M3_daily_mean,PM25_2__UG_M3_daily_max/export?format=json&from=" + time + "&to=" + (time+86400);
+  var sensor = {};
+
+  // Load sensor data simultaneously
+  $.when(
+      $.getJSON(root_url, function (response) {
+        var data = response["data"];
+        sensor["lat"] = data["latitude"];
+        sensor["lng"] = data["longitude"];
+      }),
+      $.getJSON(PM25_now_url, function (response) {
+        var data = response["data"];
+        sensor["PM25_now"] = roundTo2(data["channels"]["PM25_2__UG_M3"]["mostRecentDataSample"]["value"]);
+      }),
+      $.getJSON(PM25_stat_url, function (response) {
+        var data = response["data"][0];
+        sensor["PM25_daily_mean"] = roundTo2(data[1]);
+        sensor["PM25_daily_max"] = roundTo2(data[2]);
+      })
+  ).then(function () {
+    drawSingleSensor(sensor);
+  }); 
+}
+
+function roundTo2(val) {
+  return Math.round(parseFloat(val) * 100) / 100;
+}
+
+function drawSingleSensor(sensor) {
+  var latlng = {"lat": sensor.lat, "lng": sensor.lng};
+  var html = '';
+  html += '<b>PM2.5 now:</b> ' + sensor.PM25_now + '<br>';
+  html += '<b>PM2.5 daily mean:</b> ' + sensor.PM25_daily_mean + '<br>';
+  html += '<b>PM2.5 daily max:</b> ' + sensor.PM25_daily_max + '<br>';
+
+  // Add marker
+  var marker = new google.maps.Marker({
+    position: latlng,
+    map: map,
+    content: html,
+    icon: {
+      url: "/img/sensor.png",
+      scaledSize: new google.maps.Size(24, 24),
+      origin: new google.maps.Point(0, 0),
+      anchor: new google.maps.Point(12, 12)
+    },
+    zIndex: 1,
+    opacity: 0.85
+  });
+
+  // Add marker event
+  marker.addListener("click", function () {
+    map.panTo(this.getPosition());
+    infowindow.setContent(this.content);
+    infowindow.open(map, this);
+  });
+
+  // Save markers
+  sensor_markers.push(marker);
 }
 
 $(document).on("pageinit", init);
