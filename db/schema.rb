@@ -11,7 +11,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160728172536) do
+ActiveRecord::Schema.define(version: 20160812202536) do
+
+  create_table "achd_forms", force: :cascade do |t|
+    t.string   "email",           limit: 255
+    t.string   "phone",           limit: 255
+    t.string   "name",            limit: 255
+    t.integer  "smell_report_id", limit: 4
+    t.datetime "created_at",                  null: false
+    t.datetime "updated_at",                  null: false
+  end
+
+  add_index "achd_forms", ["smell_report_id"], name: "index_achd_forms_on_smell_report_id", using: :btree
 
   create_table "smell_reports", force: :cascade do |t|
     t.string   "user_hash",           limit: 255
@@ -27,4 +38,5 @@ ActiveRecord::Schema.define(version: 20160728172536) do
     t.boolean  "submit_achd_form",                  default: false
   end
 
+  add_foreign_key "achd_forms", "smell_reports"
 end

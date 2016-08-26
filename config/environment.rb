@@ -6,3 +6,5 @@ Rails.application.initialize!
 
 # Authorization Key for Google Firebase Push Notifications
 FIREBASE_AUTH_KEY = "DO-NOT-PUSH-ME"
+# Auth Key for AirNow API
+AIRNOW_API_KEY = "DO-NOT-PUSH-ME"

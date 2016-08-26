@@ -10,6 +10,9 @@ class FirebasePushNotification < ActiveRecord::Base
 	end
 
 
+	# TODO channel for: (1) general PGH aqi, (2) city comparison (multiple?)
+
+
 	def self.push_smell_report_to_topic(smell_report,topic)
 		title = "New Smell Report"
 		body = "A user has submitted a smell report (level #{smell_report.smell_value} of 5)."
