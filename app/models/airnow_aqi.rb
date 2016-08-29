@@ -14,11 +14,11 @@ class AirnowAqi < ActiveRecord::Base
       json.each do |row|
         # YYYY-MM-DD HH:00 EST
         date = "#{row["DateObserved"]}#{row["HourObserved"]}:00 #{row["LocalTimeZone"]}"
-        # PARAM = ## AQI
-        value = "#{row["ParameterName"]} = #{row["AQI"]} AQI"
+        param = row["ParameterName"]
+        value = row["AQI"]
 
         # add row
-        results.push( { date: date, value: value} )
+        results.push( { "date" => date, "param" => param, "value" => value} )
       end
       return results
     rescue
