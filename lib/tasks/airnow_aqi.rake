@@ -23,21 +23,23 @@ namespace :airnow_aqi do
       end
       city["aqi"] = aqi
     end
+
+    notifications = []
     # check pittsburgh's aqi; if above 50, send push notifications
     pittsburgh = cities[0]
-    if pittsburgh["aqi"] >= 50
-      notifications = []
-      # compare values of other cities against pittsburgh and push when pittsburgh is higher
-      cities[1..-1].each do |city|
-        if pittsburgh["aqi"] > city["aqi"]
-          notifications.push(city["name"]) unless city["aqi"] == -1
-        end
-      end
-      # TODO construct push notifications
-      puts "Pittsburgh AQI is at/above 50; with cities higher than pgh: #{notifications}"
-    else
-      puts "Pittsburgh AQI is below 50; no notifications to be sent"
+    if pittsburgh["aqi"] > 50
+      notifications.push(pittsburgh["name"])
     end
+    # compare values of other cities against pittsburgh and push when pittsburgh is higher
+    cities[1..-1].each do |city|
+      # we only want to know when the AQI threshold differs (0-50 good, 51-100 moderate, etc.)
+      if (pittsburgh["aqi"]-1)/50 > (city["aqi"]-1)/50
+        notifications.push(city["name"]) unless city["aqi"] < 1
+      end
+    end
+
+    # TODO construct push notifications
+    puts "notifications to send: #{notifications}"
   end
 
 end
