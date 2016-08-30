@@ -38,20 +38,23 @@ class AchdForm < ActiveRecord::Base
       form_fields["phone"] = form.phone.blank? ? "" : form.phone
       form_fields["email"] = form.formatted_server_email
       form_fields["subject"] = "Smell Report"
+
       # comment field
       body = ""
-      body += "An odor was detected near #{geo.street_address}, #{geo.zip} on #{smell_report.created_at.localtime.strftime("%d %B %Y")} at #{smell_report.created_at.localtime.strftime("%I:%M %p %Z")}. On a scale of 1 to 5, with 5 being the worst, the odor was rated as #{smell_report.smell_value}."
+      body += "Dear Dr. Karen Hacker and the Allegheny County Health Department,"
+      body += "\n\n"
+      body += "I noticed an unusual smell at #{geo.street_address}, #{geo.zip} on #{smell_report.created_at.localtime.strftime("%d %B %Y")} at #{smell_report.created_at.localtime.strftime("%I:%M %p %Z")}. I’d rate the smell #{smell_report.smell_value} on a scale of 1 to 5, with 5 being the worst odor."
       unless smell_report.smell_description.blank? and smell_report.feelings_symptoms.blank?
         body += "\n\n"
-        body += "The smell was described as: #{smell_report.smell_description}. " unless smell_report.smell_description.blank?
-        body += "Residents reported the following symptoms during the time the odor was detected: #{smell_report.feelings_symptoms}." unless smell_report.feelings_symptoms.blank?
+        body += "The smell was #{smell_report.smell_description}. " unless smell_report.smell_description.blank?
+        body += "I noticed the following symptoms when I smelled the odor: #{smell_report.feelings_symptoms}." unless smell_report.feelings_symptoms.blank?
       end
       body += "\n\n"
-      body += "This report was generated through the Smell PGH app: http://www.cmucreatelab.org/projects/Smell_Pittsburgh"
+      body += "Please let me know if there were particular causes of this smell and what health impacts could result by emailing me"
+      body += " at #{form.email}." unless form.email.blank?
       body += "\n\n"
-      body += "Please respond to this report by emailing #{form.formatted_server_email}"
-      body += " and #{form.email}" unless form.email.blank?
-      body +=". All app users will be notified of this response."
+      body += "Thank you,\n#{form_fields["name"]}"
+
       form_fields["comment"] = body
 
       # curl form
