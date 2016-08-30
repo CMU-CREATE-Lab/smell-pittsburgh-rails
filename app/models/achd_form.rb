@@ -54,6 +54,8 @@ class AchdForm < ActiveRecord::Base
       body += " at #{form.email}." unless form.email.blank?
       body += "\n\n"
       body += "Thank you,\n#{form_fields["name"]}"
+      body += "\n\n"
+      body += "This report was generated through the Smell PGH app: http://www.cmucreatelab.org/projects/Smell_Pittsburgh\nEmail: smellpgh-reports@cmucreatelab.org"
 
       form_fields["comment"] = body
 
