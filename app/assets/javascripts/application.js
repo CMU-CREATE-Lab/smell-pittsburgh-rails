@@ -4,7 +4,7 @@ var smell_reports;
 var smell_reports_jump_index = [];
 var smell_markers = [];
 var smell_color = ["smell_1.png", "smell_2.png", "smell_3.png", "smell_4.png", "smell_5.png"];
-var sensor_color = ["sensor_1.png", "sensor_2.png", "sensor_3.png", "sensor_4.png", "sensor_5.png"];
+var sensor_color = ["sensor_0.png", "sensor_1.png", "sensor_2.png", "sensor_3.png", "sensor_4.png", "sensor_5.png"];
 var smell_value_text = ["Just fine!", "Barely noticeable", "Definitely noticeable",
   "It's getting pretty bad", "About as bad as it gets!"
 ];
@@ -20,6 +20,7 @@ var $timeline_date;
 var $dialog_ok_button;
 var $timeline_container;
 var esdr_root_url = "https://esdr.cmucreatelab.org/api/v1/";
+var no_data_txt = "no data";
 
 // tanh is not defined before Chrome 38
 // which means that Android <= 4.4.x will
@@ -344,8 +345,12 @@ function loadAndDrawAllSensors(time) {
     feed: 30,
     channel_now: "PM25_UG_M3",
     channel_max: "PM25_UG_M3_daily_max"
+  }, {
+    feed: 1,
+    channel_now: "PM25B_UG_M3",
+    channel_max: "PM25B_UG_M3_daily_max"
   }];
-  
+
   for (var i = 0; i < info.length; i++) {
     loadAndDrawSingleSensor(time, info[i]);
   }
@@ -366,7 +371,7 @@ function loadAndDrawSingleSensor(time, info) {
     PM25_url = feed_url + "/channels/" + info["channel_max"] + "/export?format=json&from=" + time + "&to=" + (time+86400);
     use_PM25_now = false;
   }
- 
+
   // Load sensor data simultaneously
   $.when(
       $.getJSON(feed_url, function (response) {
@@ -380,21 +385,23 @@ function loadAndDrawSingleSensor(time, info) {
           var data = response["data"]["channels"][info["channel_now"]];
           if (data) {
             var val = roundTo2(data["mostRecentDataSample"]["value"]);
-            sensor["PM25_now"] = val < 0 ? "no data" : val + " μg/m3";
+            sensor["PM25_now"] = val < 0 ? no_data_txt : val + " μg/m3";
+          } else {
+            sensor["PM25_now"] = no_data_txt;
           }
         } else {
           var data = response["data"][0];
           if (data) {
             var val = roundTo2(data[1]);
-            sensor["PM25_max"] = val < 0 ? "no data" : val + " μg/m3";
+            sensor["PM25_max"] = val < 0 ? no_data_txt : val + " μg/m3";
+          } else {
+            sensor["PM25_max"] = no_data_txt;
           }
         }
       })
   ).then(function () {
-    if (sensor["PM25_now"] || sensor["PM25_max"]) {
-      drawSingleSensor(sensor);
-    }
-  }); 
+    drawSingleSensor(sensor);
+  });
 }
 
 function roundTo2(val) {
@@ -405,8 +412,9 @@ function drawSingleSensor(sensor) {
   var latlng = {"lat": sensor.lat, "lng": sensor.lng};
   var html = '';
   var val;
+  
   html += "<b>Name:</b> " + sensor.name + "<br>";
- 
+
   if (sensor["PM25_now"]) {
     val = sensor.PM25_now;
     html += '<b>PM2.5 now:</b> ' + sensor.PM25_now + '<br>';
@@ -416,18 +424,20 @@ function drawSingleSensor(sensor) {
     html += '<b>PM2.5 max:</b> ' + sensor.PM25_max + '<br>';
   }
 
+  var color_idx = sensorValToColorIndex(val);
+
   // Add marker
   var marker = new google.maps.Marker({
     position: latlng,
     map: map,
     content: html,
     icon: {
-      url: "/img/" + sensorValToColor(parseFloat(val)),
+      url: "/img/" + sensor_color[color_idx],
       scaledSize: new google.maps.Size(24, 24),
       origin: new google.maps.Point(0, 0),
       anchor: new google.maps.Point(12, 12)
     },
-    zIndex: 1,
+    zIndex: color_idx,
     opacity: 0.85
   });
 
@@ -442,17 +452,23 @@ function drawSingleSensor(sensor) {
   sensor_markers.push(marker);
 }
 
-function sensorValToColor(val) {
-  if (val >= 0 && val <= 30) {
-    return sensor_color[0];
-  } else if (val > 30 && val <= 60) {
-    return sensor_color[1]; 
-  } else if (val > 60 && val <= 90) {
-    return sensor_color[2];
-  } else if (val > 90 && val <= 120) {
-    return sensor_color[3];
+function sensorValToColorIndex(val) {
+  var scale = [12, 35.4, 55.4, 150.4];
+  if (val == no_data_txt) {
+    return 0;
   } else {
-    return sensor_color[4];
+    val = parseFloat(val);
+    if (val >= 0 && val <= scale[0]) {
+      return 1;
+    } else if (val > scale[0] && val <= scale[1]) {
+      return 2;
+    } else if (val > scale[1] && val <= scale[2]) {
+      return 3;
+    } else if (val > scale[2] && val <= scale[3]) {
+      return 4;
+    } else {
+      return 5;
+    }
   }
 }
 
@@ -462,7 +478,5 @@ function deleteAllSensors() {
   }
   sensor_markers = [];
 }
-
-
 
 $(document).on("pageinit", init);
