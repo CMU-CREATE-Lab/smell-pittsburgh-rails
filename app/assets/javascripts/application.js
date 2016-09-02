@@ -1,3 +1,4 @@
+// Map variables
 var map;
 var infowindow;
 var smell_reports;
@@ -15,6 +16,8 @@ var month_names = ["January", "February", "March", "April", "May", "June",
 ];
 var $calendar_dialog;
 var $calendar;
+
+// Timeline variables
 var $timeline_index;
 var $timeline_date;
 var $dialog_ok_button;

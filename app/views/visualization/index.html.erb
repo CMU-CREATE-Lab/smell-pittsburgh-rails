@@ -6,10 +6,46 @@
 <% end %>
 
 <% content_for :js do %>
-  <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js" %>
+  <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js" %>
   <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.js" %>
   <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js" %>
   <%= javascript_include_tag "https://maps.googleapis.com/maps/api/js?key=AIzaSyD2nqIondaBl-YWGlaD_mo1L0w3j2yvehQ" %>
+  <script>
+    var touchHorizontalScroll = function(elem) {
+      var scrollStartPos, startTime, endTime, newPos, startTouchX, endTouchX;
+      $(elem).on("touchstart", function(e) {
+        startTime = new Date().getTime()
+        newPos = 0;
+        endTouchX = null;
+        startTouchX = e.originalEvent.touches[0].pageX;
+        scrollStartPos = this.scrollLeft + startTouchX;
+        e.preventDefault();
+        //$("#debug").text("touchstart");
+      }).on("touchmove", function(e) {
+        endTouchX = e.originalEvent.touches[0].pageX;
+        newPos = scrollStartPos - endTouchX;
+        this.scrollLeft = newPos;
+        e.preventDefault();
+        //$("#debug").text("touchmove");
+      }).on("touchend touchcancel", function(e) {
+        endTime = new Date().getTime();
+        if (endTouchX && endTime - startTime < 200) {
+          var flickVal = 200 * Math.abs(newPos - scrollStartPos) / (endTime - startTime);
+          if (endTouchX > startTouchX) flickVal *= -1;
+          this.scrollLeft = this.scrollLeft + flickVal;
+        }
+        //$("#debug").text("touchend/touchcancel");
+      });
+    };
+    $(function() {
+      // Disable all href tags
+      $('body').on("click", "a", function(e) {
+        e.preventDefault();
+      });
+      touchHorizontalScroll($("#timeline-container"));
+      //$("#debug").text("BEGIN");
+    });
+  </script>
 <% end %>
 
 <% content_for :body do %>
@@ -21,6 +57,14 @@
       <table id="legend-smell-value">
         <tr>
           <td></td>
+          <td>1</td>
+          <td>2</td>
+          <td>3</td>
+          <td>4</td>
+          <td>5</td>
+        </tr>
+        <tr>
+          <td>Smell</td>
           <td class="smell-color-td smell-color-1"></td>
           <td class="smell-color-td smell-color-2"></td>
           <td class="smell-color-td smell-color-3"></td>
@@ -28,15 +72,16 @@
           <td class="smell-color-td smell-color-5"></td>
         </tr>
         <tr>
-          <td>Smell</td>
-          <td>1</td>
-          <td>2</td>
-          <td>3</td>
-          <td>4</td>
-          <td>5</td>
+          <td>Sensor</td>
+          <td class="smell-color-td sensor-color-1"></td>
+          <td class="smell-color-td sensor-color-2"></td>
+          <td class="smell-color-td sensor-color-3"></td>
+          <td class="smell-color-td sensor-color-4"></td>
+          <td class="smell-color-td sensor-color-5"></td>
         </tr>
       </table>
     </div>
+    <div id="debug" style="position: absolute"></div>
     <div id="timeline-container" class="noselect">
       <table id="timeline">
         <tr id="timeline-index"></tr>
