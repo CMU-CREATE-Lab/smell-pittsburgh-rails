@@ -334,22 +334,27 @@ function isMobile() {
 function loadAndDrawAllSensors(time) {
   var info = [{
     feed: 29,
+    name: "County AQ Monitor - Liberty",
     channel_now: "PM25_UG_M3",
     channel_max: "PM25_UG_M3_daily_max"
   }, {
     feed: 26,
+    name: "County AQ Monitor - Lawrenceville",
     channel_now: "PM25B_UG_M3",
     channel_max: "PM25B_UG_M3_daily_max"
   }, {
     feed: 5975,
+    name: "County AQ Monitor - Parkway East",
     channel_now: "PM2_5",
     channel_max: "PM2_5_daily_max"
   }, {
     feed: 30,
+    name: "County AQ Monitor - Lincoln",
     channel_now: "PM25_UG_M3",
     channel_max: "PM25_UG_M3_daily_max"
   }, {
     feed: 1,
+    name: "County AQ Monitor - Avalon",
     channel_now: "PM25B_UG_M3",
     channel_max: "PM25B_UG_M3_daily_max"
   }];
@@ -381,14 +386,27 @@ function loadAndDrawSingleSensor(time, info) {
         var data = response["data"];
         sensor["lat"] = data["latitude"];
         sensor["lng"] = data["longitude"];
-        sensor["name"] = data["name"];
+        if(info["name"]) {
+          sensor["name"] = info["name"];
+        } else {
+          sensor["name"] = data["name"];
+        }
       }),
       $.getJSON(PM25_url, function (response) {
         if (use_PM25_now) {
-          var data = response["data"]["channels"][info["channel_now"]];
+          var data = response["data"]["channels"][info["channel_now"]]["mostRecentDataSample"];
           if (data) {
-            var val = roundTo2(data["mostRecentDataSample"]["value"]);
-            sensor["PM25_now"] = val < 0 ? no_data_txt : val + " μg/m3";
+            // Compute the difference between the timestamp and current time.
+            // If it is more than 4 hours, consider it no data.
+            var data_time = data["timeSecs"]*1000;
+            var current_time = Date.now();
+            var diff_hour = (current_time - data_time)/3600000;
+            if(diff_hour > 4) {
+              sensor["PM25_now"] = no_data_txt;
+            } else {
+              var val = roundTo2(data["value"]);
+              sensor["PM25_now"] = val < 0 ? no_data_txt : val + " μg/m3";
+            }
           } else {
             sensor["PM25_now"] = no_data_txt;
           }
@@ -420,11 +438,11 @@ function drawSingleSensor(sensor) {
 
   if (sensor["PM25_now"]) {
     val = sensor.PM25_now;
-    html += '<b>PM2.5 now:</b> ' + sensor.PM25_now + '<br>';
+    html += '<b>Most recent PM2.5:</b> ' + sensor.PM25_now + '<br>';
   }
   if (sensor["PM25_max"]) {
     val = sensor.PM25_max;
-    html += '<b>PM2.5 max:</b> ' + sensor.PM25_max + '<br>';
+    html += '<b>Maximum PM2.5:</b> ' + sensor.PM25_max + '<br>';
   }
 
   var color_idx = sensorValToColorIndex(val);
@@ -461,7 +479,9 @@ function sensorValToColorIndex(val) {
     return 0;
   } else {
     val = parseFloat(val);
-    if (val >= 0 && val <= scale[0]) {
+    if (val < 0) {
+      return 0;
+    } else if (val >= 0 && val <= scale[0]) {
       return 1;
     } else if (val > scale[0] && val <= scale[1]) {
       return 2;
