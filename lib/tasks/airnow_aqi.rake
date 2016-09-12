@@ -6,34 +6,29 @@ namespace :airnow_aqi do
     cities.each do |city|
       city.merge!({"values" => AirnowAqi.request_aqi_from_zipcode(city["zipcode"])})
       aqi = -1
+      date = 0
       city["values"].each do |value|
         # we only care about pm2.5 and ozone
         if value["param"] == "PM2.5" or value["param"] == "O3"
           # a city's AQI is determined by the largest AQI of all parameters
           if value["value"] > aqi
             aqi = value["value"]
+            date = value["date"]
           end
         end
       end
-      city["aqi"] = aqi
+      AqiTracker.update_aqi_for_city(city,aqi,date) unless aqi < 0
     end
 
-    notifications = []
-    # check pittsburgh's aqi; if above 50, send push notifications
-    pittsburgh = cities[0]
-    if pittsburgh["aqi"] > 50
-      notifications.push(pittsburgh["name"])
+    Rails.logger.info("airnow_aqi:request (RAKE-#{Time.now.to_i}): DATA FROM AIRNOW: #{cities}")
+    Rails.logger.info("airnow_aqi:request (RAKE-#{Time.now.to_i}): DATA FROM RAILS CACHE: #{AqiTracker.info}")
+    if AqiTracker.pittsburgh_aqi_category_increased?
+      Rails.logger.info("airnow_aqi:request (RAKE-#{Time.now.to_i}): PGH AQI increased to #{}!")
     end
-    # compare values of other cities against pittsburgh and push when pittsburgh is higher
-    cities[1..-1].each do |city|
-      # we only want to know when the AQI threshold differs (0-50 good, 51-100 moderate, etc.)
-      if (pittsburgh["aqi"]-1)/50 > (city["aqi"]-1)/50
-        notifications.push(city["name"]) unless city["aqi"] < 1
-      end
+    if AqiTracker.pittsburgh_aqi_category_decreased?
+      Rails.logger.info("airnow_aqi:request (RAKE-#{Time.now.to_i}): PGH AQI decreased to #{}!")
     end
-
-    # TODO construct push notifications
-    puts "notifications to send: #{notifications}"
+    Rails.logger.info("airnow_aqi:request (RAKE-#{Time.now.to_i}): cities better than pgh: #{AqiTracker.cities_with_aqi_better_than_pittsburgh}")
   end
 
 end

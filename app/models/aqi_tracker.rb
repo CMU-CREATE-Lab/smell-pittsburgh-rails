@@ -89,16 +89,54 @@ class AqiTracker < ActiveRecord::Base
 
   # Get the most recent AQI stored for a specific city
   def self.get_current_aqi(city)
+    zipcode = city["zipcode"]
+    if Rails.cache.read("current_aqi_#{zipcode}").blank?
+      return 0
+    end
+    return Rails.cache.read("current_aqi_#{zipcode}")
   end
 
 
   # Get the previous AQI (usually previous hour) stored for a specific city
   def self.get_previous_aqi(city)
+    zipcode = city["zipcode"]
+    if Rails.cache.read("previous_aqi_#{zipcode}").blank?
+      return 0
+    end
+    return Rails.cache.read("previous_aqi_#{zipcode}")
+  end
+
+
+  def self.get_current_timestamp(city)
+    zipcode = city["zipcode"]
+    if Rails.cache.read("current_timestamp_#{zipcode}").blank?
+      return 0
+    end
+    return Rails.cache.read("current_timestamp_#{zipcode}")
+  end
+
+
+  def self.get_previous_timestamp(city)
+    zipcode = city["zipcode"]
+    if Rails.cache.read("previous_timestamp_#{zipcode}").blank?
+      return 0
+    end
+    return Rails.cache.read("previous_timestamp_#{zipcode}")
   end
 
 
   # Update the AQI that is stored for a specific city
-  def self.update_aqi_for_city(city,aqi,timestamp=nil)
+  def self.update_aqi_for_city(city,aqi,timestamp)
+    zipcode = city["zipcode"]
+    current_timestamp = get_current_timestamp(city)
+    if current_timestamp < timestamp
+      Rails.cache.write("previous_aqi_#{zipcode}",get_current_aqi(city))
+      Rails.cache.write("previous_timestamp_#{zipcode}",current_timestamp)
+      Rails.cache.write("current_aqi_#{zipcode}",aqi)
+      Rails.cache.write("current_timestamp_#{zipcode}",timestamp)
+      return true
+    end
+    return false
   end
 
 
@@ -127,13 +165,23 @@ class AqiTracker < ActiveRecord::Base
 
   # Return true if pittsburgh's current AQI is larger than it was before
   def self.pittsburgh_aqi_category_increased?
-    category_for_aqi(get_previous_aqi("Pittsburgh")) < category_for_aqi(get_current_aqi("Pittsburgh"))
+    category_for_aqi(get_previous_aqi(cities()[0])) < category_for_aqi(get_current_aqi(cities()[0]))
   end
 
 
   # Return true if pittsburgh's current AQI is lower than it was before
   def self.pittsburgh_aqi_category_decreased?
-    category_for_aqi(get_previous_aqi("Pittsburgh")) > category_for_aqi(get_current_aqi("Pittsburgh"))
+    category_for_aqi(get_previous_aqi(cities()[0])) > category_for_aqi(get_current_aqi(cities()[0]))
+  end
+
+
+  # for debugging purposes
+  def self.info
+    string = "[[city_name,current_aqi,current_timestamp,previous_aqi,previous_timestamp"
+    cities().each do |city|
+      string += "\n#{city["name"]},#{get_current_aqi(city)},#{get_current_timestamp(city)},#{get_previous_aqi(city)},#{get_previous_timestamp(city)}"
+    end
+    string += "]]"
   end
 
 end
