@@ -96,15 +96,15 @@
   background-color: rgba(255, 255, 255, 0.75);
   border: 1px solid #777777;
   border-radius: 2px;
-  padding-top: 5px;
+  padding-top: 3px;
   padding-right: 5px;
   padding-left: 5px;
-  padding-bottom: 1px;
+  padding-bottom: 5px;
 }
 
 #legend-smell-value td {
   font-size: 11px;
-  width: 20px;
+  width: 15px;
   height: 6px;
   text-align: center;
 }
@@ -112,6 +112,10 @@
 #legend-smell-value .smell-color-td {
   color: black;
   opacity: 0.9;
+  width: 15px;
+  height: 15px;
+  background-repeat: no-repeat;
+  background-size: 17px 17px;
 }
 
 #calendar-description {
@@ -148,23 +152,43 @@
 }
 
 .smell-color-1 {
-  background-color: #00ff00;
+  background-image: url("/img/smell_1.png");
 }
 
 .smell-color-2 {
-  background-color: #f8e540;
+  background-image: url("/img/smell_2.png");
 }
 
 .smell-color-3 {
-  background-color: #da8800;
+  background-image: url("/img/smell_3.png");
 }
 
 .smell-color-4 {
-  background-color: #eb2667;
+  background-image: url("/img/smell_4.png");
 }
 
 .smell-color-5 {
-  background-color: #5f0e36;
+  background-image: url("/img/smell_5.png");
+}
+
+.sensor-color-1 {
+  background-image: url("/img/sensor_1.png");
+}
+
+.sensor-color-2 {
+  background-image: url("/img/sensor_2.png");
+}
+
+.sensor-color-3 {
+  background-image: url("/img/sensor_3.png");
+}
+
+.sensor-color-4 {
+  background-image: url("/img/sensor_4.png");
+}
+
+.sensor-color-5 {
+  background-image: url("/img/sensor_5.png");
 }
 
 .custom-button {

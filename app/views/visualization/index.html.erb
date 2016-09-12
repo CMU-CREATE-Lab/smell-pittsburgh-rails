@@ -6,7 +6,7 @@
 <% end %>
 
 <% content_for :js do %>
-  <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js" %>
+  <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js" %>
   <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.js" %>
   <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js" %>
   <%= javascript_include_tag "https://maps.googleapis.com/maps/api/js?key=AIzaSyD2nqIondaBl-YWGlaD_mo1L0w3j2yvehQ" %>
@@ -21,6 +21,14 @@
       <table id="legend-smell-value">
         <tr>
           <td></td>
+          <td>1</td>
+          <td>2</td>
+          <td>3</td>
+          <td>4</td>
+          <td>5</td>
+        </tr>
+        <tr>
+          <td>Smell</td>
           <td class="smell-color-td smell-color-1"></td>
           <td class="smell-color-td smell-color-2"></td>
           <td class="smell-color-td smell-color-3"></td>
@@ -28,12 +36,12 @@
           <td class="smell-color-td smell-color-5"></td>
         </tr>
         <tr>
-          <td>Smell</td>
-          <td>1</td>
-          <td>2</td>
-          <td>3</td>
-          <td>4</td>
-          <td>5</td>
+          <td>PM2.5</td>
+          <td class="smell-color-td sensor-color-1"></td>
+          <td class="smell-color-td sensor-color-2"></td>
+          <td class="smell-color-td sensor-color-3"></td>
+          <td class="smell-color-td sensor-color-4"></td>
+          <td class="smell-color-td sensor-color-5"></td>
         </tr>
       </table>
     </div>
