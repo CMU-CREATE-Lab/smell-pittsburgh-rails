@@ -74,8 +74,8 @@ function init() {
   createCanvasLayer();
   createToolbar();
   createCalendarDialog();
-  loadSmellReports(new Date());
   loadCalendar();
+  loadSmellReports(new Date());
 
   // Disable vertical bouncing effect on mobile browsers
   $(document).on("scrollstart", function (e) {
@@ -329,7 +329,6 @@ function drawTimeline() {
 
 function selectTimelineBtn($ele, auto_scroll) {
   if ($ele && !$ele.hasClass("selected-td-btn")) {
-    setupCanvasLayerProjection();
     clearTimelineBtnSelection();
     $ele.addClass("selected-td-btn");
     infowindow.close();
@@ -341,6 +340,7 @@ function selectTimelineBtn($ele, auto_scroll) {
     if (auto_scroll) {
       $timeline_container.scrollLeft(Math.round($ele.parent().position().left - $timeline_container.width() / 5));
     }
+    setupCanvasLayerProjection();
   }
 }
 
