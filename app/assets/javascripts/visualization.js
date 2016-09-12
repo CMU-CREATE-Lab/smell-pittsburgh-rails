@@ -622,7 +622,7 @@ function drawWindDirectionAndSpeed() {
       var lat = windData[key].lat;
       var lng = windData[key].lng;
       var rectLatLng = windData[key].rectLatLng;
-      if (wind_speed && wind_dir && lat && lng) {
+      if (wind_speed && wind_dir && lat && lng && rectLatLng) {
         var worldPoint = mapProjection.fromLatLngToPoint(rectLatLng);
         var x = worldPoint.x * projectionScale;
         var y = worldPoint.y * projectionScale;
