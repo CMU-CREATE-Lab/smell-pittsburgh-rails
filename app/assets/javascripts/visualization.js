@@ -19,6 +19,11 @@ var month_names = ["January", "February", "March", "April", "May", "June",
 var $calendar_dialog;
 var $calendar;
 
+// Map Parameters
+var init_zoom_desktop = 12;
+var init_zoom_mobile = 11;
+var init_latlng = {"lat": 40.42, "lng": -79.94};
+
 // Timeline variables
 var $timeline_index;
 var $timeline_date;
@@ -88,11 +93,6 @@ function init() {
 }
 
 function createGoogleMap() {
-  // Parameters
-  init_zoom_desktop = 12;
-  init_zoom_mobile = 11;
-  init_latlng = {"lat": 40.42, "lng": -79.94};
-
   // Set Google map style
   var styleArray = [
     {
