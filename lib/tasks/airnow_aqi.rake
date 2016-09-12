@@ -2,11 +2,58 @@ namespace :airnow_aqi do
 
 
   task :request => :environment do
-    # TODO list of cities
     cities = [
       {
-        "name" => "pittsburgh",
-        "zipcode" => "92241"
+        "name" => "Pittsburgh",
+        "zipcode" => "15213"
+      },
+      {
+        "name" => "New York City",
+        "zipcode" => "11224"
+      },
+      {
+        "name" => "Boston",
+        "zipcode" => "02210"
+      },
+      {
+        "name" => "Cleveland",
+        "zipcode" => "44115"
+      },
+      {
+        "name" => "Chicago",
+        "zipcode" => "60652"
+      },
+      {
+        "name" => "Seattle",
+        "zipcode" => "98195"
+      },
+      {
+        "name" => "San Francisco",
+        "zipcode" => "94117"
+      },
+      {
+        "name" => "Washington DC",
+        "zipcode" => "20001"
+      },
+      {
+        "name" => "Denver",
+        "zipcode" => "80201"
+      },
+      {
+        "name" => "Columbus",
+        "zipcode" => "43085"
+      },
+      {
+        "name" => "Houston",
+        "zipcode" => "77004"
+      },
+      {
+        "name" => "Los Angeles",
+        "zipcode" => "90001"
+      },
+      {
+        "name" => "Philadelphia",
+        "zipcode" => "19104"
       }
     ]
     cities.each do |city|
