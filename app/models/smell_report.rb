@@ -23,10 +23,10 @@ class SmellReport < ActiveRecord::Base
 
 
   def generate_perturbed_coordinates
-    if self.real_longitude.nil? and self.real_latitude.nil?
-      self.real_longitude = self.longitude
+    if self.real_latitude.nil? and self.real_longitude.nil?
       self.real_latitude = self.latitude
-      coordinates = SmellReport.perturbLatLng(self.real_longitude,self.real_latitude)
+      self.real_longitude = self.longitude
+      coordinates = SmellReport.perturbLatLng(self.real_latitude,self.real_longitude)
       self.latitude = coordinates["lat"]
       self.longitude = coordinates["lng"]
       return true
