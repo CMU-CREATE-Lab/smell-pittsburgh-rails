@@ -172,23 +172,23 @@
 }
 
 .sensor-color-1 {
-  background-image: url("/img/sensor_1.png");
+  background-image: url("/img/sensor_1_legend.png");
 }
 
 .sensor-color-2 {
-  background-image: url("/img/sensor_2.png");
+  background-image: url("/img/sensor_2_legend.png");
 }
 
 .sensor-color-3 {
-  background-image: url("/img/sensor_3.png");
+  background-image: url("/img/sensor_3_legend.png");
 }
 
 .sensor-color-4 {
-  background-image: url("/img/sensor_4.png");
+  background-image: url("/img/sensor_4_legend.png");
 }
 
 .sensor-color-5 {
-  background-image: url("/img/sensor_5.png");
+  background-image: url("/img/sensor_5_legend.png");
 }
 
 .custom-button {

@@ -1,12 +1,49 @@
 "use strict";
 
+// A class for rotating icon
+var RotateIcon = function(options){
+  this.options = options || {};
+  this.rImg = options.img || new Image();
+  this.rImg.src = this.rImg.src || this.options.url || '';
+  this.options.width = this.options.width || this.rImg.width || 52;
+  this.options.height = this.options.height || this.rImg.height || 60;
+  var canvas = document.createElement("canvas");
+  canvas.width = this.options.width;
+  canvas.height = this.options.height;
+  this.context = canvas.getContext("2d");
+  this.canvas = canvas;
+};
+RotateIcon.makeIcon = function(url) {
+  return new RotateIcon({url: url});
+};
+RotateIcon.prototype.setRotation = function(options){
+  var canvas = this.context,
+  angle = options.deg ? options.deg * Math.PI / 180 : options.rad,
+  centerX = this.options.width/2,
+  centerY = this.options.height/2;
+
+  canvas.clearRect(0, 0, this.options.width, this.options.height);
+  canvas.save();
+  canvas.translate(centerX, centerY);
+  canvas.rotate(angle);
+  canvas.translate(-centerX, -centerY);
+  canvas.drawImage(this.rImg, 0, 0);
+  canvas.restore();
+  return this;
+};
+RotateIcon.prototype.getUrl = function(){
+  return this.canvas.toDataURL('image/png');
+};
+
 // Map variables
 var map;
 var infowindow;
+var infowindow_marker;
 var smell_reports;
 var smell_reports_jump_index = [];
 var smell_markers = [];
 var smell_color = ["smell_1.png", "smell_2.png", "smell_3.png", "smell_4.png", "smell_5.png"];
+var sensor_color_wind = ["sensor_0_wind.png", "sensor_1_wind.png", "sensor_2_wind.png", "sensor_3_wind.png", "sensor_4_wind.png", "sensor_5_wind.png"];
 var sensor_color = ["sensor_0.png", "sensor_1.png", "sensor_2.png", "sensor_3.png", "sensor_4.png", "sensor_5.png"];
 var smell_value_text = ["Just fine!", "Barely noticeable", "Definitely noticeable",
   "It's getting pretty bad", "About as bad as it gets!"
@@ -126,7 +163,12 @@ function createGoogleMap() {
   });
 
   // Set smell report information window
-  infowindow = new google.maps.InfoWindow();
+  infowindow = new google.maps.InfoWindow({
+    pixelOffset: new google.maps.Size(-1, 0)
+  });
+  infowindow_marker = new google.maps.InfoWindow({
+    pixelOffset: new google.maps.Size(0, 37)
+  });
 }
 
 function createToolbar() {
@@ -246,6 +288,7 @@ function drawSingleSmellReport(report_i) {
   // Add marker event
   marker.addListener("click", function () {
     //map.panTo(this.getPosition());
+    infowindow_marker.close();
     infowindow.setContent(this.content);
     infowindow.open(map, this);
   });
@@ -332,6 +375,7 @@ function selectTimelineBtn($ele, auto_scroll) {
     clearTimelineBtnSelection();
     $ele.addClass("selected-td-btn");
     infowindow.close();
+    infowindow_marker.close();
     deleteAllSmellReports();
     drawSmellReportsByIndex(parseInt($ele.data("index")));
     deleteAllSensors();
@@ -428,7 +472,8 @@ function loadAndDrawAllSensors(time) {
 
 function loadAndDrawSingleSensor(time, info) {
   var sensor = {};
-  var date_str_sensor = (new Date(time*1000)).toDateString();
+  var date_str_sensor = (new Date(time * 1000)).toDateString();
+  var date_hour_now = (new Date()).getHours();
   var date_str_now = (new Date()).toDateString();
   var feed_url = esdr_root_url + "feeds/" + info["feed"];
   var data_url;
@@ -436,11 +481,12 @@ function loadAndDrawSingleSensor(time, info) {
 
   sensor.doDraw = info.doDraw;
 
-  if (date_str_sensor == date_str_now) {
-    data_url = feed_url + "/channels/" + info.channels.toString() + "/export?format=json&from=" + time + "&to=" + (time+86399);
+  // Channel max values are not calculated until 3am, so to be safe we wait until 4.
+  if (date_str_sensor == date_str_now || date_hour_now < 4) {
+    data_url = feed_url + "/channels/" + info.channels.toString() + "/export?format=json&from=" + time + "&to=" + (time + 86399);
     use_PM25_now = true;
   } else if (info["channel_max"]) {
-    data_url = feed_url + "/channels/" + info["channel_max"] + "/export?format=json&from=" + time + "&to=" + (time+86399);
+    data_url = feed_url + "/channels/" + info["channel_max"] + "/export?format=json&from=" + time + "&to=" + (time + 86399);
     use_PM25_now = false;
   }
 
@@ -541,10 +587,10 @@ function drawSingleSensor(sensor) {
     map: map,
     content: html,
     icon: {
-      url: "/img/" + sensor_color[color_idx],
-      scaledSize: new google.maps.Size(24, 24),
+      url: RotateIcon.makeIcon("/img/" + sensor_color[color_idx]).setRotation({deg: 45}).getUrl(),//"/img/" + sensor_color[color_idx],
+      scaledSize: new google.maps.Size(100, 100),
       origin: new google.maps.Point(0, 0),
-      anchor: new google.maps.Point(12, 12)
+      anchor: new google.maps.Point(50, 50)
     },
     zIndex: color_idx,
     opacity: 0.85
@@ -553,8 +599,9 @@ function drawSingleSensor(sensor) {
   // Add marker event
   marker.addListener("click", function () {
     //map.panTo(this.getPosition());
-    infowindow.setContent(this.content);
-    infowindow.open(map, this);
+    infowindow.close();
+    infowindow_marker.setContent(this.content);
+    infowindow_marker.open(map, this);
   });
 
   // Save markers
@@ -623,7 +670,29 @@ function drawWindDirectionAndSpeed() {
       var lng = windData[key].lng;
       var rectLatLng = windData[key].rectLatLng;
       if (wind_speed && wind_dir && lat && lng && rectLatLng) {
-        var worldPoint = mapProjection.fromLatLngToPoint(rectLatLng);
+
+// TODO
+var topRight = mapProjection.fromLatLngToPoint(map.getBounds().getNorthEast());
+var bottomLeft = mapProjection.fromLatLngToPoint(map.getBounds().getSouthWest());
+var scale = Math.pow(2, map.getZoom());
+var worldPoint = mapProjection.fromLatLngToPoint(rectLatLng);
+var xOffset = 0;
+var yOffset = 0;
+if (wind_dir >= 0 && wind_dir <= 50)
+  yOffset = 12;
+else if (wind_dir >= 51 && wind_dir <= 100)
+  xOffset = -12;
+else if (wind_dir >= 101 && wind_dir <= 190)
+  yOffset = -12;
+else if (wind_dir >= 191 && wind_dir <= 280)
+  xOffset = 12;
+else if (wind_dir >= 281 && wind_dir <= 360)
+  yOffset = 12;
+var point = new google.maps.Point(((worldPoint.x - bottomLeft.x) * scale) + xOffset, ((worldPoint.y - topRight.y) * scale) + yOffset);
+var worldPoint = new google.maps.Point(point.x / scale + bottomLeft.x, point.y / scale + topRight.y);
+var rectLatLng = mapProjection.fromPointToLatLng(worldPoint);
+
+        //var worldPoint = mapProjection.fromLatLngToPoint(rectLatLng);
         var x = worldPoint.x * projectionScale;
         var y = worldPoint.y * projectionScale;
         // How many pixels per mile?
@@ -648,10 +717,10 @@ function drawWindDirectionAndSpeed() {
           context.beginPath();
           context.moveTo(x + length * dx,
                          y + length * dy);
-          context.lineTo(x + (length - d * 3) * dx + d * 1.5 * dy,
-                         y + (length - d * 3) * dy - d * 1.5 * dx);
-          context.lineTo(x + (length - d * 3) * dx - d * 1.5 * dy,
-                         y + (length - d * 3) * dy + d * 1.5 * dx);
+          context.lineTo(x + (length - d * 3) * dx + d * dy,
+                         y + (length - d * 3) * dy - d * dx);
+          context.lineTo(x + (length - d * 3) * dx - d * dy,
+                         y + (length - d * 3) * dy + d * dx);
           context.fill();
 
           // Black dot as base to wind vector
@@ -680,6 +749,7 @@ function createCanvasLayer() {
 function setupCanvasLayerProjection() {
   var canvasWidth = canvasLayer.canvas.width;
   var canvasHeight = canvasLayer.canvas.height;
+  var topLeft = canvasLayer.getTopLeft();
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.clearRect(0, 0, canvasWidth, canvasHeight);
 
@@ -687,7 +757,7 @@ function setupCanvasLayerProjection() {
    * see https://developers.google.com/maps/documentation/javascript/maptypes#MapCoordinates
    */
   mapProjection = map.getProjection();
-  if (!mapProjection) return;
+  if (!mapProjection || !topLeft) return;
 
   // scale is just 2^zoom
   // If canvasLayer is scaled (with resolutionScale), we need to scale by
@@ -699,7 +769,7 @@ function setupCanvasLayerProjection() {
    * world coordinates. Our translation is just the vector from the
    * world coordinate of the topLeft corder to 0,0.
    */
-  var offset = mapProjection.fromLatLngToPoint(canvasLayer.getTopLeft());
+  var offset = mapProjection.fromLatLngToPoint(topLeft);
   context.translate(-offset.x * projectionScale, -offset.y * projectionScale);
 }
 
@@ -707,7 +777,7 @@ function repaintCanvasLayer() {
   try {
     //console.log('repaint');
     setupCanvasLayerProjection();
-    drawWindDirectionAndSpeed();
+    //drawWindDirectionAndSpeed();
   } catch(e) {
     //console.log(e);
   }
