@@ -15,11 +15,13 @@ class ApiController < ApplicationController
   # "feelings_symptoms" : String
   # "horizontal_accuracy" : Double
   # "vertical_accuracy" : Double
+  # "additional_comments" : String
+  #   (specific to ACHD form submission)
   # "submit_achd_form" : Boolean
   # "email" : String
   # "name" : String
   # "phone_number" : String
-  # "additional_comments" : String
+  # "address" : String
   #
   def smell_report_create
     smell_report = SmellReport.new
@@ -46,6 +48,7 @@ class ApiController < ApplicationController
         :smell_value => smell_report.smell_value,
         :smell_description => smell_report.smell_description,
         :feelings_symptoms => smell_report.feelings_symptoms,
+        :additional_comments => smell_report.additional_comments,
         :horizontal_accuracy => smell_report.horizontal_accuracy,
         :vertical_accuracy => smell_report.vertical_accuracy
       }
@@ -59,6 +62,7 @@ class ApiController < ApplicationController
           "email": params["email"],
           "name": params["name"],
           "phone_number": params["phone_number"],
+          "address": params["address"]
         }
         AchdForm.submit_form(smell_report,options)
       end

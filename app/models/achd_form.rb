@@ -1,5 +1,11 @@
 class AchdForm < ActiveRecord::Base
 
+  # smell_report :SmellReport
+  # email :string
+  # phone :string
+  # name :string
+  # address :string
+
   belongs_to :smell_report
 
   def formatted_server_email
@@ -12,10 +18,12 @@ class AchdForm < ActiveRecord::Base
   # options["reply_email"]: String - the user specifies this when it wants to receive a response from ACHD.
   # options["name"]: String
   # options["phone_number"]: String
+  # options["address"]: String
   def self.submit_form(smell_report, options={})
     reply_email = options["reply_email"] ? "" : options["reply_email"]
     name = options["name"] ? "" : options["name"]
     phone_number = options["phone_number"] ? "" : options["phone_number"]
+    user_address = options["address"] ? "" : options["address"]
 
     # request reverse geocode object
     geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{smell_report.latitude}, #{smell_report.longitude}" )
@@ -30,6 +38,7 @@ class AchdForm < ActiveRecord::Base
       form.email = reply_email
       form.phone = phone_number
       form.name = name
+      form.address = user_address
       form.save!
 
       # construct form fields
@@ -46,12 +55,15 @@ class AchdForm < ActiveRecord::Base
       body += "I noticed an unusual smell at #{geo.street_address}, #{geo.zip} on #{smell_report.created_at.localtime.strftime("%d %B %Y")} at #{smell_report.created_at.localtime.strftime("%I:%M %p %Z")}. I’d rate the smell #{smell_report.smell_value} on a scale of 1 to 5, with 5 being the worst odor."
       unless smell_report.smell_description.blank? and smell_report.feelings_symptoms.blank?
         body += "\n\n"
-        body += "The smell was #{smell_report.smell_description}. " unless smell_report.smell_description.blank?
-        body += "I noticed the following symptoms when I smelled the odor: #{smell_report.feelings_symptoms}." unless smell_report.feelings_symptoms.blank?
+        body += "Below are some things I noticed about this smell episode."
+        body += "\nSmell/Source Description: #{smell_report.smell_description}. " unless smell_report.smell_description.blank?
+        body += "\nMy Symptoms: #{smell_report.feelings_symptoms}." unless smell_report.feelings_symptoms.blank?
       end
       body += "\n\n"
-      body += "Please let me know if there were particular causes of this smell and what health impacts could result by emailing me"
-      body += " at #{form.email}." unless form.email.blank?
+      body += "Please let me know if there were particular causes of this smell and what health impacts could result by emailing #{form.formatted_server_email}."
+      unless smell_report.additional_comments.blank?
+        body += "\n\n#{smell_report.additional_comments}"
+      end
       body += "\n\n"
       body += "Thank you,\n#{form_fields["name"]}"
       body += "\n\n"
