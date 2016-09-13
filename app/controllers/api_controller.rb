@@ -19,6 +19,7 @@ class ApiController < ApplicationController
   # "email" : String
   # "name" : String
   # "phone_number" : String
+  # "additional_comments" : String
   #
   def smell_report_create
     smell_report = SmellReport.new
@@ -31,6 +32,8 @@ class ApiController < ApplicationController
     smell_report.horizontal_accuracy = params["horizontal_accuracy"] unless params["horizontal_accuracy"].blank?
     smell_report.vertical_accuracy = params["vertical_accuracy"] unless params["vertical_accuracy"].blank?
     smell_report.submit_achd_form = params["submit_achd_form"] unless params["submit_achd_form"].blank?
+    smell_report.additional_comments = params["additional_comments"] unless params["additional_comments"].blank?
+
     # by default, the server will not send ACHD form for Smell Reports with a value of 1
     smell_report.submit_achd_form = false if smell_report.smell_value == 1
 
