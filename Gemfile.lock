@@ -79,11 +79,7 @@ GEM
     minitest (5.9.0)
     multi_json (1.12.1)
     mysql2 (0.4.4)
-    mysql2 (0.4.4-x64-mingw32)
     nokogiri (1.6.8)
-      mini_portile2 (~> 2.1.0)
-      pkg-config (~> 1.1.7)
-    nokogiri (1.6.8-x64-mingw32)
       mini_portile2 (~> 2.1.0)
       pkg-config (~> 1.1.7)
     pkg-config (1.1.7)
@@ -159,7 +155,6 @@ GEM
 
 PLATFORMS
   ruby
-  x64-mingw32
 
 DEPENDENCIES
   byebug
@@ -179,4 +174,4 @@ DEPENDENCIES
   web-console (~> 2.0)
 
 BUNDLED WITH
-   1.12.4
+   1.12.5
