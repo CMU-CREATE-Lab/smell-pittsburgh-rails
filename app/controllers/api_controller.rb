@@ -31,6 +31,8 @@ class ApiController < ApplicationController
     smell_report.horizontal_accuracy = params["horizontal_accuracy"] unless params["horizontal_accuracy"].blank?
     smell_report.vertical_accuracy = params["vertical_accuracy"] unless params["vertical_accuracy"].blank?
     smell_report.submit_achd_form = params["submit_achd_form"] unless params["submit_achd_form"].blank?
+    # by default, the server will not send ACHD form for Smell Reports with a value of 1
+    smell_report.submit_achd_form = false if smell_report.smell_value == 1
 
     if smell_report.save
       # success
@@ -49,7 +51,7 @@ class ApiController < ApplicationController
       FirebasePushNotification.push_smell_report_to_topic(smell_report, "/topics/SmellReport-#{smell_report.smell_value}")
 
       # send email
-      if smell_report.submit_achd_form and smell_report.smell_value > 1
+      if smell_report.submit_achd_form
         options = {
           "email": params["email"],
           "name": params["name"],
