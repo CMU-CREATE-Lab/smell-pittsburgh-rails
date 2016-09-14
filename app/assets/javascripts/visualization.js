@@ -1,44 +1,9 @@
 "use strict";
 
-// A class for rotating icon
-var RotateIcon = function(options){
-  this.options = options || {};
-  this.rImg = options.img || new Image();
-  this.rImg.src = this.rImg.src || this.options.url || '';
-  this.options.width = this.options.width || this.rImg.width || 52;
-  this.options.height = this.options.height || this.rImg.height || 60;
-  var canvas = document.createElement("canvas");
-  canvas.width = this.options.width;
-  canvas.height = this.options.height;
-  this.context = canvas.getContext("2d");
-  this.canvas = canvas;
-};
-RotateIcon.makeIcon = function(url) {
-  return new RotateIcon({url: url});
-};
-RotateIcon.prototype.setRotation = function(options){
-  var canvas = this.context,
-  angle = options.deg ? options.deg * Math.PI / 180 : options.rad,
-  centerX = this.options.width/2,
-  centerY = this.options.height/2;
-
-  canvas.clearRect(0, 0, this.options.width, this.options.height);
-  canvas.save();
-  canvas.translate(centerX, centerY);
-  canvas.rotate(angle);
-  canvas.translate(-centerX, -centerY);
-  canvas.drawImage(this.rImg, 0, 0);
-  canvas.restore();
-  return this;
-};
-RotateIcon.prototype.getUrl = function(){
-  return this.canvas.toDataURL('image/png');
-};
-
 // Map variables
 var map;
-var infowindow;
-var infowindow_marker;
+var infowindow_smell;
+var infowindow_sensor;
 var smell_reports;
 var smell_reports_jump_index = [];
 var smell_markers = [];
@@ -48,8 +13,8 @@ var sensor_color = ["sensor_0.png", "sensor_1.png", "sensor_2.png", "sensor_3.pn
 var smell_value_text = ["Just fine!", "Barely noticeable", "Definitely noticeable",
   "It's getting pretty bad", "About as bad as it gets!"
 ];
-var sensor_markers = [];
-var staging_base_url = "http://staging.api.smellpittsburgh.org";
+
+// Calendar
 var month_names = ["January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
 ];
@@ -67,19 +32,82 @@ var $timeline_date;
 var $dialog_ok_button;
 var $timeline_container;
 var esdr_root_url = "https://esdr.cmucreatelab.org/api/v1/";
-var no_data_txt = "no data";
+var no_data_txt = "No data in last four hours.";
 
-// CanvasLayer variables
-var canvasLayer;
-var context;
-var contextScale;
-var resolutionScale = window.devicePixelRatio || 1;
-var mapProjection;
-var projectionScale = 2000;
-
+// Wind
 var windData = {};
-var totalSensors
+
+// Sensors
+// NOTE: Put all sensors that are not drawn first.
+// This is needed so that the data is available for the sensors
+// that are drawn.
+var sensorList = [{
+  feed: 28,
+  name: "County AQ Monitor - Liberty",
+  channel_max: "PM25_UG_M3_daily_max",
+  channels: [
+    "SONICWS_MPH",
+    "SONICWD_DEG"
+  ],
+  doDraw: false
+}, {
+  feed: 29,
+  name: "County AQ Monitor - Liberty",
+  channel_max: "PM25_UG_M3_daily_max",
+  channels: [
+    "PM25_UG_M3"
+  ],
+  doDraw: true
+}, {
+  feed: 26,
+  name: "County AQ Monitor - Lawrenceville",
+  channel_max: "PM25B_UG_M3_daily_max",
+  channels: [
+    "PM25B_UG_M3",
+    "SONICWS_MPH",
+    "SONICWD_DEG"
+  ],
+  doDraw: true
+}, {
+  feed: 43,
+  name: "County AQ Monitor - Parkway East",
+  channel_max: "PM2_5_daily_max",
+  channels: [
+    "SONICWS_MPH",
+    "SONICWD_DEG"
+  ],
+  doDraw: false
+}, {
+  feed: 5975,
+  name: "County AQ Monitor - Parkway East",
+  channel_max: "PM2_5_daily_max",
+  channels: [
+    "PM2_5"
+  ],
+  doDraw: true
+}, {
+  feed: 30,
+  name: "County AQ Monitor - Lincoln",
+  channel_max: "PM25_UG_M3_daily_max",
+  channels: [
+    "PM25_UG_M3"
+  ],
+  doDraw: true
+}, {
+  feed: 1,
+  name: "County AQ Monitor - Avalon",
+  channel_max: "PM25B_UG_M3_daily_max",
+  channels: [
+    "PM25B_UG_M3",
+    "SONICWS_MPH",
+    "SONICWD_DEG"
+  ],
+  doDraw: true
+}];
+var sensor_markers = [];
 var sensorLoadCount = 0;
+var totalSensors = sensorList.length;
+
 
 // tanh is not defined before Chrome 38
 // which means that Android <= 4.4.x will
@@ -108,7 +136,6 @@ function init() {
 
   // Create the page
   createGoogleMap();
-  createCanvasLayer();
   createToolbar();
   createCalendarDialog();
   loadCalendar();
@@ -163,10 +190,10 @@ function createGoogleMap() {
   });
 
   // Set smell report information window
-  infowindow = new google.maps.InfoWindow({
+  infowindow_smell = new google.maps.InfoWindow({
     pixelOffset: new google.maps.Size(-1, 0)
   });
-  infowindow_marker = new google.maps.InfoWindow({
+  infowindow_sensor = new google.maps.InfoWindow({
     pixelOffset: new google.maps.Size(0, 37)
   });
 }
@@ -248,6 +275,8 @@ function genSmellURL(date_obj) {
 
   var url_hostname = window.location.origin;
   var api_url = "/api/v1/smell_reports?";
+  var staging_base_url = "http://staging.api.smellpittsburgh.org";
+
   if (url_hostname.indexOf("api.smellpittsburgh") >= 0) {
     api_url = url_hostname + api_url;
   } else {
@@ -266,8 +295,8 @@ function drawSingleSmellReport(report_i) {
   // Add marker
   var date = new Date(report_i.created_at).toLocaleString();
   var smell_value = report_i.smell_value;
-  var feelings_symptoms = report_i.feelings_symptoms ? report_i.feelings_symptoms : "no data";
-  var smell_description = report_i.smell_description ? report_i.smell_description : "no data";
+  var feelings_symptoms = report_i.feelings_symptoms ? report_i.feelings_symptoms : "No data.";
+  var smell_description = report_i.smell_description ? report_i.smell_description : "No data.";
   var marker = new google.maps.Marker({
     position: latlng,
     map: map,
@@ -288,9 +317,9 @@ function drawSingleSmellReport(report_i) {
   // Add marker event
   marker.addListener("click", function () {
     //map.panTo(this.getPosition());
-    infowindow_marker.close();
-    infowindow.setContent(this.content);
-    infowindow.open(map, this);
+    infowindow_sensor.close();
+    infowindow_smell.setContent(this.content);
+    infowindow_smell.open(map, this);
   });
 
   // Save markers
@@ -374,8 +403,8 @@ function selectTimelineBtn($ele, auto_scroll) {
   if ($ele && !$ele.hasClass("selected-td-btn")) {
     clearTimelineBtnSelection();
     $ele.addClass("selected-td-btn");
-    infowindow.close();
-    infowindow_marker.close();
+    infowindow_smell.close();
+    infowindow_sensor.close();
     deleteAllSmellReports();
     drawSmellReportsByIndex(parseInt($ele.data("index")));
     deleteAllSensors();
@@ -384,7 +413,6 @@ function selectTimelineBtn($ele, auto_scroll) {
     if (auto_scroll) {
       $timeline_container.scrollLeft(Math.round($ele.parent().position().left - $timeline_container.width() / 5));
     }
-    setupCanvasLayerProjection();
   }
 }
 
@@ -401,82 +429,20 @@ function isMobile() {
 }
 
 function loadAndDrawAllSensors(time) {
-  var info = [{
-    feed: 29,
-    name: "County AQ Monitor - Liberty",
-    channel_max: "PM25_UG_M3_daily_max",
-    channels: [
-      "PM25_UG_M3"
-    ],
-    doDraw: true
-  }, {
-    feed: 28,
-    name: "County AQ Monitor - Liberty",
-    channels: [
-      "SONICWS_MPH",
-      "SONICWD_DEG"
-    ],
-    doDraw: false
-  }, {
-    feed: 26,
-    name: "County AQ Monitor - Lawrenceville",
-    channel_max: "PM25B_UG_M3_daily_max",
-    channels: [
-      "PM25B_UG_M3",
-      "SONICWS_MPH",
-      "SONICWD_DEG"
-    ],
-    doDraw: true
-  }, {
-    feed: 5975,
-    name: "County AQ Monitor - Parkway East",
-    channel_max: "PM2_5_daily_max",
-    channels: [
-      "PM2_5"
-    ],
-    doDraw: true
-  }, {
-    feed: 43,
-    name: "County AQ Monitor - Parkway East",
-    channels: [
-      "SONICWS_MPH",
-      "SONICWD_DEG"
-    ],
-    doDraw: false
-  }, {
-    feed: 30,
-    name: "County AQ Monitor - Lincoln",
-    channel_max: "PM25_UG_M3_daily_max",
-    channels: [
-      "PM25_UG_M3"
-    ],
-    doDraw: true
-  }, {
-    feed: 1,
-    name: "County AQ Monitor - Avalon",
-    channel_max: "PM25B_UG_M3_daily_max",
-    channels: [
-      "PM25B_UG_M3",
-      "SONICWS_MPH",
-      "SONICWD_DEG"
-    ],
-    doDraw: true
-  }];
-
-  totalSensors = info.length;
   sensorLoadCount = 0;
-  for (var i = 0; i < info.length; i++) {
-    loadAndDrawSingleSensor(time, info[i]);
-  }
+  loadAndDrawSingleSensor(time);
 }
 
-function loadAndDrawSingleSensor(time, info) {
+function loadAndDrawSingleSensor(time) {
+  var info = sensorList[sensorLoadCount];
   var sensor = {};
   var date_str_sensor = (new Date(time * 1000)).toDateString();
   var date_hour_now = (new Date()).getHours();
   var date_str_now = (new Date()).toDateString();
   var feed_url = esdr_root_url + "feeds/" + info["feed"];
   var data_url;
+  var data;
+  var val;
   var use_PM25_now;
 
   sensor.doDraw = info.doDraw;
@@ -491,71 +457,66 @@ function loadAndDrawSingleSensor(time, info) {
   }
 
   // Load sensor data simultaneously
-  $.when(
-      $.getJSON(feed_url, function (response) {
-        var data = response["data"];
-        sensor["lat"] = data["latitude"];
-        sensor["lng"] = data["longitude"];
-        if (info["name"]) {
-          sensor["name"] = info["name"];
-        } else {
-          sensor["name"] = data["name"];
-        }
-        if (!windData[info["name"]])
-          windData[info["name"]] = {};
-        windData[info["name"]]["lat"] = sensor["lat"];
-        windData[info["name"]]["lng"] = sensor["lng"];
-        windData[info["name"]]["rectLatLng"] = new google.maps.LatLng(sensor["lat"], sensor["lng"]);
+  $.getJSON(feed_url, function (response) {
+    data = response["data"];
+    sensor["lat"] = data["latitude"];
+    sensor["lng"] = data["longitude"];
+    if (info["name"]) {
+      sensor["name"] = info["name"];
+    } else {
+      sensor["name"] = data["name"];
+    }
+    if (!windData[info["name"]])
+      windData[info["name"]] = {};
+  }).then(function(){
+    return $.getJSON(data_url, function (response) {
+      if (use_PM25_now) {
+        data = response["data"];
+        var latest_data = data[data.length - 1];
+        var windStartIdx = 2;
 
-      }),
-      $.getJSON(data_url, function (response) {
-        if (use_PM25_now) {
-          var data = response["data"];
-          var latest_data = data[data.length - 1];
-          var windStartIdx = 2;
-
-          if (data && latest_data) {
-            // Compute the difference between the timestamp and current time.
-            // If it is more than 4 hours, consider it no data.
-            var data_time = data[data.length - 1][0] * 1000;
-            var current_time = Date.now();
-            var diff_hour = (current_time - data_time) / 3600000;
-            if (diff_hour > 4) {
-              sensor["PM25_now"] = no_data_txt;
-            } else {
-              var val = roundTo2(latest_data[1]);
-              sensor["PM25_now"] = val < 0 ? no_data_txt : val + " &mu;g/m<sup>3</sup>";
-
-              if (!sensor.doDraw)
-                windStartIdx = 1;
-
-              if (!windData[info["name"]])
-                windData[info["name"]] = {};
-
-              if (!windData[info["name"]]["wind_speed"])
-                windData[info["name"]]["wind_speed"] = latest_data[windStartIdx];
-              if (!windData[info["name"]]["wind_direction"])
-                windData[info["name"]]["wind_direction"] = latest_data[windStartIdx + 1];
-            }
-          } else {
+        if (data && latest_data) {
+          // Compute the difference between the timestamp and current time.
+          // If it is more than 4 hours, consider it no data.
+          var data_time = data[data.length - 1][0] * 1000;
+          var current_time = Date.now();
+          var diff_hour = (current_time - data_time) / 3600000;
+          if (diff_hour > 4) {
             sensor["PM25_now"] = no_data_txt;
+          } else {
+            val = roundTo2(latest_data[1]);
+            sensor["PM25_now"] = val < 0 ? no_data_txt : val + " &mu;g/m<sup>3</sup>";
+
+            if (!sensor.doDraw)
+              windStartIdx = 1;
+
+            if (!windData[info["name"]])
+              windData[info["name"]] = {};
+
+            if (!windData[info["name"]]["wind_speed"])
+              windData[info["name"]]["wind_speed"] = latest_data[windStartIdx];
+            if (!windData[info["name"]]["wind_direction"])
+              windData[info["name"]]["wind_direction"] = latest_data[windStartIdx + 1];
           }
         } else {
-          var data = response["data"][0];
-          if (data) {
-            var val = roundTo2(data[1]);
-            sensor["PM25_max"] = val < 0 ? no_data_txt : val + " &mu;g/m<sup>3</sup>";
-          } else {
-            sensor["PM25_max"] = no_data_txt;
-          }
+          sensor["PM25_now"] = no_data_txt;
         }
-      })
-  ).then(function () {
+      } else {
+        data = response["data"][0];
+        if (data) {
+          val = roundTo2(data[1]);
+          sensor["PM25_max"] = val < 0 ? no_data_txt : val + " &mu;g/m<sup>3</sup>";
+        } else {
+          sensor["PM25_max"] = no_data_txt;
+        }
+      }
+    });
+  }).then(function () {
     if (sensor.doDraw)
       drawSingleSensor(sensor);
     sensorLoadCount++;
-    if (sensorLoadCount == totalSensors)
-      repaintCanvasLayer();
+    if (sensorLoadCount < totalSensors)
+      loadAndDrawSingleSensor(time, info[sensorLoadCount]);
   });
 }
 
@@ -580,32 +541,49 @@ function drawSingleSensor(sensor) {
   }
 
   var color_idx = sensorValToColorIndex(val);
+  var windSensor = windData[sensor["name"]];
+  var markerArray, rotation = 0;
+  if (windSensor && typeof(windSensor["wind_speed"]) !== "undefined" && typeof(windSensor["wind_direction"]) !== "undefined") {
+    markerArray = sensor_color_wind;
+    // The direction given by ACHD is the direction _from_ which the wind is coming.
+    // We reverse it to show where the wind is going to. (+180)
+    // Also, the arrow we start with is already rotated 90 degrees, so we need to account for this. (-90)
+    // This means we add 90 to the sensor wind direction value for the correct angle of the wind arrow.
+    rotation = windSensor["wind_direction"] + 90;
+  } else {
+    markerArray = sensor_color;
+  }
 
   // Add marker
-  var marker = new google.maps.Marker({
-    position: latlng,
-    map: map,
-    content: html,
-    icon: {
-      url: RotateIcon.makeIcon("/img/" + sensor_color[color_idx]).setRotation({deg: 45}).getUrl(),//"/img/" + sensor_color[color_idx],
-      scaledSize: new google.maps.Size(100, 100),
-      origin: new google.maps.Point(0, 0),
-      anchor: new google.maps.Point(50, 50)
-    },
-    zIndex: color_idx,
-    opacity: 0.85
+  var image = new Image();
+  image.addEventListener("load", function() {
+    var marker = new google.maps.Marker({
+      position: latlng,
+      map: map,
+      content: html,
+      icon: {
+        url: getRotatedMarker(image, rotation),
+        scaledSize: new google.maps.Size(100, 100),
+        origin: new google.maps.Point(0, 0),
+        anchor: new google.maps.Point(50, 50)
+      },
+      zIndex: color_idx,
+      opacity: 0.85
+    });
+
+    // Add marker event
+    marker.addListener("click", function () {
+      //map.panTo(this.getPosition());
+      infowindow_smell.close();
+      infowindow_sensor.setContent(this.content);
+      infowindow_sensor.open(map, this);
+    });
+
+    // Save markers
+    sensor_markers.push(marker);
   });
 
-  // Add marker event
-  marker.addListener("click", function () {
-    //map.panTo(this.getPosition());
-    infowindow.close();
-    infowindow_marker.setContent(this.content);
-    infowindow_marker.open(map, this);
-  });
-
-  // Save markers
-  sensor_markers.push(marker);
+  image.src = "/img/" + markerArray[color_idx];
 }
 
 function sensorValToColorIndex(val) {
@@ -635,6 +613,8 @@ function deleteAllSensors() {
     sensor_markers[i].setMap(null);
   }
   sensor_markers = [];
+  windData = {};
+  sensorLoadCount = 0;
 }
 
 function addTouchHorizontalScroll(elem) {
@@ -661,126 +641,22 @@ function addTouchHorizontalScroll(elem) {
   });
 }
 
-function drawWindDirectionAndSpeed() {
-  if (windData && sensorLoadCount == totalSensors) {
-    for (var key in windData) {
-      var wind_speed = windData[key].wind_speed;
-      var wind_dir = windData[key].wind_direction
-      var lat = windData[key].lat;
-      var lng = windData[key].lng;
-      var rectLatLng = windData[key].rectLatLng;
-      if (wind_speed && wind_dir && lat && lng && rectLatLng) {
-
-// TODO
-var topRight = mapProjection.fromLatLngToPoint(map.getBounds().getNorthEast());
-var bottomLeft = mapProjection.fromLatLngToPoint(map.getBounds().getSouthWest());
-var scale = Math.pow(2, map.getZoom());
-var worldPoint = mapProjection.fromLatLngToPoint(rectLatLng);
-var xOffset = 0;
-var yOffset = 0;
-if (wind_dir >= 0 && wind_dir <= 50)
-  yOffset = 12;
-else if (wind_dir >= 51 && wind_dir <= 100)
-  xOffset = -12;
-else if (wind_dir >= 101 && wind_dir <= 190)
-  yOffset = -12;
-else if (wind_dir >= 191 && wind_dir <= 280)
-  xOffset = 12;
-else if (wind_dir >= 281 && wind_dir <= 360)
-  yOffset = 12;
-var point = new google.maps.Point(((worldPoint.x - bottomLeft.x) * scale) + xOffset, ((worldPoint.y - topRight.y) * scale) + yOffset);
-var worldPoint = new google.maps.Point(point.x / scale + bottomLeft.x, point.y / scale + topRight.y);
-var rectLatLng = mapProjection.fromPointToLatLng(worldPoint);
-
-        //var worldPoint = mapProjection.fromLatLngToPoint(rectLatLng);
-        var x = worldPoint.x * projectionScale;
-        var y = worldPoint.y * projectionScale;
-        // How many pixels per mile?
-        var offset1mile = mapProjection.fromLatLngToPoint(new google.maps.LatLng(lat + 0.014457067, lng));
-        var unitsPerMile = 1000 * (worldPoint.y - offset1mile.y);
-        if (wind_speed > 0.1) {
-          var wind_dir_radians = wind_dir * Math.PI / 180;
-          var dx = -Math.sin(wind_dir_radians);
-          var dy =  Math.cos(wind_dir_radians);
-          var d = 1;
-          var length = unitsPerMile * wind_speed / 2;
-
-          context.strokeStyle = '#0000ee';
-          context.lineWidth = Math.max(2.0 / contextScale, d * 0.10);
-          context.beginPath();
-          context.moveTo(x, y);
-          context.lineTo(x + (length - d * 1) * dx,
-                         y + (length - d * 1) * dy);
-          context.stroke();
-
-          context.fillStyle = '#0000ee';
-          context.beginPath();
-          context.moveTo(x + length * dx,
-                         y + length * dy);
-          context.lineTo(x + (length - d * 3) * dx + d * dy,
-                         y + (length - d * 3) * dy - d * dx);
-          context.lineTo(x + (length - d * 3) * dx - d * dy,
-                         y + (length - d * 3) * dy + d * dx);
-          context.fill();
-
-          // Black dot as base to wind vector
-          //context.fillStyle = 'black';
-          //context.beginPath();
-          //context.arc(x, y, 1.18, 0, 2 * Math.PI, false);
-          //context.fill();
-        }
-      }
-    }
-  }
-}
-
-function createCanvasLayer() {
-  // initialize the canvasLayer
-  var canvasLayerOptions = {
-    map: map,
-    animate: false,
-    updateHandler: repaintCanvasLayer,
-    resolutionScale: resolutionScale
-  };
-  canvasLayer = new CanvasLayer(canvasLayerOptions);
-  context = canvasLayer.canvas.getContext('2d');
-}
-
-function setupCanvasLayerProjection() {
-  var canvasWidth = canvasLayer.canvas.width;
-  var canvasHeight = canvasLayer.canvas.height;
-  var topLeft = canvasLayer.getTopLeft();
-  context.setTransform(1, 0, 0, 1, 0, 0);
-  context.clearRect(0, 0, canvasWidth, canvasHeight);
-
-  /* We need to scale and translate the map for current view.
-   * see https://developers.google.com/maps/documentation/javascript/maptypes#MapCoordinates
-   */
-  mapProjection = map.getProjection();
-  if (!mapProjection || !topLeft) return;
-
-  // scale is just 2^zoom
-  // If canvasLayer is scaled (with resolutionScale), we need to scale by
-  // the same amount to account for the larger canvas.
-  contextScale = Math.pow(2, map.zoom) * resolutionScale / projectionScale;
-  context.scale(contextScale, contextScale);
-
-  /* If the map was not translated, the topLeft corner would be 0,0 in
-   * world coordinates. Our translation is just the vector from the
-   * world coordinate of the topLeft corder to 0,0.
-   */
-  var offset = mapProjection.fromLatLngToPoint(topLeft);
-  context.translate(-offset.x * projectionScale, -offset.y * projectionScale);
-}
-
-function repaintCanvasLayer() {
-  try {
-    //console.log('repaint');
-    setupCanvasLayerProjection();
-    //drawWindDirectionAndSpeed();
-  } catch(e) {
-    //console.log(e);
-  }
+function getRotatedMarker(image, deg) {
+  var angle = deg * Math.PI / 180;
+  var canvas = document.createElement("canvas");
+  var ctx = canvas.getContext("2d");
+  canvas.width = image.width;
+  canvas.height = image.height;
+  var centerX = canvas.width / 2;
+  var centerY = canvas.height / 2;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(angle);
+  ctx.translate(-centerX, -centerY);
+  ctx.drawImage(image, 0, 0);
+  ctx.restore();
+  return canvas.toDataURL('image/png');
 }
 
 $(document).on("pagecreate", init);
