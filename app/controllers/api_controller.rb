@@ -54,7 +54,7 @@ class ApiController < ApplicationController
       }
 
       # send push notifications for specific smell values (1-5)
-      FirebasePushNotification.push_smell_report_to_topic(smell_report, "/topics/SmellReport-#{smell_report.smell_value}")
+      FirebasePushNotification.push_smell_report(smell_report)
 
       # send email
       if smell_report.submit_achd_form

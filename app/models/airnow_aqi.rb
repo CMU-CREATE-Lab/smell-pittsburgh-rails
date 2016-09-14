@@ -1,6 +1,5 @@
 class AirnowAqi < ActiveRecord::Base
 
-
   def self.AIRNOW_API_URL
     "http://www.airnowapi.org"
   end
