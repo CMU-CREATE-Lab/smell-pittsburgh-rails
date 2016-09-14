@@ -1,2 +1,1 @@
-//= require CanvasLayer
 //= require visualization
