@@ -15,8 +15,8 @@ class FirebasePushNotification < ActiveRecord::Base
 
 	# pushes to those subscribed to Pittsburgh AQI notifications
 	def self.push_aqi_pittsburgh(aqi_has_increased,cities,pittsburgh)
-		pittsburgh_current_category = AqiTracker.category_for_aqi(AqiTracker.get_current_aqi(pittsburgh))
-		pittsburgh_previous_category = AqiTracker.category_for_aqi(AqiTracker.get_previous_aqi(pittsburgh))
+		pittsburgh_current_category = AqiTracker.category_for_aqi(AqiTracker.get_current_aqi(pittsburgh))["name"]
+		pittsburgh_previous_category = AqiTracker.category_for_aqi(AqiTracker.get_previous_aqi(pittsburgh))["name"]
 
 		if aqi_has_increased
 			if cities.empty?

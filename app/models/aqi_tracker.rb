@@ -3,34 +3,34 @@ class AqiTracker < ActiveRecord::Base
   def self.epa_aqi_scale
     [
       {
-        "index": 0,
-        "name": "Good",
-        "max": 50
+        "index" => 0,
+        "name" => "Good",
+        "max" => 50
       },
       {
-        "index": 1,
-        "name": "Moderate",
-        "max": 100
+        "index" => 1,
+        "name" => "Moderate",
+        "max" => 100
       },
       {
-        "index": 2,
-        "name": "Unhealthy for Sensitive Groups",
-        "max": 150
+        "index" => 2,
+        "name" => "Unhealthy for Sensitive Groups",
+        "max" => 150
       },
       {
-        "index": 3,
-        "name": "Unhealthy",
-        "max": 200
+        "index" => 3,
+        "name" => "Unhealthy",
+        "max" => 200
       },
       {
-        "index": 4,
-        "name": "Very Unhealthy",
-        "max": 300
+        "index" => 4,
+        "name" => "Very Unhealthy",
+        "max" => 300
       },
       {
-        "index": 5,
-        "name": "Hazardous",
-        "max": 500
+        "index" => 5,
+        "name" => "Hazardous",
+        "max" =>  500
       },
     ]
   end
@@ -131,7 +131,7 @@ class AqiTracker < ActiveRecord::Base
   # Return the AQI category for a given AQI
   def self.category_for_aqi(aqi)
     epa_aqi_scale.each do |category|
-      return category if aqi <= category[:max]
+      return category if aqi <= category["max"]
     end
     return nil
   end
