@@ -116,6 +116,16 @@
   height: 15px;
   background-repeat: no-repeat;
   background-size: 17px 17px;
+  background-position: center;
+}
+
+#legend-smell-value .wind-arrow-td {
+  color: black;
+  opacity: 0.9;
+  width: 39px;
+  height: 15px;
+  background-repeat: no-repeat;
+  background-size: 41px 17px;
 }
 
 #calendar-description {
@@ -189,6 +199,10 @@
 
 .sensor-color-5 {
   background-image: url("/img/sensor_5_legend.png");
+}
+
+.wind-arrow {
+  background-image: url("/img/wind_arrow.png");
 }
 
 .custom-button {
