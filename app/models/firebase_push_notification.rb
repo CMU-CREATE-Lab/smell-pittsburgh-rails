@@ -1,5 +1,7 @@
 class FirebasePushNotification < ActiveRecord::Base
 
+	# for some reason, Firebase API insists on prepending "/topics/" despite not using this when subscribing.
+	# This prefix can also be used as a quick way to construct topics for non-production notifications
 	def self.TOPIC_PREFIX
 		"/topics/"
 	end
@@ -33,14 +35,14 @@ class FirebasePushNotification < ActiveRecord::Base
 		end
 
 		title = "Pittsburgh AQI is #{pittsburgh_current_category}"
-		topic = "pghaqi"
+		topic = self.TOPIC_PREFIX+"pghaqi"
 		self.send_push_notification(topic,title,body)
 	end
 
 
 	# pushes to those subscribed to smell reports on the same level as smell_report
 	def self.push_smell_report(smell_report)
-		topic = "SmellReport-#{smell_report.smell_value}"
+		topic = self.TOPIC_PREFIX+"SmellReport"
 		title = "New Smell Report"
 		body = "A smell report rated #{smell_report.smell_value} was just submitted! How does your air smell?"
 		self.send_push_notification(topic,title,body)
@@ -49,7 +51,12 @@ class FirebasePushNotification < ActiveRecord::Base
 
 	# all Smell PGH clients should be subscribed to these messages
 	def self.push_global(title, body)
-		self.send_push_notification(self.GLOBAL_TOPIC, title, body)
+		self.send_push_notification(self.TOPIC_PREFIX+self.GLOBAL_TOPIC, title, body)
+	end
+
+
+	def self.push_to_token(token, title, body)
+		self.send_push_notification(token, title, body)
 	end
 
 
@@ -59,8 +66,7 @@ class FirebasePushNotification < ActiveRecord::Base
 	# TODO add options
 	def self.send_push_notification(to, title, body, options=nil)
 		json = {}
-		# for some reason, Firebase API insists on prepending "/topics/" despite not using this when subscribing
-		json["to"] = self.TOPIC_PREFIX+to
+		json["to"] = to
 		json["notification"] = {
 			"sound" => "default",
 			"click_action" => "FCM_PLUGIN_ACTIVITY",
