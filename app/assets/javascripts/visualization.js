@@ -222,7 +222,9 @@ function createCalendarDialog() {
     var $selected = $calendar.find(":selected");
     var desired_index = smell_reports_jump_index[$selected.val()];
     if (typeof desired_index != "undefined") {
-      selectTimelineBtn($timeline_index.find("div[data-value=" + desired_index + "]"), true);
+      selectTimelineBtn($timeline_index.find("div[data-value=" + desired_index + "]"), true, false);
+      var selected_text = $selected.text().replace(" ", "-");
+      addGoogleAnalyticEvent("calendar", "select-month", selected_text);
     }
   });
   $dialog_ok_button.on("vclick", function () {
@@ -273,34 +275,31 @@ function genSmellURL(date_obj) {
     //api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=" + first_day + "&end_time=" + last_day;
   }
 
-  var url_hostname = window.location.origin;
   var api_url = "/api/v1/smell_reports?";
   var staging_base_url = "http://staging.api.smellpittsburgh.org";
-
-  if (url_hostname.indexOf("api.smellpittsburgh") >= 0) {
-    api_url = url_hostname + api_url;
-  } else {
-    api_url = staging_base_url + api_url;
-  }
-  return api_url + api_paras;
+  var root_url = isOriginStaging() ? staging_base_url : window.location.origin;
+  return root_url + api_url + api_paras;
 }
 
 function selectMostRecentDate() {
-  selectTimelineBtn($timeline_index.children().last().children().first(), true);
+  selectTimelineBtn($timeline_index.children().last().children().first(), true, false);
 }
 
 function drawSingleSmellReport(report_i) {
   var latlng = {"lat": report_i.latitude, "lng": report_i.longitude};
 
   // Add marker
-  var date = new Date(report_i.created_at).toLocaleString();
+  var date = new Date(report_i.created_at);
+  var date_str = date.toLocaleString();
   var smell_value = report_i.smell_value;
   var feelings_symptoms = report_i.feelings_symptoms ? report_i.feelings_symptoms : "No data.";
   var smell_description = report_i.smell_description ? report_i.smell_description : "No data.";
   var marker = new google.maps.Marker({
     position: latlng,
     map: map,
-    content: '<b>Date:</b> ' + date + '<br>'
+    created_date: date.getTime(),
+    smell_value: report_i.smell_value,
+    content: '<b>Date:</b> ' + date_str + '<br>'
       + '<b>Smell Value:</b> ' + smell_value + " (" + smell_value_text[smell_value - 1] + ")" + '<br>'
       + '<b>Feelings Symptoms:</b> ' + feelings_symptoms + '<br>'
       + '<b>Smell Description:</b> ' + smell_description,
@@ -320,6 +319,13 @@ function drawSingleSmellReport(report_i) {
     infowindow_sensor.close();
     infowindow_smell.setContent(this.content);
     infowindow_smell.open(map, this);
+    // Add google analytics event
+    var label = {
+      "dimension3": Date.now().toString(),
+      "dimension4": this.created_date,
+      "metric1": this.smell_value
+    };
+    addGoogleAnalyticEvent("smell-report", "click", label);
   });
 
   // Save markers
@@ -395,11 +401,11 @@ function drawTimeline() {
 
   // Add clicking events
   $("#timeline-index .custom-td-button").on("vclick", function () {
-    selectTimelineBtn($(this));
+    selectTimelineBtn($(this), false, true);
   });
 }
 
-function selectTimelineBtn($ele, auto_scroll) {
+function selectTimelineBtn($ele, auto_scroll, from_click_event) {
   if ($ele && !$ele.hasClass("selected-td-btn")) {
     clearTimelineBtnSelection();
     $ele.addClass("selected-td-btn");
@@ -408,10 +414,19 @@ function selectTimelineBtn($ele, auto_scroll) {
     deleteAllSmellReports();
     drawSmellReportsByIndex(parseInt($ele.data("index")));
     deleteAllSensors();
-    loadAndDrawAllSensors(parseInt($ele.data("time")));
+    var selected_time = parseInt($ele.data("time"));
+    loadAndDrawAllSensors(selected_time);
     // Scroll to the position
     if (auto_scroll) {
       $timeline_container.scrollLeft(Math.round($ele.parent().position().left - $timeline_container.width() / 5));
+    }
+    if (from_click_event) {
+      // Add google analytics
+      var label = {
+        "dimension3": Date.now().toString(),
+        "dimension4": (selected_time*1000).toString()
+      }
+      addGoogleAnalyticEvent("smell-timeline", "click", label);
     }
   }
 }
