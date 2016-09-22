@@ -7,6 +7,7 @@ namespace :airnow_aqi do
     pittsburgh = cities[0]
     values = AirnowAqi.request_aqi_from_zipcode(pittsburgh["zipcode"])
     aqi = -1
+    date = 0
     values.each do |value|
       # we only care about pm2.5 and ozone
       if value["param"] == "PM2.5" or value["param"] == "O3"
@@ -18,7 +19,7 @@ namespace :airnow_aqi do
       end
     end
     # we need to track whether or not pittsburgh's aqi was actually updated
-    pittsburgh_aqi_updated = (aqi >= 0 and AqiTracker.update_aqi_for_city(city,aqi,date))
+    pittsburgh_aqi_updated = (aqi >= 0 and AqiTracker.update_aqi_for_city(pittsburgh,aqi,date))
     # now, check the rest
     cities[1..-1].each do |city|
       values = AirnowAqi.request_aqi_from_zipcode(city["zipcode"])
