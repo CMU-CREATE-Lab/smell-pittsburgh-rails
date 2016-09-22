@@ -34,78 +34,78 @@ var $timeline_container;
 var esdr_root_url = "https://esdr.cmucreatelab.org/api/v1/";
 var no_data_txt = "No data in last four hours.";
 
-// Wind
-var windData = {};
+var requests = [];
 
 // Sensors
 // NOTE: Put all sensors that are not drawn first.
 // This is needed so that the data is available for the sensors
 // that are drawn.
-var sensorList = [{
-  feed: 28,
-  name: "County AQ Monitor - Liberty",
-  channel_max: "PM25_UG_M3_daily_max",
-  channels: [
-    "SONICWS_MPH",
-    "SONICWD_DEG"
-  ],
-  doDraw: false
-}, {
-  feed: 29,
-  name: "County AQ Monitor - Liberty",
-  channel_max: "PM25_UG_M3_daily_max",
-  channels: [
-    "PM25_UG_M3"
-  ],
-  doDraw: true
-}, {
-  feed: 26,
-  name: "County AQ Monitor - Lawrenceville",
-  channel_max: "PM25B_UG_M3_daily_max",
-  channels: [
-    "PM25B_UG_M3",
-    "SONICWS_MPH",
-    "SONICWD_DEG"
-  ],
-  doDraw: true
-}, {
-  feed: 43,
-  name: "County AQ Monitor - Parkway East",
-  channel_max: "PM2_5_daily_max",
-  channels: [
-    "SONICWS_MPH",
-    "SONICWD_DEG"
-  ],
-  doDraw: false
-}, {
-  feed: 5975,
-  name: "County AQ Monitor - Parkway East",
-  channel_max: "PM2_5_daily_max",
-  channels: [
-    "PM2_5"
-  ],
-  doDraw: true
-}, {
-  feed: 30,
-  name: "County AQ Monitor - Lincoln",
-  channel_max: "PM25_UG_M3_daily_max",
-  channels: [
-    "PM25_UG_M3"
-  ],
-  doDraw: true
-}, {
-  feed: 1,
-  name: "County AQ Monitor - Avalon",
-  channel_max: "PM25B_UG_M3_daily_max",
-  channels: [
-    "PM25B_UG_M3",
-    "SONICWS_MPH",
-    "SONICWD_DEG"
-  ],
-  doDraw: true
-}];
+var sensorList = [
+  {
+    feed: 28,
+    name: "County AQ Monitor - Liberty",
+    channels: [
+      "SONICWS_MPH",
+      "SONICWD_DEG"
+    ],
+    doDraw: false
+  }, {
+    feed: 29,
+    name: "County AQ Monitor - Liberty",
+    channel_max: "PM25_UG_M3_daily_max",
+    channels: [
+      "PM25_UG_M3"
+    ],
+    doDraw: true
+  }, {
+    feed: 26,
+    name: "County AQ Monitor - Lawrenceville",
+    channel_max: "PM25B_UG_M3_daily_max",
+    channels: [
+      "PM25B_UG_M3",
+      "SONICWS_MPH",
+      "SONICWD_DEG"
+    ],
+    doDraw: true
+  }, {
+    feed: 43,
+    name: "County AQ Monitor - Parkway East",
+    channels: [
+      "SONICWS_MPH",
+      "SONICWD_DEG"
+    ],
+    doDraw: false
+  }, {
+    feed: 5975,
+    name: "County AQ Monitor - Parkway East",
+    channel_max: "PM2_5_daily_max",
+    channels: [
+      "PM2_5"
+    ],
+    doDraw: true
+  }, {
+    feed: 30,
+    name: "County AQ Monitor - Lincoln",
+    channel_max: "PM25_UG_M3_daily_max",
+    channels: [
+      "PM25_UG_M3"
+    ],
+    doDraw: true
+  }, {
+    feed: 1,
+    name: "County AQ Monitor - Avalon",
+    channel_max: "PM25B_UG_M3_daily_max",
+    channels: [
+      "PM25B_UG_M3",
+      "SONICWS_MPH",
+      "SONICWD_DEG"
+    ],
+    doDraw: true
+  }
+];
 var sensor_markers = [];
 var sensorLoadCount = 0;
+var sensors = {};
 var totalSensors = sensorList.length;
 
 
@@ -222,7 +222,9 @@ function createCalendarDialog() {
     var $selected = $calendar.find(":selected");
     var desired_index = smell_reports_jump_index[$selected.val()];
     if (typeof desired_index != "undefined") {
-      selectTimelineBtn($timeline_index.find("div[data-value=" + desired_index + "]"), true);
+      selectTimelineBtn($timeline_index.find("div[data-value=" + desired_index + "]"), true, false);
+      var selected_text = $selected.text().replace(" ", "-");
+      addGoogleAnalyticEvent("calendar", "select-month", selected_text);
     }
   });
   $dialog_ok_button.on("vclick", function () {
@@ -273,34 +275,31 @@ function genSmellURL(date_obj) {
     //api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=" + first_day + "&end_time=" + last_day;
   }
 
-  var url_hostname = window.location.origin;
   var api_url = "/api/v1/smell_reports?";
   var staging_base_url = "http://staging.api.smellpittsburgh.org";
-
-  if (url_hostname.indexOf("api.smellpittsburgh") >= 0) {
-    api_url = url_hostname + api_url;
-  } else {
-    api_url = staging_base_url + api_url;
-  }
-  return api_url + api_paras;
+  var root_url = isOriginStaging() ? staging_base_url : window.location.origin;
+  return root_url + api_url + api_paras;
 }
 
 function selectMostRecentDate() {
-  selectTimelineBtn($timeline_index.children().last().children().first(), true);
+  selectTimelineBtn($timeline_index.children().last().children().first(), true, false);
 }
 
 function drawSingleSmellReport(report_i) {
   var latlng = {"lat": report_i.latitude, "lng": report_i.longitude};
 
   // Add marker
-  var date = new Date(report_i.created_at).toLocaleString();
+  var date = new Date(report_i.created_at);
+  var date_str = date.toLocaleString();
   var smell_value = report_i.smell_value;
   var feelings_symptoms = report_i.feelings_symptoms ? report_i.feelings_symptoms : "No data.";
   var smell_description = report_i.smell_description ? report_i.smell_description : "No data.";
   var marker = new google.maps.Marker({
     position: latlng,
     map: map,
-    content: '<b>Date:</b> ' + date + '<br>'
+    created_date: date.getTime(),
+    smell_value: report_i.smell_value,
+    content: '<b>Date:</b> ' + date_str + '<br>'
       + '<b>Smell Value:</b> ' + smell_value + " (" + smell_value_text[smell_value - 1] + ")" + '<br>'
       + '<b>Feelings Symptoms:</b> ' + feelings_symptoms + '<br>'
       + '<b>Smell Description:</b> ' + smell_description,
@@ -320,6 +319,13 @@ function drawSingleSmellReport(report_i) {
     infowindow_sensor.close();
     infowindow_smell.setContent(this.content);
     infowindow_smell.open(map, this);
+    // Add google analytics event
+    var label = {
+      "dimension3": Date.now().toString(),
+      "dimension4": this.created_date,
+      "metric1": this.smell_value
+    };
+    addGoogleAnalyticEvent("smell-report", "click", label);
   });
 
   // Save markers
@@ -395,11 +401,11 @@ function drawTimeline() {
 
   // Add clicking events
   $("#timeline-index .custom-td-button").on("vclick", function () {
-    selectTimelineBtn($(this));
+    selectTimelineBtn($(this), false, true);
   });
 }
 
-function selectTimelineBtn($ele, auto_scroll) {
+function selectTimelineBtn($ele, auto_scroll, from_click_event) {
   if ($ele && !$ele.hasClass("selected-td-btn")) {
     clearTimelineBtnSelection();
     $ele.addClass("selected-td-btn");
@@ -408,10 +414,19 @@ function selectTimelineBtn($ele, auto_scroll) {
     deleteAllSmellReports();
     drawSmellReportsByIndex(parseInt($ele.data("index")));
     deleteAllSensors();
-    loadAndDrawAllSensors(parseInt($ele.data("time")));
+    var selected_time = parseInt($ele.data("time"));
+    loadAndDrawAllSensors(selected_time);
     // Scroll to the position
     if (auto_scroll) {
       $timeline_container.scrollLeft(Math.round($ele.parent().position().left - $timeline_container.width() / 5));
+    }
+    if (from_click_event) {
+      // Add google analytics
+      var label = {
+        "dimension3": Date.now().toString(),
+        "dimension4": (selected_time*1000).toString()
+      }
+      addGoogleAnalyticEvent("smell-timeline", "click", label);
     }
   }
 }
@@ -439,12 +454,13 @@ function loadAndDrawSingleSensor(time) {
   var date_str_sensor = (new Date(time * 1000)).toDateString();
   var date_hour_now = (new Date()).getHours();
   var date_str_now = (new Date()).toDateString();
-  var feed_url = esdr_root_url + "feeds/" + info["feed"];
+  var feed_url = esdr_root_url + "feeds/" + info.feed;
   var data_url;
   var data;
   var val;
   var use_PM25_now;
 
+  sensor.name = info.name;
   sensor.doDraw = info.doDraw;
 
   // Channel max values are not calculated until 3am, so to be safe we wait until 4.
@@ -457,21 +473,21 @@ function loadAndDrawSingleSensor(time) {
   }
 
   // Load sensor data simultaneously
-  $.getJSON(feed_url, function (response) {
-    data = response["data"];
-    sensor["lat"] = data["latitude"];
-    sensor["lng"] = data["longitude"];
-    if (info["name"]) {
-      sensor["name"] = info["name"];
-    } else {
-      sensor["name"] = data["name"];
-    }
-    if (!windData[info["name"]])
-      windData[info["name"]] = {};
-  }).then(function(){
-    return $.getJSON(data_url, function (response) {
+  (function() {
+    // If we do not need to draw or already have lat/lng then immediately return a resolved Promise
+    if (!sensor.doDraw || (sensors[sensor.name] && sensors[sensor.name].lat && sensors[sensor.name].lng)) return $().promise();
+    var xhr = $.getJSON(feed_url, function (response) {
+      data = response.data;
+      sensor.lat = data.latitude;
+      sensor.lng = data.longitude;
+    });
+    requests.push(xhr);
+    return xhr;
+  })().then(function(){
+    if (!use_PM25_now && !sensor.doDraw) return;
+    var xhr = $.getJSON(data_url, function (response) {
       if (use_PM25_now) {
-        data = response["data"];
+        data = response.data;
         var latest_data = data[data.length - 1];
         var windStartIdx = 2;
 
@@ -490,19 +506,16 @@ function loadAndDrawSingleSensor(time) {
             if (!sensor.doDraw)
               windStartIdx = 1;
 
-            if (!windData[info["name"]])
-              windData[info["name"]] = {};
-
-            if (!windData[info["name"]]["wind_speed"])
-              windData[info["name"]]["wind_speed"] = latest_data[windStartIdx];
-            if (!windData[info["name"]]["wind_direction"])
-              windData[info["name"]]["wind_direction"] = latest_data[windStartIdx + 1];
+            if (!sensor["wind_speed"])
+              sensor["wind_speed"] = latest_data[windStartIdx];
+            if (!sensor["wind_direction"])
+              sensor["wind_direction"] = latest_data[windStartIdx + 1];
           }
         } else {
           sensor["PM25_now"] = no_data_txt;
         }
       } else {
-        data = response["data"][0];
+        data = response.data[0];
         if (data) {
           val = roundTo2(data[1]);
           sensor["PM25_max"] = val < 0 ? no_data_txt : val + " &mu;g/m<sup>3</sup>";
@@ -510,10 +523,14 @@ function loadAndDrawSingleSensor(time) {
           sensor["PM25_max"] = no_data_txt;
         }
       }
+      var tmp = $.extend(true, {}, sensors[sensor.name], sensor);
+      sensors[sensor.name] = tmp;
     });
-  }).then(function () {
+    requests.push(xhr);
+    return xhr;
+  }).done(function () {
     if (sensor.doDraw)
-      drawSingleSensor(sensor);
+      drawSingleSensor(sensors[sensor.name]);
     sensorLoadCount++;
     if (sensorLoadCount < totalSensors)
       loadAndDrawSingleSensor(time, info[sensorLoadCount]);
@@ -541,15 +558,14 @@ function drawSingleSensor(sensor) {
   }
 
   var color_idx = sensorValToColorIndex(val);
-  var windSensor = windData[sensor["name"]];
   var markerArray, rotation = 0;
-  if (windSensor && typeof(windSensor["wind_speed"]) !== "undefined" && typeof(windSensor["wind_direction"]) !== "undefined") {
+  if (typeof(sensor["wind_speed"]) !== "undefined" && typeof(sensor["wind_direction"]) !== "undefined") {
     markerArray = sensor_color_wind;
     // The direction given by ACHD is the direction _from_ which the wind is coming.
     // We reverse it to show where the wind is going to. (+180)
     // Also, the arrow we start with is already rotated 90 degrees, so we need to account for this. (-90)
     // This means we add 90 to the sensor wind direction value for the correct angle of the wind arrow.
-    rotation = windSensor["wind_direction"] + 90;
+    rotation = sensor["wind_direction"] + 90;
   } else {
     markerArray = sensor_color;
   }
@@ -567,13 +583,13 @@ function drawSingleSensor(sensor) {
         origin: new google.maps.Point(0, 0),
         anchor: new google.maps.Point(50, 50)
       },
+      shape: {coords: [50, 50, 12.5], type: "circle"}, /* Modify click region */
       zIndex: color_idx,
       opacity: 0.85
     });
 
     // Add marker event
     marker.addListener("click", function () {
-      //map.panTo(this.getPosition());
       infowindow_smell.close();
       infowindow_sensor.setContent(this.content);
       infowindow_sensor.open(map, this);
@@ -609,12 +625,24 @@ function sensorValToColorIndex(val) {
 }
 
 function deleteAllSensors() {
-  for (var i = 0; i < sensor_markers.length; i++) {
-    sensor_markers[i].setMap(null);
+  // Abort all pending ajax requests
+  for (var ri = 0; ri < requests.length; ri++) {
+    requests[ri].abort();
+  }
+  requests = [];
+  // Delete all sensor properties except for name and location,
+  // which allows us to cache the first ESDR request.
+  for (var sensor in sensors) {
+    for (var prop in sensors[sensor]) {
+      if (prop !== "lat" && prop !== "lng" && prop !== "name") {
+        delete sensors[sensor][prop];
+      }
+    }
+  }
+  for (var mi = 0; mi < sensor_markers.length; mi++) {
+    sensor_markers[mi].setMap(null);
   }
   sensor_markers = [];
-  windData = {};
-  sensorLoadCount = 0;
 }
 
 function addTouchHorizontalScroll(elem) {
