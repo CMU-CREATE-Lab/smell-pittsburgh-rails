@@ -42,7 +42,7 @@ class FirebasePushNotification < ActiveRecord::Base
 
 	# pushes to those subscribed to smell reports on the same level as smell_report
 	def self.push_smell_report(smell_report)
-		topic = self.TOPIC_PREFIX+"SmellReport"
+		topic = self.TOPIC_PREFIX+"SmellReports"
 		title = "New Smell Report"
 		body = "A smell report rated #{smell_report.smell_value} was just submitted! How does your air smell?"
 		self.send_push_notification(topic,title,body)
