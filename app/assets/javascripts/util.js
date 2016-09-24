@@ -6,3 +6,8 @@ function isOriginStaging() {
     return false;
   }
 }
+
+function roundTo(val, n) {
+  var d = Math.pow(10, n);
+  return Math.round(parseFloat(val) * d) / d;
+}
