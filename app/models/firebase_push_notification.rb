@@ -16,27 +16,20 @@ class FirebasePushNotification < ActiveRecord::Base
 
 
 	# pushes to those subscribed to Pittsburgh AQI notifications
+	# aqi_has_increased: true indicates increase, false indicates decrease (if neither increase/decrease, the function should not be called)
 	def self.push_aqi_pittsburgh(aqi_has_increased,cities,pittsburgh)
-		# TODO update the AQI notifications
-		pittsburgh_current_category = AqiTracker.category_for_aqi(AqiTracker.get_current_aqi(pittsburgh))["name"]
-		pittsburgh_previous_category = AqiTracker.category_for_aqi(AqiTracker.get_previous_aqi(pittsburgh))["name"]
+		topic = self.TOPIC_PREFIX+"pghaqi"
+		title = ""
+		body = ""
 
 		if aqi_has_increased
-			if cities.empty?
-				body = "Pittsburgh AQI has increased from #{pittsburgh_previous_category} to #{pittsburgh_current_category}!"
-			else
-				random_city = cities.shuffle.first
-				random_city_name = random_city["name"]
-				random_city_aqi = AqiTracker.get_current_aqi(pittsburgh)
-				pittsburgh_aqi = AqiTracker.get_current_aqi(pittsburgh)
-				body = "Pittsburgh AQI is #{pittsburgh_aqi} (#{pittsburgh_current_category}) while #{random_city_name} is enjoying cleaner air (AQI #{random_city_aqi})"
-			end
+			title = "Is there a poor odor outside?"
+			body = "PGH pollution levels just went up"
 		else
-			body = "Pittsburgh AQI has decreased from #{pittsburgh_previous_category} to #{pittsburgh_current_category}!"
+			title = "Does it smell better outside?"
+			body = "Pittsburgh's AQI just improved"
 		end
 
-		title = "Pittsburgh AQI is #{pittsburgh_current_category}"
-		topic = self.TOPIC_PREFIX+"pghaqi"
 		self.send_push_notification(topic,title,body)
 	end
 
