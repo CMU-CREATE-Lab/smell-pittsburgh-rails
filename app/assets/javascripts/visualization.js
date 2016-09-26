@@ -186,7 +186,8 @@ function createGoogleMap() {
     styles: styleArray,
     zoom: isMobile() ? init_zoom_mobile : init_zoom_desktop,
     disableDefaultUI: true,
-    mapTypeId: google.maps.MapTypeId.ROADMAP
+    mapTypeId: google.maps.MapTypeId.ROADMAP,
+    maxZoom: 17
   });
 
   // Set smell report information window
@@ -223,8 +224,12 @@ function createCalendarDialog() {
     var desired_index = smell_reports_jump_index[$selected.val()];
     if (typeof desired_index != "undefined") {
       selectTimelineBtn($timeline_index.find("div[data-value=" + desired_index + "]"), true, false);
-      var selected_text = $selected.text().replace(" ", "-");
-      addGoogleAnalyticEvent("calendar", "select-month", selected_text);
+      var data_time = (new Date($selected.data("year"), $selected.data("month")-1)).getTime();
+      var label = {
+        "metric1": Date.now(),
+        "metric2": data_time 
+      };
+      addGoogleAnalyticEvent("calendar", "click", label);
     }
   });
   $dialog_ok_button.on("vclick", function () {
@@ -321,11 +326,11 @@ function drawSingleSmellReport(report_i) {
     infowindow_smell.open(map, this);
     // Add google analytics event
     var label = {
-      "viewedTime": Date.now().toString(),
-      "dataTime": this.created_date.toString(),
-      "smellValue": this.smell_value
+      "metric1": Date.now(),
+      "metric2": this.created_date,
+      "metric3": this.smell_value
     };
-    addGoogleAnalyticEvent("smell-report", "click", JSON.stringify(label));
+    addGoogleAnalyticEvent("smell", "click", label);
   });
 
   // Save markers
@@ -423,10 +428,10 @@ function selectTimelineBtn($ele, auto_scroll, from_click_event) {
     if (from_click_event) {
       // Add google analytics
       var label = {
-        "viewedTime": Date.now().toString(),
-        "dataTime": (data_time*1000).toString()
+        "metric1": Date.now(),
+        "metric2": data_time*1000
       };
-      addGoogleAnalyticEvent("smell-timeline", "click", JSON.stringify(label));
+      addGoogleAnalyticEvent("timeline", "click", label);
     }
   }
 }
@@ -460,8 +465,9 @@ function loadAndDrawSingleSensor(time) {
   var val;
   var use_PM25_now;
 
-  sensor.name = info.name;
-  sensor.doDraw = info.doDraw;
+  sensor["name"] = info.name;
+  sensor["doDraw"] = info.doDraw;
+  sensor["feed"] = info.feed;
 
   // Channel max values are not calculated until 3am, so to be safe we wait until 4.
   if (date_str_sensor == date_str_now || date_hour_now < 4) {
@@ -495,6 +501,9 @@ function loadAndDrawSingleSensor(time) {
           // Compute the difference between the timestamp and current time.
           // If it is more than 4 hours, consider it no data.
           var data_time = data[data.length - 1][0] * 1000;
+          // IMPORTANT: only report data time when latest data exist
+          // This is done intentionally for Google Analytics to know
+          // if the reported PM25 value is now or max
           sensor["data_time"] = data_time;
           var current_time = Date.now();
           var diff_hour = (current_time - data_time) / 3600000;
@@ -517,6 +526,9 @@ function loadAndDrawSingleSensor(time) {
         }
       } else {
         data = response.data[0];
+        // IMPORTANT: do not report data time here
+        // This is done intentionally for Google Analytics to know
+        // if the reported PM25 value is now or max
         if (data) {
           val = roundTo(data[1], 2);
           sensor["PM25_max"] = Math.max(-1, val);
@@ -576,8 +588,7 @@ function drawSingleSensor(sensor) {
       position: latlng,
       map: map,
       content: html,
-      lat: sensor["lat"],
-      lng: sensor["lng"],
+      feed: sensor["feed"],
       data_time: typeof sensor["data_time"] !== "undefined" ? sensor["data_time"] : -1,
       PM25_now: typeof sensor["PM25_now"] !== "undefined" ? sensor["PM25_now"] : -1,
       PM25_max: typeof sensor["PM25_max"] !== "undefined" ? sensor["PM25_max"] : -1,
@@ -599,15 +610,13 @@ function drawSingleSensor(sensor) {
       infowindow_sensor.open(map, this);
       // Add google analytics
       var label = {
-        "viewedTime": Date.now().toString(),
-        "dataTime": this.data_time,
-        "lat": roundTo(this.lat, 4),
-        "lng": roundTo(this.lng, 4),
-        "PM25Now": this.PM25_now,
-        "PM25Max": this.PM25_max
+        "metric1": Date.now().toString(),
+        "metric2": this.data_time,
+        "metric4": this.feed,
+        "metric5": this.PM25_now != -1 ? this.PM25_now : this.PM25_max
       };
-      console.log(label);
-      addGoogleAnalyticEvent("smell-timeline", "click", JSON.stringify(label));
+      addGoogleAnalyticEvent("sensor", "click", label);
+      console.log(this.PM25_max);
     });
 
     // Save markers
