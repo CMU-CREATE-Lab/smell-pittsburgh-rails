@@ -186,8 +186,7 @@ function createGoogleMap() {
     styles: styleArray,
     zoom: isMobile() ? init_zoom_mobile : init_zoom_desktop,
     disableDefaultUI: true,
-    mapTypeId: google.maps.MapTypeId.ROADMAP,
-    maxZoom: 17
+    mapTypeId: google.maps.MapTypeId.ROADMAP
   });
 
   // Set smell report information window
