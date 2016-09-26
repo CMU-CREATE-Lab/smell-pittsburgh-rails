@@ -53,9 +53,12 @@ class ApiController < ApplicationController
         :vertical_accuracy => smell_report.vertical_accuracy
       }
 
-      # TODO this will need to send smarter (not all the time; hourly summaries)
       # send push notifications for smell values at or above 3
-      FirebasePushNotification.push_smell_report(smell_report) unless smell_report.smell_value < 3
+      if SmellReportTracker.is_listening_for_smell_reports? and smell_report.smell_value >= 3
+        SmellReportTracker.set_last_reported(smell_report.created_at.to_i)
+        SmellReportTracker.listening_for_smell_reports(false)
+        FirebasePushNotification.push_smell_report(smell_report)
+      end
 
       # send email
       if smell_report.submit_achd_form

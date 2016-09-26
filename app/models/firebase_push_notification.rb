@@ -17,6 +17,7 @@ class FirebasePushNotification < ActiveRecord::Base
 
 	# pushes to those subscribed to Pittsburgh AQI notifications
 	def self.push_aqi_pittsburgh(aqi_has_increased,cities,pittsburgh)
+		# TODO update the AQI notifications
 		pittsburgh_current_category = AqiTracker.category_for_aqi(AqiTracker.get_current_aqi(pittsburgh))["name"]
 		pittsburgh_previous_category = AqiTracker.category_for_aqi(AqiTracker.get_previous_aqi(pittsburgh))["name"]
 
@@ -43,8 +44,43 @@ class FirebasePushNotification < ActiveRecord::Base
 	# pushes to those subscribed to smell reports on the same level as smell_report
 	def self.push_smell_report(smell_report)
 		topic = self.TOPIC_PREFIX+"SmellReports"
-		title = "New Smell Report"
-		body = "A smell report rated #{smell_report.smell_value} was just submitted! How does your air smell?"
+
+		title = "How does your air smell?"
+		body = "A smell report rated #{smell_report.smell_value} was just submitted"
+
+		self.send_push_notification(topic,title,body)
+	end
+
+
+	# list: list of smell reports
+	def self.push_smell_report_daily_summary(list)
+		topic = self.TOPIC_PREFIX+"SmellReports"
+
+		title = "Today's Smell Report Summary"
+		body = "#{list.size}"
+		if list.size == 1
+			body += " smell report was submitted today"
+		else
+			body += " smell reports were submitted today"
+		end
+
+		self.send_push_notification(topic,title,body)
+	end
+
+
+	def self.push_smell_report_hourly_summary(from_time_in_seconds,to_time_in_seconds)
+		list = SmellReport.where("smell_value >= 3").where(:created_at => [Time.at(from_time_in_seconds).to_datetime..Time.at(to_time_in_seconds).to_datetime])
+		topic = self.TOPIC_PREFIX+"SmellReports"
+
+		# TODO other title when more reports were sent? "Did you submit a smell report?"
+		title = "View the map of smell reports"
+		body = "#{list.size}"
+		if list.size == 1
+			body += " odor was reported in the last 2 hours"
+		else
+			body += " odors were reported in the last 2 hours"
+		end
+
 		self.send_push_notification(topic,title,body)
 	end
 
