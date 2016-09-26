@@ -52,7 +52,7 @@ class AchdForm < ActiveRecord::Base
       body = ""
       body += "Dear Dr. Karen Hacker and the Allegheny County Health Department,"
       body += "\n\n"
-      body += "I noticed an unusual smell at #{geo.street_address}, #{geo.zip} on #{smell_report.created_at.localtime.strftime("%d %B %Y")} at #{smell_report.created_at.localtime.strftime("%I:%M %p %Z")}. I’d rate the smell #{smell_report.smell_value} on a scale of 1 to 5, with 5 being the worst odor."
+      body += "I noticed an unusual smell at #{geo.street_address}, #{geo.zip} on #{smell_report.created_at.localtime.strftime("%d %B %Y")} at #{smell_report.created_at.localtime.strftime("%I:%M %p %Z")}. I'd rate the smell #{smell_report.smell_value} on a scale of 1 to 5, with 5 being the worst odor."
       unless smell_report.smell_description.blank? and smell_report.feelings_symptoms.blank?
         body += "\n\n"
         body += "Below are some things I noticed about this smell episode."
