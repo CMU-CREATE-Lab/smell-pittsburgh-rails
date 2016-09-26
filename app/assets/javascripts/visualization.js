@@ -223,8 +223,12 @@ function createCalendarDialog() {
     var desired_index = smell_reports_jump_index[$selected.val()];
     if (typeof desired_index != "undefined") {
       selectTimelineBtn($timeline_index.find("div[data-value=" + desired_index + "]"), true, false);
-      var selected_text = $selected.text().replace(" ", "-");
-      addGoogleAnalyticEvent("calendar", "select-month", selected_text);
+      var data_time = (new Date($selected.data("year"), $selected.data("month")-1)).getTime();
+      var label = {
+        "metric1": Date.now(),
+        "metric2": data_time 
+      };
+      addGoogleAnalyticEvent("calendar", "click", label);
     }
   });
   $dialog_ok_button.on("vclick", function () {
@@ -321,11 +325,11 @@ function drawSingleSmellReport(report_i) {
     infowindow_smell.open(map, this);
     // Add google analytics event
     var label = {
-      "dimension3": Date.now().toString(),
-      "dimension4": this.created_date,
-      "metric1": this.smell_value
+      "metric1": Date.now(),
+      "metric2": this.created_date,
+      "metric3": this.smell_value
     };
-    addGoogleAnalyticEvent("smell-report", "click", label);
+    addGoogleAnalyticEvent("smell", "click", label);
   });
 
   // Save markers
@@ -414,8 +418,8 @@ function selectTimelineBtn($ele, auto_scroll, from_click_event) {
     deleteAllSmellReports();
     drawSmellReportsByIndex(parseInt($ele.data("index")));
     deleteAllSensors();
-    var selected_time = parseInt($ele.data("time"));
-    loadAndDrawAllSensors(selected_time);
+    var data_time = parseInt($ele.data("time"));
+    loadAndDrawAllSensors(data_time);
     // Scroll to the position
     if (auto_scroll) {
       $timeline_container.scrollLeft(Math.round($ele.parent().position().left - $timeline_container.width() / 5));
@@ -423,10 +427,10 @@ function selectTimelineBtn($ele, auto_scroll, from_click_event) {
     if (from_click_event) {
       // Add google analytics
       var label = {
-        "dimension3": Date.now().toString(),
-        "dimension4": (selected_time*1000).toString()
-      }
-      addGoogleAnalyticEvent("smell-timeline", "click", label);
+        "metric1": Date.now(),
+        "metric2": data_time*1000
+      };
+      addGoogleAnalyticEvent("timeline", "click", label);
     }
   }
 }
@@ -460,8 +464,9 @@ function loadAndDrawSingleSensor(time) {
   var val;
   var use_PM25_now;
 
-  sensor.name = info.name;
-  sensor.doDraw = info.doDraw;
+  sensor["name"] = info.name;
+  sensor["doDraw"] = info.doDraw;
+  sensor["feed"] = info.feed;
 
   // Channel max values are not calculated until 3am, so to be safe we wait until 4.
   if (date_str_sensor == date_str_now || date_hour_now < 4) {
@@ -495,13 +500,17 @@ function loadAndDrawSingleSensor(time) {
           // Compute the difference between the timestamp and current time.
           // If it is more than 4 hours, consider it no data.
           var data_time = data[data.length - 1][0] * 1000;
+          // IMPORTANT: only report data time when latest data exist
+          // This is done intentionally for Google Analytics to know
+          // if the reported PM25 value is now or max
+          sensor["data_time"] = data_time;
           var current_time = Date.now();
           var diff_hour = (current_time - data_time) / 3600000;
           if (diff_hour > 4) {
-            sensor["PM25_now"] = no_data_txt;
+            sensor["PM25_now"] = -1;
           } else {
-            val = roundTo2(latest_data[1]);
-            sensor["PM25_now"] = val < 0 ? no_data_txt : val + " &mu;g/m<sup>3</sup>";
+            val = roundTo(latest_data[1], 2);
+            sensor["PM25_now"] = Math.max(-1, val);
 
             if (!sensor.doDraw)
               windStartIdx = 1;
@@ -512,15 +521,18 @@ function loadAndDrawSingleSensor(time) {
               sensor["wind_direction"] = latest_data[windStartIdx + 1];
           }
         } else {
-          sensor["PM25_now"] = no_data_txt;
+          sensor["PM25_now"] = -1;
         }
       } else {
         data = response.data[0];
+        // IMPORTANT: do not report data time here
+        // This is done intentionally for Google Analytics to know
+        // if the reported PM25 value is now or max
         if (data) {
-          val = roundTo2(data[1]);
-          sensor["PM25_max"] = val < 0 ? no_data_txt : val + " &mu;g/m<sup>3</sup>";
+          val = roundTo(data[1], 2);
+          sensor["PM25_max"] = Math.max(-1, val);
         } else {
-          sensor["PM25_max"] = no_data_txt;
+          sensor["PM25_max"] = -1;
         }
       }
       var tmp = $.extend(true, {}, sensors[sensor.name], sensor);
@@ -537,10 +549,6 @@ function loadAndDrawSingleSensor(time) {
   });
 }
 
-function roundTo2(val) {
-  return Math.round(parseFloat(val) * 100) / 100;
-}
-
 function drawSingleSensor(sensor) {
   var latlng = {"lat": sensor.lat, "lng": sensor.lng};
   var html = '';
@@ -548,13 +556,15 @@ function drawSingleSensor(sensor) {
 
   html += "<b>Name:</b> " + sensor.name + "<br>";
 
-  if (sensor["PM25_now"]) {
-    val = sensor.PM25_now;
-    html += '<b>Latest PM<sub>2.5</sub>:</b> ' + sensor.PM25_now + '<br>';
+  if (typeof sensor["PM25_now"] !== "undefined") {
+    val = sensor["PM25_now"];
+    var txt = val < 0 ? no_data_txt : val + " &mu;g/m<sup>3</sup>";
+    html += '<b>Latest PM<sub>2.5</sub>:</b> ' + txt + '<br>';
   }
-  if (sensor["PM25_max"]) {
-    val = sensor.PM25_max;
-    html += '<b>Maximum PM<sub>2.5</sub>:</b> ' + sensor.PM25_max + '<br>';
+  if (typeof sensor["PM25_max"] !== "undefined") {
+    val = sensor["PM25_max"];
+    var txt = val < 0 ? no_data_txt : val + " &mu;g/m<sup>3</sup>";
+    html += '<b>Maximum PM<sub>2.5</sub>:</b> ' + txt + '<br>';
   }
 
   var color_idx = sensorValToColorIndex(val);
@@ -577,6 +587,10 @@ function drawSingleSensor(sensor) {
       position: latlng,
       map: map,
       content: html,
+      feed: sensor["feed"],
+      data_time: typeof sensor["data_time"] !== "undefined" ? sensor["data_time"] : -1,
+      PM25_now: typeof sensor["PM25_now"] !== "undefined" ? sensor["PM25_now"] : -1,
+      PM25_max: typeof sensor["PM25_max"] !== "undefined" ? sensor["PM25_max"] : -1,
       icon: {
         url: getRotatedMarker(image, rotation),
         scaledSize: new google.maps.Size(100, 100),
@@ -593,6 +607,15 @@ function drawSingleSensor(sensor) {
       infowindow_smell.close();
       infowindow_sensor.setContent(this.content);
       infowindow_sensor.open(map, this);
+      // Add google analytics
+      var label = {
+        "metric1": Date.now().toString(),
+        "metric2": this.data_time,
+        "metric4": this.feed,
+        "metric5": this.PM25_now != -1 ? this.PM25_now : this.PM25_max
+      };
+      addGoogleAnalyticEvent("sensor", "click", label);
+      console.log(this.PM25_max);
     });
 
     // Save markers
