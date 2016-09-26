@@ -61,8 +61,7 @@ class FirebasePushNotification < ActiveRecord::Base
 	end
 
 
-	def self.push_smell_report_hourly_summary(from_time_in_seconds,to_time_in_seconds)
-		list = SmellReport.where("smell_value >= 3").where(:created_at => [Time.at(from_time_in_seconds).to_datetime..Time.at(to_time_in_seconds).to_datetime])
+	def self.push_smell_report_hourly_summary(list)
 		topic = self.TOPIC_PREFIX+"SmellReports"
 
 		# TODO other title when more reports were sent? "Did you submit a smell report?"

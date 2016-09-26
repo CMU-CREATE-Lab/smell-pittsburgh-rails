@@ -25,7 +25,7 @@ namespace :smell_report do
     # give the daily summary at 7pm
     if [19].include?(to_time.hour)
       smell_reports = SmellReport.where("smell_value >= 3").where(:created_at => DateTime.now.beginning_of_day..DateTime.now)
-      FirebasePushNotification.push_smell_report_daily_summary(smell_reports)
+      FirebasePushNotification.push_smell_report_daily_summary(smell_reports) unless smell_reports.empty?
       SmellReportTracker.listening_for_smell_reports(false)
       SmellReportTracker.set_last_reported(0)
     end
@@ -35,7 +35,8 @@ namespace :smell_report do
       from_time = SmellReportTracker.get_last_reported
       # check time to perform summary
       if from_time > 0 and (to_time - from_time) >= 3600
-        FirebasePushNotification.push_smell_report_hourly_summary(from_time,to_time)
+        smell_reports = SmellReport.where("smell_value >= 3").where(:created_at => [Time.at(from_time).to_datetime..Time.at(to_time).to_datetime])
+        FirebasePushNotification.push_smell_report_hourly_summary(smell_reports) unless smell_reports.empty?
         SmellReportTracker.set_last_reported(0)
       end
     end
