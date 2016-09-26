@@ -73,6 +73,8 @@ class AchdForm < ActiveRecord::Base
 
       # curl form
       url = "http://www.achd.net/thanksnew.php"
+      Rails.logger.info("------")
+      Rails.logger.info("user_hash=(#{smell_report.user_hash})")
       # do not send from dev/staging environments
       if Rails.env == "production"
         Rails.logger.info("ACHD Form: curl -X POST #{url} -d #{form_fields.to_json}")
@@ -81,6 +83,7 @@ class AchdForm < ActiveRecord::Base
       else
         Rails.logger.info("ACHD Form (non-production): curl -X POST #{url} -d #{form_fields.to_json}")
       end
+      Rails.logger.info("======")
     end
   end
 
