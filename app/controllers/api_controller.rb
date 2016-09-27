@@ -57,6 +57,7 @@ class ApiController < ApplicationController
       if SmellReportTracker.is_listening_for_smell_reports? and smell_report.smell_value >= 3
         SmellReportTracker.set_last_reported(smell_report.created_at.to_i)
         SmellReportTracker.listening_for_smell_reports(false)
+        SmellReportTracker.generating_hourly_summary(true)
         FirebasePushNotification.push_smell_report(smell_report)
       end
 
