@@ -26,7 +26,7 @@ class AchdForm < ActiveRecord::Base
     user_address = options["address"] ? "" : options["address"]
 
     # request reverse geocode object
-    geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{smell_report.latitude}, #{smell_report.longitude}" )
+    geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{smell_report.real_latitude}, #{smell_report.real_longitude}" )
 
     # if reverse geocoding fails, we want to avoid submitting a form (since the location may either be invalid, or failed for another reason and we don't want to expose the precise location)
     if geo.full_address.blank?
@@ -52,7 +52,20 @@ class AchdForm < ActiveRecord::Base
       body = ""
       body += "Dear Dr. Karen Hacker and the Allegheny County Health Department,"
       body += "\n\n"
-      body += "I noticed an unusual smell at #{geo.street_address}, #{geo.zip} on #{smell_report.created_at.localtime.strftime("%d %B %Y")} at #{smell_report.created_at.localtime.strftime("%I:%M %p %Z")}. I'd rate the smell #{smell_report.smell_value} on a scale of 1 to 5, with 5 being the worst odor."
+
+      if geo.street_address.empty?
+        if geo.zip.empty?
+          # no location info available
+          body += "I noticed an unusual smell on #{smell_report.created_at.localtime.strftime("%d %B %Y")} at #{smell_report.created_at.localtime.strftime("%I:%M %p %Z")}. I'd rate the smell #{smell_report.smell_value} on a scale of 1 to 5, with 5 being the worst odor."
+        else
+          # only zipcode available
+          body += "I noticed an unusual smell at zipcode: #{geo.zip} on #{smell_report.created_at.localtime.strftime("%d %B %Y")} at #{smell_report.created_at.localtime.strftime("%I:%M %p %Z")}. I'd rate the smell #{smell_report.smell_value} on a scale of 1 to 5, with 5 being the worst odor."
+        end
+      else
+        # street address and zipcode
+        body += "I noticed an unusual smell at #{geo.street_address}, #{geo.zip} on #{smell_report.created_at.localtime.strftime("%d %B %Y")} at #{smell_report.created_at.localtime.strftime("%I:%M %p %Z")}. I'd rate the smell #{smell_report.smell_value} on a scale of 1 to 5, with 5 being the worst odor."
+      end
+
       unless smell_report.smell_description.blank? and smell_report.feelings_symptoms.blank?
         body += "\n\n"
         body += "Below are some things I noticed about this smell episode."
