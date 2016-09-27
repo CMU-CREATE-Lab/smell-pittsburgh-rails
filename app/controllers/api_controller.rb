@@ -39,7 +39,13 @@ class ApiController < ApplicationController
     # by default, the server will not send ACHD form for Smell Reports with a value of 1
     smell_report.submit_achd_form = false if smell_report.smell_value == 1
 
-    if smell_report.save
+    if BannedUserHash.where(:user_hash => smell_report.user_hash).size > 0
+      Rails.logger.info("(ApiController::smell_report_create) ignoring smell report with banned user_hash=#{smell_report.user_hash}")
+      # banned users
+      response = {
+        :error => "failed to create smell report from submitted form."
+      }
+    elsif smell_report.save
       # success
       response = {
         :latitude => smell_report.latitude,
