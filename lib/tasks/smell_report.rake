@@ -25,7 +25,8 @@ namespace :smell_report do
     # give the daily summary at 7pm (and clear the last reported timestamp so we don't give an hourly summary afterwards)
     if [19].include?(to_time.hour)
       smell_reports = SmellReport.where("smell_value >= 3").where(:created_at => DateTime.now.beginning_of_day..DateTime.now)
-      FirebasePushNotification.push_smell_report_daily_summary(smell_reports) unless smell_reports.empty?
+      # send the daily notification (even if no smell reports that day)
+      FirebasePushNotification.push_smell_report_daily_summary(smell_reports)
       SmellReportTracker.listening_for_smell_reports(false)
       SmellReportTracker.set_last_reported(0)
       SmellReportTracker.generating_hourly_summary(false)

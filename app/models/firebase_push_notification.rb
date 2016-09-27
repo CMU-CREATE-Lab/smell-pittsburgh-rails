@@ -23,10 +23,10 @@ class FirebasePushNotification < ActiveRecord::Base
 		body = ""
 
 		if aqi_has_increased
-			title = "Is there a poor odor outside?"
+			title = "Is there a malodor outside?"
 			body = "PGH pollution levels just went up"
 		else
-			title = "Does it smell better outside?"
+			title = "Does it smell better?"
 			body = "Pittsburgh AQI just improved"
 		end
 
@@ -49,7 +49,7 @@ class FirebasePushNotification < ActiveRecord::Base
 	def self.push_smell_report_daily_summary(list)
 		topic = self.TOPIC_PREFIX+"SmellReports"
 
-		title = "Smell Report Summary Today"
+		title = "Smell Report Summary"
 		body = "#{list.size}"
 		if list.size == 1
 			body += " smell report was submitted today"
@@ -64,8 +64,8 @@ class FirebasePushNotification < ActiveRecord::Base
 	def self.push_smell_report_hourly_summary(list)
 		topic = self.TOPIC_PREFIX+"SmellReports"
 
-		# TODO other title when more reports were sent? "Did you submit a smell report?"
-		title = "View the map of smell reports"
+		# title depends on how many reports we have
+		title = list.size >= 15 ? "Did you submit a report?" : "View map of smell reports"
 		body = "#{list.size}"
 		if list.size == 1
 			body += " odor was reported in the last 2 hours"
