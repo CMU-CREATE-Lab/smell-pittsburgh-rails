@@ -5,7 +5,7 @@ m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
 /******** Disable real tracking now for debugging, need to fill out the XX **********/
-var tracker_id = isOriginStaging() ? 'UA-84745384-1' : '';
+var tracker_id = isOriginStaging() ? 'UA-84745384-2' : '';
 
 // Initialize Tracker
 ga('create', tracker_id, 'auto');
@@ -19,7 +19,8 @@ ga(function(tracker) {
     ga('set', 'dimension2', tracker.get('clientId'));
     // Send session ID with every hit
     ga('set', 'dimension3', new Date().getTime() + '.' + Math.random().toString(36).substring(5));
-    ga('send', 'pageview');
+    // Send page view
+    ga('send', 'pageview', {"dimension4": Date.now().toString()});
 });
 
 // This function parses the search query string in the url

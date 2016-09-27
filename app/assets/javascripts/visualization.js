@@ -225,8 +225,8 @@ function createCalendarDialog() {
       selectTimelineBtn($timeline_index.find("div[data-value=" + desired_index + "]"), true, false);
       var data_time = (new Date($selected.data("year"), $selected.data("month")-1)).getTime();
       var label = {
-        "metric1": Date.now(),
-        "metric2": data_time 
+        "dimension4": Date.now().toString(),
+        "dimension5": data_time.toString() 
       };
       addGoogleAnalyticEvent("calendar", "click", label);
     }
@@ -325,9 +325,9 @@ function drawSingleSmellReport(report_i) {
     infowindow_smell.open(map, this);
     // Add google analytics event
     var label = {
-      "metric1": Date.now(),
-      "metric2": this.created_date,
-      "metric3": this.smell_value
+      "dimension4": Date.now().toString(),
+      "dimension5": this.created_date.toString(),
+      "metric1": this.smell_value
     };
     addGoogleAnalyticEvent("smell", "click", label);
   });
@@ -427,8 +427,8 @@ function selectTimelineBtn($ele, auto_scroll, from_click_event) {
     if (from_click_event) {
       // Add google analytics
       var label = {
-        "metric1": Date.now(),
-        "metric2": data_time*1000
+        "dimension4": Date.now().toString(),
+        "dimension5": (data_time*1000).toString()
       };
       addGoogleAnalyticEvent("timeline", "click", label);
     }
@@ -609,13 +609,12 @@ function drawSingleSensor(sensor) {
       infowindow_sensor.open(map, this);
       // Add google analytics
       var label = {
-        "metric1": Date.now().toString(),
-        "metric2": this.data_time,
-        "metric4": this.feed,
-        "metric5": this.PM25_now != -1 ? this.PM25_now : this.PM25_max
+        "dimension4": Date.now().toString(),
+        "dimension5": this.data_time.toString(),
+        "dimension6": this.feed.toString(),
+        "metric2": this.PM25_now != -1 ? this.PM25_now : this.PM25_max
       };
       addGoogleAnalyticEvent("sensor", "click", label);
-      console.log(this.PM25_max);
     });
 
     // Save markers
