@@ -164,6 +164,37 @@ class AqiTracker < ActiveRecord::Base
   end
 
 
+  # track if pittsburgh's AQI has changed AQI categories since its last two readings
+  def self.track_pghaqi_change
+    if pittsburgh_aqi_category_increased?
+      Rails.logger.info("airnow_aqi:request(#{Time.now.to_i}): sending increased AQI push notification with cities #{cities_with_aqi_better_than_pittsburgh}")
+      FirebasePushNotification.push_aqi_pittsburgh_change(true,cities_with_aqi_better_than_pittsburgh,pittsburgh)
+    elsif pittsburgh_aqi_category_decreased?
+      Rails.logger.info("airnow_aqi:request(#{Time.now.to_i}): sending decreased AQI push notification")
+      FirebasePushNotification.push_aqi_pittsburgh_change(false,[],pittsburgh)
+    end
+  end
+
+
+  # track if pittsburgh had bad AQI for 2 hours or more
+  def self.track_pghaqi_notgood
+    # the AQI category
+    pgh_category = category_for_aqi(get_current_aqi(cities[0]))["index"]
+    # the last time PGH was green
+    from_time = get_green_timestamp
+    # time of PGH's most recent AQI reading
+    to_time = get_current_timestamp(cities[0])
+
+    if pgh_category == 0
+      set_green_timestamp(to_time)
+      waiting_for_notgood_aqi(true)
+    elsif is_waiting_for_notgood_aqi and (to_time - from_time >= 7200)
+      FirebasePushNotification.push_aqi_pittsburgh_notgood
+      waiting_for_notgood_aqi(false)
+    end
+  end
+
+
   # for debugging purposes
   def self.info
     string = "[[city_name,current_aqi,current_timestamp,previous_aqi,previous_timestamp"
@@ -192,6 +223,34 @@ class AqiTracker < ActiveRecord::Base
       return 0
     end
     return Rails.cache.read("previous_timestamp_#{zipcode}")
+  end
+
+
+  # timestamp of the last time PGH AQI was green
+  def self.get_green_timestamp
+    if Rails.cache.read("pghaqi_green_timestamp").blank?
+      Rails.cache.write("pghaqi_green_timestamp",0)
+    end
+    return Rails.cache.read("pghaqi_green_timestamp")
+  end
+
+
+  def self.set_green_timestamp(timestamp)
+    Rails.cache.write("pghaqi_green_timestamp",timestamp)
+  end
+
+
+  # determines if we are still waiting to report notgood aqi
+  def self.is_waiting_for_notgood_aqi
+    if Rails.cache.read("pghaqi_waiting_for_notgood_aqi").blank?
+      Rails.cache.write("pghaqi_waiting_for_notgood_aqi",true)
+    end
+    return Rails.cache.read("pghaqi_waiting_for_notgood_aqi")
+  end
+
+
+  def self.waiting_for_notgood_aqi(flag)
+    Rails.cache.write("pghaqi_waiting_for_notgood_aqi",flag)
   end
 
 end

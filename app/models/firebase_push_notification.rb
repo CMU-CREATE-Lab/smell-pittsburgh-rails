@@ -17,7 +17,7 @@ class FirebasePushNotification < ActiveRecord::Base
 
 	# pushes to those subscribed to Pittsburgh AQI notifications
 	# aqi_has_increased: true indicates increase, false indicates decrease (if neither increase/decrease, the function should not be called)
-	def self.push_aqi_pittsburgh(aqi_has_increased,cities,pittsburgh)
+	def self.push_aqi_pittsburgh_change(aqi_has_increased,cities,pittsburgh)
 		topic = self.TOPIC_PREFIX+"pghaqi"
 		title = ""
 		body = ""
@@ -30,6 +30,14 @@ class FirebasePushNotification < ActiveRecord::Base
 			body = "Pittsburgh AQI just improved"
 		end
 
+		self.send_push_notification(topic,title,body)
+	end
+
+
+	def self.push_aqi_pittsburgh_notgood
+		topic = self.TOPIC_PREFIX+"pghaqi"
+		title = "Air quality alert for PGH"
+		body = "We have had poor air quality the last 2 hrs"
 		self.send_push_notification(topic,title,body)
 	end
 
