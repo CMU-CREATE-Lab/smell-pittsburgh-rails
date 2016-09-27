@@ -27,7 +27,7 @@ class FirebasePushNotification < ActiveRecord::Base
 			body = "PGH pollution levels just went up"
 		else
 			title = "Does it smell better outside?"
-			body = "Pittsburgh's AQI just improved"
+			body = "Pittsburgh AQI just improved"
 		end
 
 		self.send_push_notification(topic,title,body)
@@ -49,7 +49,7 @@ class FirebasePushNotification < ActiveRecord::Base
 	def self.push_smell_report_daily_summary(list)
 		topic = self.TOPIC_PREFIX+"SmellReports"
 
-		title = "Today's Smell Report Summary"
+		title = "Smell Report Summary Today"
 		body = "#{list.size}"
 		if list.size == 1
 			body += " smell report was submitted today"
