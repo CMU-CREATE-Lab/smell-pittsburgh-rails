@@ -202,11 +202,11 @@ function createGoogleMap() {
 }
 
 function createToolbar() {
-  $("#home-btn").on("vclick", function () {
+  $("#home-btn").on("click", function () {
     map.setCenter(init_latlng);
     map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
   });
-  $("#calendar-btn").on("vclick", function () {
+  $("#calendar-btn").on("click", function () {
     $calendar_dialog.dialog("open");
     $dialog_ok_button.focus();
   });
@@ -218,7 +218,8 @@ function createCalendarDialog() {
     draggable: false,
     modal: true,
     width: 260,
-    dialogClass: "custom-dialog noselect"
+    dialogClass: "custom-dialog noselect",
+    closeText:'<i class=\"fa fa-times\"></i>'
   });
   $calendar.on("change", function () {
     $calendar_dialog.dialog("close");
@@ -234,9 +235,10 @@ function createCalendarDialog() {
       addGoogleAnalyticEvent("calendar", "click", label);
     }
   });
-  $dialog_ok_button.on("vclick", function () {
+  $dialog_ok_button.on("click", function () {
     $calendar_dialog.dialog("close");
   });
+
 }
 
 function loadCalendar() {
@@ -410,7 +412,7 @@ function drawTimeline() {
   }
 
   // Add clicking events
-  $("#timeline-index .custom-td-button").on("vclick", function () {
+  $("#timeline-index .custom-td-button").on("click", function () {
     selectTimelineBtn($(this), false, true);
   });
 }
@@ -731,4 +733,6 @@ function getRotatedMarker(image, deg) {
   return canvas.toDataURL('image/png');
 }
 
-$(document).on("pagecreate", init);
+$(function() {
+  init();
+});

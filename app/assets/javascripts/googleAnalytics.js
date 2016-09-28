@@ -20,7 +20,7 @@ ga(function(tracker) {
     // Send session ID with every hit
     ga('set', 'dimension3', new Date().getTime() + '.' + Math.random().toString(36).substring(5));
     // Send page view
-    ga('send', 'pageview', {"dimension4": Date.now().toString()});
+    ga('send', 'pageview', verifyGoogleAnalyticsLabel({"dimension4": Date.now().toString()}));
 });
 
 // This function parses the search query string in the url
@@ -37,6 +37,27 @@ function parseSearch() {
 // This function is used for adding Google Analytic events
 function addGoogleAnalyticEvent(category, action, label) {
   if ( typeof (ga) != "undefined") {
-    ga('send', 'event', category, action, label);
+    // Send google analytic report
+    ga('send', 'event', category, action, verifyGoogleAnalyticsLabel(label));
   }
 };
+
+// This function check if all custom dimensions and metrics are reported
+// so that all reports can be shown on google analytics
+function verifyGoogleAnalyticsLabel(label) {
+  var num_of_dimensions = 6;
+  var num_of_metrics = 2;
+  for (var i = 1; i < num_of_dimensions + 1; i++) {
+    var key = "dimension" + i;
+    if (typeof label[key] === "undefined") {
+      label[key] = "undefined";
+    }
+  }
+  for (var j = 1; j < num_of_metrics + 1; j++) {
+    var key = "metric" + j;
+    if (typeof label[key] === "undefined") {
+      label[key] = -1;
+    }
+  }
+  return label;
+}

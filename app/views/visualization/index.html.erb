@@ -1,13 +1,12 @@
 <% content_for :css do %>
-  <%= stylesheet_link_tag "https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.css" %>
   <%= stylesheet_link_tag "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css" %>
+  <%= stylesheet_link_tag "http://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" %>
   <%= stylesheet_link_tag "https://fonts.googleapis.com/css?family=Open+Sans:400,700" %>
   <%= stylesheet_link_tag "https://fonts.googleapis.com/css?family=Raleway:400,700" %>
 <% end %>
 
 <% content_for :js do %>
   <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js" %>
-  <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.js" %>
   <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js" %>
   <%= javascript_include_tag "https://maps.googleapis.com/maps/api/js?key=AIzaSyD2nqIondaBl-YWGlaD_mo1L0w3j2yvehQ" %>
 <% end %>
@@ -60,11 +59,10 @@
       </table>
     </div>
     <div id="calendar-dialog" title="Calendar" data-role="none">
-      <p id="calendar-description">Select a month to jump to the starting date of the month.</p>
+      <p id="calendar-description">Select a month to jump to the start of in the timeline.</p>
       <select id="calendar" data-role="none">
         <option selected>Select a month</option>
       </select>
-      <button id="dialog-ok-button">Ok</button>
     </div>
   </div>
 <% end %>

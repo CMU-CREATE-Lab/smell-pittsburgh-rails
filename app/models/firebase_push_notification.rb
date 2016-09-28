@@ -37,7 +37,7 @@ class FirebasePushNotification < ActiveRecord::Base
 	def self.push_aqi_pittsburgh_notgood
 		topic = self.TOPIC_PREFIX+"pghaqi"
 		title = "Air quality alert for PGH"
-		body = "We have had poor air quality the last 2 hrs"
+		body = "AQI has been over 50 for last 2 hrs"
 		self.send_push_notification(topic,title,body)
 	end
 
@@ -108,6 +108,7 @@ class FirebasePushNotification < ActiveRecord::Base
 			"click_action" => "FCM_PLUGIN_ACTIVITY",
 			"icon" => "fcm_push_icon"
 		}
+		json["time_to_live"] = 3600
 		json["notification"]["title"] = title
 		json["notification"]["body"] = body
 
