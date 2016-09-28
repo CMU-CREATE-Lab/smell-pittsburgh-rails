@@ -32,6 +32,9 @@ var $timeline_date;
 var $dialog_ok_button;
 var $timeline_container;
 var esdr_root_url = "https://esdr.cmucreatelab.org/api/v1/";
+var aqi_root_url = "http://staging.api.smellpittsburgh.org/api/v1/get_aqi?city=";
+var staging_base_url = "http://staging.api.smellpittsburgh.org";
+var api_url = "/api/v1/smell_reports?";
 var no_data_txt = "No data in last four hours.";
 
 var requests = [];
@@ -226,7 +229,7 @@ function createCalendarDialog() {
       var data_time = (new Date($selected.data("year"), $selected.data("month")-1)).getTime();
       var label = {
         "dimension4": Date.now().toString(),
-        "dimension5": data_time.toString() 
+        "dimension5": data_time.toString()
       };
       addGoogleAnalyticEvent("calendar", "click", label);
     }
@@ -279,8 +282,6 @@ function genSmellURL(date_obj) {
     //api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=" + first_day + "&end_time=" + last_day;
   }
 
-  var api_url = "/api/v1/smell_reports?";
-  var staging_base_url = "http://staging.api.smellpittsburgh.org";
   var root_url = isOriginStaging() ? staging_base_url : window.location.origin;
   return root_url + api_url + api_paras;
 }
@@ -381,14 +382,19 @@ function deleteTimeline() {
 function drawTimeline() {
   var last_month;
   var td_count = 0;
+  // June 04 2016
+  var date = new Date(1465012800000);
   for (var k = 0; k < smell_reports.length; k++) {
     var report_k = smell_reports[k];
-    if (report_k.length == 0) {
-      continue;
-    }
+    //if (report_k.length == 0) {
+    //  continue;
+    //}
     var color = Math.round((0.95 - Math.tanh(report_k.length / 10)) * 255);
     var color_str = "rgb(" + color + "," + color + "," + color + ")";
-    var date = new Date(report_k[0].created_at);
+    if (report_k[0])
+      date = new Date(report_k[0].created_at);
+    else
+      date = new Date(date.setDate(date.getDate() + 1));
     var date_str = date.toDateString();
     var date_str_seg = date_str.split(" ");
     // Add the day block and text
@@ -477,10 +483,26 @@ function loadAndDrawSingleSensor(time) {
     use_PM25_now = false;
   }
 
+  // Show current Pittsburgh AQI if on current day
+  if (use_PM25_now) {
+    if (sensorLoadCount == 0) {
+      $.getJSON(aqi_root_url + "Pittsburgh", function (response) {
+        if (response) {
+          $(".aqi-td").text(response);
+          $(".aqi-tr").show();
+        }
+      });
+    }
+  } else {
+    $(".aqi-tr").hide();
+  }
+
   // Load sensor data simultaneously
   (function() {
     // If we do not need to draw or already have lat/lng then immediately return a resolved Promise
-    if (!sensor.doDraw || (sensors[sensor.name] && sensors[sensor.name].lat && sensors[sensor.name].lng)) return $().promise();
+    if (!sensor.doDraw || (sensors[sensor.name] && sensors[sensor.name].lat && sensors[sensor.name].lng))
+      return $().promise();
+
     var xhr = $.getJSON(feed_url, function (response) {
       data = response.data;
       sensor.lat = data.latitude;

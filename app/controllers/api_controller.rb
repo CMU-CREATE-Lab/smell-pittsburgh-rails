@@ -138,4 +138,19 @@ class ApiController < ApplicationController
     render :json => @reports.to_json(:only => [:month, :latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
   end
 
+  # GET /api/v1/get_aqi
+  #
+  # PARAMS:
+  # "city" : String
+  def get_aqi
+    @aqi = "null"
+    AqiTracker.cities.each do |hash|
+      if (hash.has_value?(params["city"]))
+        val = AqiTracker.get_current_aqi(hash)
+        @aqi = val
+        break
+      end
+    end
+    render :json => @aqi.to_json
+  end
 end
