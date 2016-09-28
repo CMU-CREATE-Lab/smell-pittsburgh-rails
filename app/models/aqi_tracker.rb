@@ -242,7 +242,7 @@ class AqiTracker < ActiveRecord::Base
 
   # determines if we are still waiting to report notgood aqi
   def self.is_waiting_for_notgood_aqi
-    if Rails.cache.read("pghaqi_waiting_for_notgood_aqi").blank?
+    if Rails.cache.read("pghaqi_waiting_for_notgood_aqi").nil?
       Rails.cache.write("pghaqi_waiting_for_notgood_aqi",true)
     end
     return Rails.cache.read("pghaqi_waiting_for_notgood_aqi")

@@ -53,8 +53,8 @@ class AchdForm < ActiveRecord::Base
       body += "Dear Dr. Karen Hacker and the Allegheny County Health Department,"
       body += "\n\n"
 
-      if geo.street_address.empty?
-        if geo.zip.empty?
+      if geo.street_address.blank?
+        if geo.zip.blank?
           # no location info available
           body += "I noticed an unusual smell on #{smell_report.created_at.localtime.strftime("%d %B %Y")} at #{smell_report.created_at.localtime.strftime("%I:%M %p %Z")}. I'd rate the smell #{smell_report.smell_value} on a scale of 1 to 5, with 5 being the worst odor."
         else
@@ -78,9 +78,13 @@ class AchdForm < ActiveRecord::Base
         body += "\n\n#{smell_report.additional_comments}"
       end
       body += "\n\n"
-      body += "Thank you,\n#{form_fields["name"]}"
+      if form.name.blank?
+        body += "Thank you!"
+      else
+        body += "Thank you,\n#{form_fields["name"]}"
+      end
       body += "\n\n"
-      body += "This report was generated through the Smell PGH app: http://www.cmucreatelab.org/projects/Smell_Pittsburgh\nEmail: smellpgh-reports@cmucreatelab.org"
+      body += "This report was generated through the Smell PGH app: http://www.cmucreatelab.org/projects/Smell_Pittsburgh"
 
       form_fields["comment"] = body
 

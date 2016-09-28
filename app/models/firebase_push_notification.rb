@@ -101,6 +101,7 @@ class FirebasePushNotification < ActiveRecord::Base
 
 	# TODO add options
 	def self.send_push_notification(to, title, body, options=nil)
+		Rails.logger.info("FirebasePushNotification(#{DateTime.now}): Sending notification to=#{to}, title=#{title}, body=#{body}")
 		json = {}
 		json["to"] = to
 		json["notification"] = {
