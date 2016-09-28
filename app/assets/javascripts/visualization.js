@@ -36,6 +36,7 @@ var aqi_root_url = "http://staging.api.smellpittsburgh.org/api/v1/get_aqi?city="
 var staging_base_url = "http://staging.api.smellpittsburgh.org";
 var api_url = "/api/v1/smell_reports?";
 var no_data_txt = "No data in last four hours.";
+var timelineTouched = false;
 
 var requests = [];
 
@@ -307,8 +308,8 @@ function drawSingleSmellReport(report_i) {
     created_date: date.getTime(),
     smell_value: report_i.smell_value,
     content: '<b>Date:</b> ' + date_str + '<br>'
-      + '<b>Smell Value:</b> ' + smell_value + " (" + smell_value_text[smell_value - 1] + ")" + '<br>'
-      + '<b>Feelings Symptoms:</b> ' + feelings_symptoms + '<br>'
+      + '<b>Smell Rating:</b> ' + smell_value + " (" + smell_value_text[smell_value - 1] + ")" + '<br>'
+      + '<b>Symptoms:</b> ' + feelings_symptoms + '<br>'
       + '<b>Smell Description:</b> ' + smell_description,
     icon: {
       url: "/img/" + smell_color[report_i.smell_value - 1],
@@ -412,8 +413,18 @@ function drawTimeline() {
   }
 
   // Add clicking events
-  $("#timeline-index .custom-td-button").on("click", function () {
-    selectTimelineBtn($(this), false, true);
+  $("#timeline-index .custom-td-button").on("click touchend", function () {
+    if (event.type == "click") timelineTouched = true;
+    if (timelineTouched)
+      selectTimelineBtn($(this), false, true);
+  });
+
+  $("#timeline-index .custom-td-button").on('touchstart', function() {
+    timelineTouched = true;
+  });
+
+  $("#timeline-index .custom-td-button").on('touchmove', function() {
+    timelineTouched = false;
   });
 }
 
