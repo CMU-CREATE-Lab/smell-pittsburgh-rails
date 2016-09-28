@@ -128,6 +128,14 @@
   background-size: 41px 17px;
 }
 
+#legend-smell-value .entry-title {
+  text-align: left;
+}
+
+#legend-smell-value .aqi-tr {
+  display: none;
+}
+
 #calendar-description {
   margin-top: 0px;
   margin-bottom: 6px;
