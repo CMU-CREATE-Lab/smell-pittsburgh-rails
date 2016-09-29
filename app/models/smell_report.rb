@@ -10,9 +10,6 @@ class SmellReport < ActiveRecord::Base
   # additional_comments :text
 
   validates :user_hash, :latitude, :longitude, :smell_value, :presence => true
-  # makes sure all reports are within a bounding box specific to Pittsburgh
-  validates :latitude, :numericality => { :greater_than_or_equal_to => 40.102992, :less_than_or_equal_to => 40.916992 }
-  validates :longitude, :numericality => { :greater_than_or_equal_to => -80.471694, :less_than_or_equal_to => -79.428193 }
   validates :smell_value, :inclusion => { in: (1..5) }
   before_create :generate_perturbed_coordinates
 

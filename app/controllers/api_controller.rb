@@ -38,6 +38,9 @@ class ApiController < ApplicationController
 
     # by default, the server will not send ACHD form for Smell Reports with a value of 1
     smell_report.submit_achd_form = false if smell_report.smell_value == 1
+    # do not send to ACHD if the smell report is outside the pgh bounding box
+    # TODO we should also check against a list of valid zipcodes for ACHD submission
+    smell_report.submit_achd_form = false if smell_report.latitude < 40.102992 or smell_report.latitude > 40.916992 or smell_report.longitude < -80.471694 or smell_report.longitude > -79.428193
 
     if BannedUserHash.where(:user_hash => smell_report.user_hash).size > 0
       Rails.logger.info("(ApiController::smell_report_create) ignoring smell report with banned user_hash=#{smell_report.user_hash}")
