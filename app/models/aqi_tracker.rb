@@ -166,6 +166,7 @@ class AqiTracker < ActiveRecord::Base
 
   # track if pittsburgh's AQI has changed AQI categories since its last two readings
   def self.track_pghaqi_change
+    pittsburgh = cities[0]
     if pittsburgh_aqi_category_increased?
       Rails.logger.info("airnow_aqi:request(#{Time.now.to_i}): sending increased AQI push notification with cities #{cities_with_aqi_better_than_pittsburgh}")
       FirebasePushNotification.push_aqi_pittsburgh_change(true,cities_with_aqi_better_than_pittsburgh,pittsburgh)
