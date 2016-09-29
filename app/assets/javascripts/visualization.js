@@ -37,6 +37,7 @@ var staging_base_url = "http://api.smellpittsburgh.org";
 var api_url = "/api/v1/smell_reports?";
 var no_data_txt = "No data in last four hours.";
 var timelineTouched = false;
+var timelineTouchedPosition = {};
 
 var requests = [];
 
@@ -413,18 +414,20 @@ function drawTimeline() {
   }
 
   // Add clicking events
-  $("#timeline-index .custom-td-button").on("click touchend", function () {
-    if (event.type == "click") timelineTouched = true;
+  $("#timeline-index .custom-td-button").on("click touchend", function (e) {
+    if (e.type == "click") timelineTouched = true;
     if (timelineTouched)
       selectTimelineBtn($(this), false, true);
   });
 
-  $("#timeline-index .custom-td-button").on('touchstart', function() {
+  $("#timeline-index .custom-td-button").on('touchstart', function(e) {
+    timelineTouchedPosition = {x: e.originalEvent.touches[0].pageX, y: e.originalEvent.touches[0].pageY}
     timelineTouched = true;
   });
 
-  $("#timeline-index .custom-td-button").on('touchmove', function() {
-    timelineTouched = false;
+  $("#timeline-index .custom-td-button").on('touchmove', function(e) {
+    if (Math.abs(timelineTouchedPosition.x - e.originalEvent.touches[0].pageX) >= 2 || Math.abs(timelineTouchedPosition.y - e.originalEvent.touches[0].pageY) >= 2)
+      timelineTouched = false;
   });
 }
 
@@ -717,12 +720,13 @@ function addTouchHorizontalScroll(elem) {
     this.scrollLeft = newPos;
     e.preventDefault();
   }).on("touchend touchcancel", function(e) {
-    endTime = new Date().getTime();
-    if (endTouchX && endTime - startTime < 200) {
-      var flickVal = 200 * Math.abs(newPos - scrollStartPos) / (endTime - startTime);
-      if (endTouchX > startTouchX) flickVal *= -1;
-      this.scrollLeft = this.scrollLeft + flickVal;
-    }
+    // TODO: Flick/swip ability
+    //endTime = new Date().getTime();
+    //if (endTouchX && endTime - startTime < 100) {
+    //  var flickVal = 200 * Math.abs(newPos - scrollStartPos) / (endTime - startTime);
+    //  if (endTouchX > startTouchX) flickVal *= -1;
+    //  this.scrollLeft = this.scrollLeft + flickVal;
+    //}
   });
 }
 
