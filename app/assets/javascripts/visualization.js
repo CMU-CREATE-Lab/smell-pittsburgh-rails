@@ -285,7 +285,7 @@ function genSmellURL(date_obj) {
     //api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=" + first_day + "&end_time=" + last_day;
   }
 
-  var root_url = isOriginStaging() ? staging_base_url : window.location.origin;
+  var root_url = window.location.origin;
   return root_url + api_url + api_paras;
 }
 
