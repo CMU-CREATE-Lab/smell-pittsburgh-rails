@@ -10,20 +10,20 @@ namespace :smell_report do
 
 
   task :summary_notifications => :environment do
-    to_time = Time.now.to_i
+    right_now = DateTime.now
 
     # start listening for smell reports at 6am
-    if [6].include?(to_time.hour)
+    if [6].include?(right_now.hour)
       SmellReportTracker.listening_for_smell_reports(true)
     end
 
     # stop listening for smell reports at 2pm
-    if [14].include?(to_time.hour)
+    if [14].include?(right_now.hour)
       SmellReportTracker.listening_for_smell_reports(false)
     end
 
     # give the daily summary at 7pm (and clear the last reported timestamp so we don't give an hourly summary afterwards)
-    if [19].include?(to_time.hour)
+    if [19].include?(right_now.hour)
       smell_reports = SmellReport.where("smell_value >= 3").where(:created_at => DateTime.now.beginning_of_day..DateTime.now)
       # send the daily notification (even if no smell reports that day)
       FirebasePushNotification.push_smell_report_daily_summary(smell_reports)
@@ -36,13 +36,13 @@ namespace :smell_report do
     if SmellReportTracker.is_generating_hourly_summary?
       from_time = SmellReportTracker.get_last_reported
       # check time to perform summary
-      if from_time > 0 and (to_time - from_time) >= 3600
+      if from_time > 0 and (right_now.to_i - from_time) >= 3600
         # if it has been more than 2 hours, then something went wrong with our logic (so we ignore and reset)
-        if (to_time - from_time) <= 7200
+        if (right_now.to_i - from_time) <= 7200
           SmellReportTracker.set_last_reported(0)
           SmellReportTracker.generating_hourly_summary(false)
         else
-          smell_reports = SmellReport.where("smell_value >= 3").where(:created_at => [Time.at(from_time).to_datetime..Time.at(to_time).to_datetime])
+          smell_reports = SmellReport.where("smell_value >= 3").where(:created_at => [Time.at(from_time).to_datetime..right_now])
           FirebasePushNotification.push_smell_report_hourly_summary(smell_reports) unless smell_reports.empty?
           SmellReportTracker.set_last_reported(0)
         end
