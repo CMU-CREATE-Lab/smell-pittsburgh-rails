@@ -13,6 +13,14 @@ class SmellReport < ActiveRecord::Base
   validates :smell_value, :inclusion => { in: (1..5) }
   before_create :generate_perturbed_coordinates
 
+  scope :in_pittsburgh, -> { where("real_latitude < 40.916992 AND real_latitude > 40.102992 AND real_longitude < -79.428193 AND real_longitude > -80.471694") }
+
+
+  def is_within_pittsburgh?
+    return false if self.real_latitude.nil? or self.real_longitude.nil?
+    self.real_latitude < 40.916992 and self.real_latitude > 40.102992 and self.real_longitude < -79.428193 and self.real_longitude > -80.471694
+  end
+
 
   def self.perturbLatLng(lat, lng)
     perturb_miles = 0.10
