@@ -226,15 +226,19 @@ function createCalendarDialog() {
   $calendar.on("change", function () {
     $calendar_dialog.dialog("close");
     var $selected = $calendar.find(":selected");
-    var desired_index = smell_reports_jump_index[$selected.val()];
-    if (typeof desired_index != "undefined") {
-      selectTimelineBtn($timeline_index.find("div[data-value=" + desired_index + "]"), true, false);
-      var data_time = (new Date($selected.data("year"), $selected.data("month")-1)).getTime();
-      var label = {
-        "dimension4": Date.now().toString(),
-        "dimension5": data_time.toString()
-      };
-      addGoogleAnalyticEvent("calendar", "click", label);
+    if ($selected.val() == -1) {
+      selectMostRecentDate();
+    } else {
+      var desired_index = smell_reports_jump_index[$selected.val()];
+      if (typeof desired_index != "undefined") {
+        selectTimelineBtn($timeline_index.find("div[data-value=" + desired_index + "]"), true, false);
+        var data_time = (new Date($selected.data("year"), $selected.data("month")-1)).getTime();
+        var label = {
+          "dimension4": Date.now().toString(),
+          "dimension5": data_time.toString()
+        };
+        addGoogleAnalyticEvent("calendar", "click", label);
+      }
     }
   });
   $dialog_ok_button.on("click", function () {
@@ -371,6 +375,8 @@ function deleteAllSmellReports() {
 
 function drawCalendar(data) {
   var month_arr = data.month;
+  var today = new Date();
+  $calendar.append($('<option value="' + -1 + '" data-year="' + today.getFullYear() + '" data-month="' + today.getMonth() + '">Today</option>'));
   for (var i = 0; i < month_arr.length; i++) {
     var year = month_arr[i][0];
     var month = month_arr[i][1];
@@ -421,7 +427,7 @@ function drawTimeline() {
   });
 
   $("#timeline-index .custom-td-button").on('touchstart', function(e) {
-    timelineTouchedPosition = {x: e.originalEvent.touches[0].pageX, y: e.originalEvent.touches[0].pageY}
+    timelineTouchedPosition = {x: e.originalEvent.touches[0].pageX, y: e.originalEvent.touches[0].pageY};
     timelineTouched = true;
   });
 
