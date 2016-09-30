@@ -40,7 +40,7 @@ class ApiController < ApplicationController
     smell_report.submit_achd_form = false if smell_report.smell_value == 1
     # do not send to ACHD if the smell report is outside the pgh bounding box
     # TODO we should also check against a list of valid zipcodes for ACHD submission
-    smell_report.submit_achd_form = false if smell_report.latitude < 40.102992 or smell_report.latitude > 40.916992 or smell_report.longitude < -80.471694 or smell_report.longitude > -79.428193
+    smell_report.submit_achd_form = false unless smell_report.is_within_pittsburgh?
 
     if BannedUserHash.where(:user_hash => smell_report.user_hash).size > 0
       Rails.logger.info("(ApiController::smell_report_create) ignoring smell report with banned user_hash=#{smell_report.user_hash}")
@@ -63,7 +63,7 @@ class ApiController < ApplicationController
       }
 
       # send push notifications for smell values at or above 3
-      if SmellReportTracker.is_listening_for_smell_reports? and smell_report.smell_value >= 3
+      if SmellReportTracker.is_listening_for_smell_reports? and smell_report.smell_value >= 3 and smell_report.is_within_pittsburgh?
         SmellReportTracker.set_last_reported(smell_report.created_at.to_i)
         SmellReportTracker.listening_for_smell_reports(false)
         SmellReportTracker.generating_hourly_summary(true)
