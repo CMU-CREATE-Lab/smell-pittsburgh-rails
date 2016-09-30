@@ -240,6 +240,8 @@ function createCalendarDialog() {
         addGoogleAnalyticEvent("calendar", "click", label);
       }
     }
+    // Have selector go back to showing default option
+    $(this).prop('selectedIndex', 0);
   });
   $dialog_ok_button.on("click", function () {
     $calendar_dialog.dialog("close");
