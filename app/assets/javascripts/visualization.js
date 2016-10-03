@@ -401,7 +401,14 @@ function drawTimeline() {
     //if (report_k.length == 0) {
     //  continue;
     //}
-    var color = Math.round((0.95 - Math.tanh(report_k.length / 10)) * 255);
+    //var color = Math.round((0.95 - Math.tanh(report_k.length / 10)) * 255);
+    var smell_average = 0;
+    for (var i = 0; i < report_k.length; i++) {
+      smell_average += report_k[i].smell_value;
+    }
+    if (smell_average > 0)
+      smell_average /= report_k.length;
+    var color = Math.round((0.95 - Math.tanh(smell_average / 5)) * 255);
     var color_str = "rgb(" + color + "," + color + "," + color + ")";
     if (report_k[0])
       date = new Date(report_k[0].created_at);
