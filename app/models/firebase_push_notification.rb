@@ -34,6 +34,15 @@ class FirebasePushNotification < ActiveRecord::Base
 	end
 
 
+  def self.push_aqi_pittsburgh_green
+    topic = self.TOPIC_PREFIX+"pghaqi"
+    title = "Does it smell better?"
+    body = "Pittsburgh AQI just improved"
+
+    self.send_push_notification(topic,title,body)
+  end
+
+
 	def self.push_aqi_pittsburgh_notgood
 		topic = self.TOPIC_PREFIX+"pghaqi"
 		title = "Air quality alert for PGH"

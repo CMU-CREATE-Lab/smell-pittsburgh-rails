@@ -14,10 +14,10 @@ namespace :airnow_aqi do
       AirnowAqi.update_city_aqi(city)
     end
 
-    # skip all of this if AirNow never actually updated pittsburgh's AQI
-    if pittsburgh_aqi_updated
-      AqiTracker.track_pghaqi_change
-    end
+    # # skip all of this if AirNow never actually updated pittsburgh's AQI
+    # if pittsburgh_aqi_updated
+    #   AqiTracker.track_pghaqi_change
+    # end
 
     # AQI not-good alert
     AqiTracker.track_pghaqi_notgood

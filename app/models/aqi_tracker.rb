@@ -189,9 +189,15 @@ class AqiTracker < ActiveRecord::Base
     if pgh_category == 0
       set_green_timestamp(to_time)
       waiting_for_notgood_aqi(true)
-    elsif is_waiting_for_notgood_aqi and (to_time - from_time >= 7200)
+      # we only send a notification if we were waiting for it to be green again
+      if is_waiting_for_green?
+        waiting_for_green(false)
+        FirebasePushNotification.push_aqi_pittsburgh_green
+      end
+    elsif is_waiting_for_notgood_aqi? and (to_time - from_time >= 7200)
       FirebasePushNotification.push_aqi_pittsburgh_notgood
       waiting_for_notgood_aqi(false)
+      waiting_for_green(true)
     end
   end
 
@@ -242,7 +248,7 @@ class AqiTracker < ActiveRecord::Base
 
 
   # determines if we are still waiting to report notgood aqi
-  def self.is_waiting_for_notgood_aqi
+  def self.is_waiting_for_notgood_aqi?
     if Rails.cache.read("pghaqi_waiting_for_notgood_aqi").nil?
       Rails.cache.write("pghaqi_waiting_for_notgood_aqi",true)
     end
@@ -252,6 +258,19 @@ class AqiTracker < ActiveRecord::Base
 
   def self.waiting_for_notgood_aqi(flag)
     Rails.cache.write("pghaqi_waiting_for_notgood_aqi",flag)
+  end
+
+
+  def self.is_waiting_for_green?
+    if Rails.cache.read("pghaqi_waiting_for_green").nil?
+      Rails.cache.write("pghaqi_waiting_for_green",true)
+    end
+    return Rails.cache.read("pghaqi_waiting_for_green")
+  end
+
+
+  def self.waiting_for_green(flag)
+    Rails.cache.write("pghaqi_waiting_for_green",flag)
   end
 
 end
