@@ -7,7 +7,6 @@ var infowindow_sensor;
 var smell_reports;
 var smell_reports_jump_index = [];
 var smell_markers = [];
-var smell_color = ["smell_1.png", "smell_2.png", "smell_3.png", "smell_4.png", "smell_5.png"];
 var sensor_color_wind = ["sensor_0_wind.png", "sensor_1_wind.png", "sensor_2_wind.png", "sensor_3_wind.png", "sensor_4_wind.png", "sensor_5_wind.png"];
 var sensor_color = ["sensor_0.png", "sensor_1.png", "sensor_2.png", "sensor_3.png", "sensor_4.png", "sensor_5.png"];
 var smell_value_text = ["Just fine!", "Barely noticeable", "Definitely noticeable",
@@ -21,10 +20,14 @@ var month_names = ["January", "February", "March", "April", "May", "June",
 var $calendar_dialog;
 var $calendar;
 
-// Map Parameters
+// Map parameters
 var init_zoom_desktop = 12;
 var init_zoom_mobile = 11;
 var init_latlng = {"lat": 40.42, "lng": -79.94};
+
+// Marker parameters
+var zoom_level_to_smell_icon_size = [24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 36, 60, 90, 180, 240, 360];
+var previous_icon_size;
 
 // Timeline variables
 var $timeline_index;
@@ -194,6 +197,24 @@ function createGoogleMap() {
     mapTypeId: google.maps.MapTypeId.ROADMAP
   });
 
+  // Add events
+  map.addListener('zoom_changed', function() {
+    var zoom_level = map.getZoom();
+    var icon_size = zoom_level_to_smell_icon_size[zoom_level];
+    if (icon_size != previous_icon_size) {
+      var icon_size_half = icon_size / 2;
+      for (var i = 0; i < smell_markers.length; i++) {
+        var icon = smell_markers[i]["icon"];
+        icon["url"] = getSmellColor(smell_markers[i]["smell_value"] - 1);
+        icon["scaledSize"] = new google.maps.Size(icon_size, icon_size);
+        icon["anchor"] = new google.maps.Point(icon_size_half, icon_size_half);
+        icon["size"] = new google.maps.Size(icon_size, icon_size);
+        smell_markers[i].setIcon(icon);
+      }
+      previous_icon_size = icon_size;
+    }
+  });
+
   // Set smell report information window
   infowindow_smell = new google.maps.InfoWindow({
     pixelOffset: new google.maps.Size(-1, 0)
@@ -234,7 +255,6 @@ function createCalendarDialog() {
         selectTimelineBtn($timeline_index.find("div[data-value=" + desired_index + "]"), true, false);
         var data_time = (new Date($selected.data("year"), $selected.data("month")-1)).getTime();
         var label = {
-          "dimension4": Date.now().toString(),
           "dimension5": data_time.toString()
         };
         addGoogleAnalyticEvent("calendar", "click", label);
@@ -246,7 +266,6 @@ function createCalendarDialog() {
   $dialog_ok_button.on("click", function () {
     $calendar_dialog.dialog("close");
   });
-
 }
 
 function loadCalendar() {
@@ -309,6 +328,9 @@ function drawSingleSmellReport(report_i) {
   var smell_value = report_i.smell_value;
   var feelings_symptoms = report_i.feelings_symptoms ? report_i.feelings_symptoms : "No data.";
   var smell_description = report_i.smell_description ? report_i.smell_description : "No data.";
+  var icon_size = zoom_level_to_smell_icon_size[map.getZoom()];
+  previous_icon_size = icon_size;
+  var icon_size_half = icon_size / 2;
   var marker = new google.maps.Marker({
     position: latlng,
     map: map,
@@ -319,10 +341,11 @@ function drawSingleSmellReport(report_i) {
       + '<b>Symptoms:</b> ' + feelings_symptoms + '<br>'
       + '<b>Smell Description:</b> ' + smell_description,
     icon: {
-      url: "/img/" + smell_color[report_i.smell_value - 1],
-      scaledSize: new google.maps.Size(24, 24),
+      url: getSmellColor(report_i.smell_value - 1),
+      scaledSize: new google.maps.Size(icon_size, icon_size),
+      size: new google.maps.Size(icon_size, icon_size),
       origin: new google.maps.Point(0, 0),
-      anchor: new google.maps.Point(12, 12)
+      anchor: new google.maps.Point(icon_size_half, icon_size_half)
     },
     zIndex: report_i.smell_value,
     opacity: 0.85
@@ -336,7 +359,6 @@ function drawSingleSmellReport(report_i) {
     infowindow_smell.open(map, this);
     // Add google analytics event
     var label = {
-      "dimension4": Date.now().toString(),
       "dimension5": this.created_date.toString(),
       "metric1": this.smell_value
     };
@@ -464,7 +486,6 @@ function selectTimelineBtn($ele, auto_scroll, from_click_event) {
     if (from_click_event) {
       // Add google analytics
       var label = {
-        "dimension4": Date.now().toString(),
         "dimension5": (data_time*1000).toString()
       };
       addGoogleAnalyticEvent("timeline", "click", label);
@@ -662,7 +683,6 @@ function drawSingleSensor(sensor) {
       infowindow_sensor.open(map, this);
       // Add google analytics
       var label = {
-        "dimension4": Date.now().toString(),
         "dimension5": this.data_time.toString(),
         "dimension6": this.feed.toString(),
         "metric2": this.PM25_now != -1 ? this.PM25_now : this.PM25_max
@@ -761,6 +781,21 @@ function getRotatedMarker(image, deg) {
   ctx.drawImage(image, 0, 0);
   ctx.restore();
   return canvas.toDataURL('image/png');
+}
+
+function getSmellColor(idx) {
+  var path = "/img/";
+  var smell_color = ["smell_1.png", "smell_2.png", "smell_3.png", "smell_4.png", "smell_5.png"];
+  var smell_color_med = ["smell_1_med.png", "smell_2_med.png", "smell_3_med.png", "smell_4_med.png", "smell_5_med.png"];
+  var smell_color_big = ["smell_1_big.png", "smell_2_big.png", "smell_3_big.png", "smell_4_big.png", "smell_5_big.png"];
+  var map_zoom = map.getZoom();
+  if (map_zoom >= 20) {
+    return path + smell_color_big[idx];
+  } else if (map_zoom < 20 && map_zoom >= 17) {
+    return path + smell_color_med[idx];
+  } else {
+    return path + smell_color[idx];
+  }
 }
 
 $(function() {

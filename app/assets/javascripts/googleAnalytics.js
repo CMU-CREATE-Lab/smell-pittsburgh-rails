@@ -5,7 +5,10 @@ m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
 /******** Disable real tracking now for debugging, need to fill out the XX **********/
-var tracker_id = isOriginStaging() ? 'UA-10682694-17' : 'UA-10682694-15';
+var tracker_id = isOriginStaging() ? 'UA-10682694-17' : 'UA-10682694-18';
+var session_id = new Date().getTime() + '.' + Math.random().toString(36).substring(5);
+var client_id;
+var user_id;
 
 // Initialize Tracker
 ga('create', tracker_id, 'auto');
@@ -13,12 +16,10 @@ ga(function(tracker) {
     // Send user ID with every hit
     var search = parseSearch();
     if(typeof search["user_hash"] !== "undefined") {
-      ga('set', 'dimension1', search["user_hash"]);
+      user_id = search["user_hash"];
     }
     // Send client ID with every hit
-    ga('set', 'dimension2', tracker.get('clientId'));
-    // Send session ID with every hit
-    ga('set', 'dimension3', new Date().getTime() + '.' + Math.random().toString(36).substring(5));
+    client_id = tracker.get('clientId');
     // Send page view
     ga('send', 'pageview', verifyGoogleAnalyticsLabel({"dimension4": Date.now().toString()}));
 });
@@ -47,6 +48,10 @@ function addGoogleAnalyticEvent(category, action, label) {
 function verifyGoogleAnalyticsLabel(label) {
   var num_of_dimensions = 6;
   var num_of_metrics = 2;
+  label["dimension1"] = user_id;
+  label["dimension2"] = client_id;
+  label["dimension3"] = session_id;
+  label["dimension4"] = Date.now().toString();
   for (var i = 1; i < num_of_dimensions + 1; i++) {
     var key = "dimension" + i;
     if (typeof label[key] === "undefined") {
