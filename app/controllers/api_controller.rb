@@ -33,6 +33,7 @@ class ApiController < ApplicationController
     smell_report.feelings_symptoms = params["feelings_symptoms"] unless params["feelings_symptoms"].blank?
     smell_report.horizontal_accuracy = params["horizontal_accuracy"] unless params["horizontal_accuracy"].blank?
     smell_report.vertical_accuracy = params["vertical_accuracy"] unless params["vertical_accuracy"].blank?
+    smell_report.submit_achd_form = true
     smell_report.submit_achd_form = params["submit_achd_form"] unless params["submit_achd_form"].blank?
     smell_report.additional_comments = params["additional_comments"] unless params["additional_comments"].blank?
 
