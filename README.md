@@ -43,7 +43,8 @@ You can upload new smell reports using the following form:
 	"longitude" : -79.9958864,
 	"smell_value" : 1,
 	"smell_description" : "Description of the smell",
-	"feelings_symptoms" : "Symptoms or feelings associated with the smell"
+	"feelings_symptoms" : "Symptoms or feelings associated with the smell",
+  "submit_achd_form" : true
 }
 ```
 
