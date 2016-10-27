@@ -16,9 +16,14 @@ class SmellReport < ActiveRecord::Base
   scope :in_pittsburgh, -> { where("real_latitude < 40.916992 AND real_latitude > 40.102992 AND real_longitude < -79.428193 AND real_longitude > -80.471694") }
 
 
+  def self.is_within_pittsburgh?(latitude,longitude)
+    return false if latitude.nil? or longitude.nil?
+    latitude < 40.916992 and latitude > 40.102992 and longitude < -79.428193 and longitude > -80.471694
+  end
+
+
   def is_within_pittsburgh?
-    return false if self.real_latitude.nil? or self.real_longitude.nil?
-    self.real_latitude < 40.916992 and self.real_latitude > 40.102992 and self.real_longitude < -79.428193 and self.real_longitude > -80.471694
+    SmellReport.is_within_pittsburgh?(self.real_latitude,self.real_longitude)
   end
 
 
