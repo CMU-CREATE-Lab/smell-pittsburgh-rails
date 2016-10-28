@@ -1,4 +1,8 @@
 class ApplicationMailer < ActionMailer::Base
-  default from: "from@example.com"
-  layout 'mailer'
+
+
+  def test_mail(to, from, body)
+    mail(:to => to, :from => from, :body => body)
+  end
+
 end
