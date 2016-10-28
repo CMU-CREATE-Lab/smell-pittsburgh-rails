@@ -20,10 +20,10 @@ class AchdForm < ActiveRecord::Base
   # options["phone_number"]: String
   # options["address"]: String
   def self.submit_form(smell_report, options={})
-    reply_email = options["reply_email"] ? "" : options["reply_email"]
-    name = options["name"] ? "" : options["name"]
-    phone_number = options["phone_number"] ? "" : options["phone_number"]
-    user_address = options["address"] ? "" : options["address"]
+    reply_email = options[:reply_email] ? "" : options[:reply_email]
+    name = options[:name] ? "" : options[:name]
+    phone_number = options[:phone_number] ? "" : options[:phone_number]
+    user_address = options[:address] ? "" : options[:address]
 
     # request reverse geocode object
     geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{smell_report.real_latitude}, #{smell_report.real_longitude}" )

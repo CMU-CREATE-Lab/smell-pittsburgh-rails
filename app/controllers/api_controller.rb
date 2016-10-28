@@ -74,7 +74,7 @@ class ApiController < ApplicationController
       # send email
       if smell_report.submit_achd_form
         options = {
-          "email": params["email"],
+          "reply_email": params["email"],
           "name": params["name"],
           "phone_number": params["phone_number"],
           "address": params["address"]
