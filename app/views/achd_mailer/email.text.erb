@@ -2,11 +2,11 @@ Dear Dr. Karen Hacker and the Allegheny County Health Department,
 
 
 <% if @geocode.street_address.blank? and @geocode.zip.blank? %>
-I noticed an unusual smell on <%= @smell_report.created_at.localtime.strftime("%d %B %Y") %> at <%= @smell_report.created_at.localtime.strftime("%I:%M %p %Z") %>. I'd rate the smell <%= @smell_report.smell_value %> on a scale of 1 to 5, with 5 being the worst odor.
+<% if @smell_report.smell_value == 1 %>I wanted to report that everything smells just fine<% else %>I noticed an unusual smell<% end %> on <%= @smell_report.created_at.localtime.strftime("%d %B %Y") %> at <%= @smell_report.created_at.localtime.strftime("%I:%M %p %Z") %>. I'd rate the smell <%= @smell_report.smell_value %> on a scale of 1 to 5, with 5 being the worst odor.
 <% elsif @geocode.street_address.blank? and not @geocode.zip.blank? %>
-I noticed an unusual smell at zipcode: <%= @geocode.zip %> on <%= @smell_report.created_at.localtime.strftime("%d %B %Y") %> at <%= @smell_report.created_at.localtime.strftime("%I:%M %p %Z") %>. I'd rate the smell <%= @smell_report.smell_value %> on a scale of 1 to 5, with 5 being the worst odor.
+<% if @smell_report.smell_value == 1 %>I wanted to report that everything smells just fine<% else %>I noticed an unusual smell<% end %> at zipcode: <%= @geocode.zip %> on <%= @smell_report.created_at.localtime.strftime("%d %B %Y") %> at <%= @smell_report.created_at.localtime.strftime("%I:%M %p %Z") %>. I'd rate the smell <%= @smell_report.smell_value %> on a scale of 1 to 5, with 5 being the worst odor.
 <% else %>
-I noticed an unusual smell at <%= @geocode.street_address %>, <%= @geocode.zip %> on <%= @smell_report.created_at.localtime.strftime("%d %B %Y") %> at <%= @smell_report.created_at.localtime.strftime("%I:%M %p %Z") %>. I'd rate the smell <%= @smell_report.smell_value %> on a scale of 1 to 5, with 5 being the worst odor.
+<% if @smell_report.smell_value == 1 %>I wanted to report that everything smells just fine<% else %>I noticed an unusual smell<% end %> at <%= @geocode.street_address %>, <%= @geocode.zip %> on <%= @smell_report.created_at.localtime.strftime("%d %B %Y") %> at <%= @smell_report.created_at.localtime.strftime("%I:%M %p %Z") %>. I'd rate the smell <%= @smell_report.smell_value %> on a scale of 1 to 5, with 5 being the worst odor.
 <% end %>
 
 
