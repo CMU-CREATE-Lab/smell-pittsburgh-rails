@@ -43,7 +43,7 @@ class AchdForm < ActiveRecord::Base
 
       Rails.logger.info("------")
       Rails.logger.info("user_hash=(#{smell_report.user_hash})")
-      email = AchdMailer.mail(form)
+      email = AchdMailer.email(form)
       # do not send from dev/staging environments
       if Rails.env == "production"
         email.deliver!
