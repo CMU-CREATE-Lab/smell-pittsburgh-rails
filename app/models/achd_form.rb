@@ -12,6 +12,10 @@ class AchdForm < ActiveRecord::Base
     return "smellpgh-reports+#{self.id}@createlab.org"
   end
 
+  def self.allegheny_county_zipcodes
+    return [ "15006", "15007", "15014", "15015", "15017", "15018", "15020", "15024", "15025", "15025", "15025", "15025", "15025", "15028", "15030", "15031", "15032", "15034", "15035", "15035", "15037", "15044", "15045", "15046", "15046", "15047", "15049", "15051", "15056", "15064", "15065", "15071", "15071", "15075", "15076", "15082", "15084", "15086", "15088", "15090", "15091", "15095", "15095", "15096", "15096", "15101", "15102", "15104", "15104", "15106", "15106", "15106", "15106", "15108", "15108", "15108", "15108", "15110", "15112", "15112", "15116", "15120", "15120", "15120", "15120", "15122", "15122", "15122", "15123", "15123", "15123", "15123", "15126", "15127", "15129", "15129", "15131", "15131", "15132", "15133", "15133", "15134", "15135", "15135", "15136", "15136", "15137", "15139", "15140", "15140", "15142", "15143", "15143", "15144", "15145", "15146", "15147", "15148", "15148", "15201", "15201", "15201", "15201", "15201", "15202", "15202", "15202", "15202", "15202", "15202", "15202", "15202", "15202", "15203", "15203", "15203", "15203", "15204", "15204", "15204", "15204", "15205", "15205", "15205", "15205", "15205", "15206", "15206", "15207", "15207", "15208", "15208", "15208", "15208", "15209", "15209", "15209", "15209", "15210", "15210", "15210", "15210", "15211", "15211", "15211", "15211", "15212", "15212", "15212", "15212", "15213", "15213", "15214", "15214", "15214", "15214", "15215", "15215", "15215", "15215", "15215", "15216", "15216", "15216", "15216", "15216", "15216", "15217", "15217", "15218", "15218", "15218", "15218", "15219", "15220", "15220", "15220", "15220", "15220", "15221", "15221", "15221", "15221", "15221", "15221", "15221", "15222", "15222", "15222", "15223", "15223", "15223", "15223", "15224", "15224", "15224", "15224", "15225", "15225", "15225", "15225", "15226", "15226", "15226", "15226", "15227", "15227", "15227", "15227", "15228", "15228", "15228", "15228", "15229", "15229", "15229", "15229", "15230", "15231", "15231", "15232", "15232", "15232", "15232", "15233", "15233", "15233", "15233", "15234", "15234", "15234", "15234", "15234", "15234", "15234", "15234", "15234", "15235", "15235", "15235", "15235", "15235", "15236", "15236", "15236", "15236", "15236", "15236", "15237", "15237", "15237", "15237", "15237", "15238", "15238", "15238", "15238", "15238", "15239", "15239", "15239", "15239", "15240", "15240", "15240", "15240", "15241", "15241", "15241", "15241", "15241", "15242", "15242", "15243", "15243", "15244", "15244", "15250", "15251", "15252", "15252", "15253", "15253", "15254", "15254", "15255", "15255", "15257", "15257", "15258", "15258", "15259", "15259", "15260", "15260", "15261", "15261", "15262", "15262", "15264", "15265", "15265", "15267", "15267", "15268", "15270", "15270", "15272", "15274", "15275", "15276", "15277", "15277", "15278", "15278", "15279", "15279", "15281", "15281", "15282", "15282", "15283", "15283", "15286", "15286", "15289", "15289", "15290", "15295" ]
+  end
+
 
   # PARAMS
   # smell_report: SmellReport - The smell report that the email is being sent for.
@@ -31,26 +35,33 @@ class AchdForm < ActiveRecord::Base
     # if reverse geocoding fails, we want to avoid submitting a form (since the location may either be invalid, or failed for another reason and we don't want to expose the precise location)
     if geo.full_address.blank?
       Rails.logger.info("ACHD Form (GoogleGeocoder Error): reverse geocoding failed on smell report id=#{smell_report.id} with lat/long='#{smell_report.latitude}, #{smell_report.longitude}'; achd form not submitted")
-    else
-      # construct object
-      form = AchdForm.new
-      form.smell_report = smell_report
-      form.email = reply_email
-      form.phone = phone_number
-      form.name = name
-      form.address = user_address
-      form.save!
+    elsif not geo.zip.blank?
+      # only send to ACHD if the zipcode is part of allegheny county
+      if AchdForm.allegheny_county_zipcodes.include?(geo.zip)
+        # construct object
+        form = AchdForm.new
+        form.smell_report = smell_report
+        form.email = reply_email
+        form.phone = phone_number
+        form.name = name
+        form.address = user_address
+        form.save!
 
-      Rails.logger.info("------")
-      Rails.logger.info("user_hash=(#{smell_report.user_hash})")
-      email = AchdMailer.email(form)
-      # do not send from dev/staging environments
-      if Rails.env == "production"
-        email.deliver!
+        Rails.logger.info("------")
+        Rails.logger.info("user_hash=(#{smell_report.user_hash})")
+        email = AchdMailer.email(form,geo.street_address,geo.zip)
+        # do not send from dev/staging environments
+        if Rails.env == "production"
+          email.deliver!
+        else
+          Rails.logger.info("ACHD Form (non-production): generated email:\n#{email.body}")
+        end
+        Rails.logger.info("======")
       else
-        Rails.logger.info("ACHD Form (non-production): generated email:\n#{email.body}")
+        Rails.logger.info("ACHD Form (GoogleGeocoder Error): zipcode on smell report id=#{smell_report.id} was #{geo.zip} and is not in list allegheny_county_zipcodes; achd form not submitted")
       end
-      Rails.logger.info("======")
+    else
+      Rails.logger.info("ACHD Form (GoogleGeocoder Error): failed to reverse geocode a zipcode on smell report id=#{smell_report.id} with lat/long='#{smell_report.latitude}, #{smell_report.longitude}'; achd form not submitted")
     end
   end
 

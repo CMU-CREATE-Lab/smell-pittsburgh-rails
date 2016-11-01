@@ -5,9 +5,11 @@ class AchdMailer < ApplicationMailer
           :content_type => "text/plain"
 
 
-  def email(achd_form)
+  # ASSERT: zipcode is not blank and is a zipcode in Allegheny County
+  def email(achd_form,street_address=nil,zipcode)
     @smell_report = achd_form.smell_report
-    @geocode = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{@smell_report.real_latitude}, #{@smell_report.real_longitude}" )
+    @street_address = street_address
+    @zipcode = zipcode
     @reply_to = achd_form.email.blank? ? achd_form.formatted_server_email : achd_form.email
     @phone_number = achd_form.phone
     @name = achd_form.name.blank? ? "Smell PGH App User" : achd_form.name
