@@ -52,6 +52,7 @@ class AchdForm < ActiveRecord::Base
         email = AchdMailer.email(form,geo.street_address,geo.zip)
         # do not send from dev/staging environments
         if Rails.env == "production"
+          Rails.logger.info("ACHD Form: generated email:\n#{email.body}")
           email.deliver!
         else
           Rails.logger.info("ACHD Form (non-production): generated email:\n#{email.body}")
