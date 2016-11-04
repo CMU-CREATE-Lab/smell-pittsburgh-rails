@@ -50,3 +50,8 @@ end
 
 # Geokit Rails
 gem 'geokit-rails'
+
+# Capistrano
+gem 'capistrano', '3.5.0'
+# terminal input-hiding for capistrano
+gem 'highline'
