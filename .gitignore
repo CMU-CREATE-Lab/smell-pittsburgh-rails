@@ -23,3 +23,6 @@
 /public/assets
 .DS_Store
 *~
+
+# Capistrano files on deployment
+/REVISION
