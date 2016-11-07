@@ -15,15 +15,15 @@ Responses will look like:
 
 ```json
 [
-	{
-		"latitude" : 40.4406248,
-		"longitude" : -79.9958864,
-		"smell_value" : 1,
-		"smell_description" : "Description of the smell",
-		"feelings_symptoms" : "Symptoms or feelings associated with the smell",
-		"created_at" : "2016-03-29T15:49:53.000Z"
-	},
-	...
+  {
+    "latitude" : 40.4406248,
+    "longitude" : -79.9958864,
+    "smell_value" : 1,
+    "smell_description" : "Description of the smell",
+    "feelings_symptoms" : "Symptoms or feelings associated with the smell",
+    "created_at" : "2016-03-29T15:49:53.000Z"
+  },
+  ...
 ]
 ```
 
@@ -38,13 +38,13 @@ You can upload new smell reports using the following form:
 
 ```json
 {
-	"user_hash" : "someuniquehash",
-	"latitude" : 40.4406248,
-	"longitude" : -79.9958864,
-	"smell_value" : 1,
-	"smell_description" : "Description of the smell",
-	"feelings_symptoms" : "Symptoms or feelings associated with the smell",
-	"submit_achd_form" : true
+  "user_hash" : "someuniquehash",
+  "latitude" : 40.4406248,
+  "longitude" : -79.9958864,
+  "smell_value" : 1,
+  "smell_description" : "Description of the smell",
+  "feelings_symptoms" : "Symptoms or feelings associated with the smell",
+  "submit_achd_form" : true
 }
 ```
 
@@ -67,6 +67,8 @@ capistrano production deploy
 ```
 
 They will then be prompted to enter their username and password for the production server (capistrano uses local username by default, but I added the prompt for my own preference). After entering the proper credentials, capistrano uses **ssh** to run `git clone --mirror` and mirror the repository to the production server. If it is already mirrored, it will try to update the repository. Finally, it will copy files from the _master_ branch, update the current symlink, and restart the server.
+
+**NOTE:** For the first deployment, you will have to manually copy the repository's linked_files (`config/database.yml` `config/secrets.yml` `config/environment.rb`) into the capistrano `shared` directory.
 
 #### Capistrano config, in greater detail
 
