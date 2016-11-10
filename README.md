@@ -68,7 +68,7 @@ capistrano production deploy
 
 They will then be prompted to enter their username and password for the production server (capistrano uses local username by default, but I added the prompt for my own preference). After entering the proper credentials, capistrano uses **ssh** to run `git clone --mirror` and mirror the repository to the production server. If it is already mirrored, it will try to update the repository. Finally, it will copy files from the _master_ branch, update the current symlink, and restart the server.
 
-**NOTE:** For the first deployment, you will have to manually copy the repository's linked_files (`config/database.yml` `config/secrets.yml` `config/environment.rb`) into the capistrano `shared` directory.
+**NOTE:** For the first deployment, you will have to manually copy the repository's linked_files (`config/database.yml` `config/secrets.yml` `config/environment.rb` `config/environments/production.rb`) into the capistrano `shared` directory.
 
 #### Capistrano config, in greater detail
 
