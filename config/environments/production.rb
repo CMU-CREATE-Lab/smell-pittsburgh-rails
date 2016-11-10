@@ -76,4 +76,14 @@ Rails.application.configure do
 
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
+
+  # environment variables (defined for production)
+
+  # Authorization Key for Google Firebase Push Notifications
+  FIREBASE_AUTH_KEY = "DO-NOT-PUSH-ME"
+  # Auth Key for AirNow API
+  AIRNOW_API_KEY = "DO-NOT-PUSH-ME"
+  # the email address for who receives the ACHD Form mail
+  ACHD_EMAIL_RECIPIENT = "DO-NOT-PUSH-ME"
+
 end
