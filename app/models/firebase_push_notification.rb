@@ -110,6 +110,7 @@ class FirebasePushNotification < ActiveRecord::Base
 
 	# TODO add options
 	def self.send_push_notification(to, title, body, options=nil)
+		current_hour = Time.now.hour
 		Rails.logger.info("FirebasePushNotification(#{DateTime.now}): Sending notification to=#{to}, title=#{title}, body=#{body}")
 		json = {}
 		json["to"] = to
@@ -136,12 +137,17 @@ class FirebasePushNotification < ActiveRecord::Base
 
 		# only push on production
 		if Rails.env == "production"
-			response = `curl -X POST #{headers} #{url} -d '#{data}'`
-			begin
-				json_response = JSON.parse(response)
-				unless json_response["message_id"].blank?
-					Rails.logger.info("Successfully sent push with id=#{json_response["message_id"]}")
-					return
+			# do not send any notifications from 9 PM until 7 AM
+			if current_hour.between?(21,24) or current_hour.between?(0,6)
+				Rails.logger.info("Refusing to send push notification at hour=#{current_hour}; info was: headers=#{headers}, url=#{url}, data=#{data}")
+			else
+				response = `curl -X POST #{headers} #{url} -d '#{data}'`
+				begin
+					json_response = JSON.parse(response)
+					unless json_response["message_id"].blank?
+						Rails.logger.info("Successfully sent push with id=#{json_response["message_id"]}")
+						return
+					end
 				end
 			end
 		else
