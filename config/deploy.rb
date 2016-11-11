@@ -60,6 +60,7 @@ namespace :deploy do
     on roles(:web) do
       within "#{fetch(:deploy_to)}/current" do
         execute(:git, "init", "--separate-git-dir=#{fetch(:repo_path)}")
+        execute(:rake, "assets:precompile")
         execute(:mkdir,"-p","tmp")
         execute(:touch,"tmp/restart.txt")
       end
