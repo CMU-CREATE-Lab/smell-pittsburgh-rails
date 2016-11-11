@@ -53,5 +53,6 @@ gem 'geokit-rails'
 
 # Capistrano
 gem 'capistrano', '3.5.0'
+gem 'capistrano-rails'
 # terminal input-hiding for capistrano
 gem 'highline'
