@@ -24,4 +24,5 @@ require "capistrano/deploy"
 # require 'capistrano/passenger'
 
 # Load custom tasks from `lib/capistrano/tasks` if you have any defined
+load 'deploy/assets'
 Dir.glob("lib/capistrano/tasks/*.rake").each { |r| import r }
