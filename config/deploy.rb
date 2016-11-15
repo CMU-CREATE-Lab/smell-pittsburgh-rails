@@ -61,6 +61,7 @@ namespace :deploy do
       within "#{fetch(:deploy_to)}/current" do
         execute(:git, "init", "--separate-git-dir=#{fetch(:repo_path)}")
         execute(:mkdir,"-p","tmp")
+        sudo(:chown, "-R", "#{fetch(:ssh_username)}:rvm", "tmp")
         execute(:touch,"tmp/restart.txt")
       end
     end
