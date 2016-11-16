@@ -11,7 +11,9 @@ class SmellReport < ActiveRecord::Base
 
   validates :user_hash, :latitude, :longitude, :smell_value, :presence => true
   validates :smell_value, :inclusion => { in: (1..5) }
+
   before_create :generate_perturbed_coordinates
+  after_destroy :handle_destroy
 
   scope :in_pittsburgh, -> { where("real_latitude < 40.916992 AND real_latitude > 40.102992 AND real_longitude < -79.428193 AND real_longitude > -80.471694") }
 
@@ -48,6 +50,14 @@ class SmellReport < ActiveRecord::Base
     end
     return false
   end
+
+
+  def handle_destroy
+    AchdForm.where(:smell_report_id => self.id).each do |form|
+      form.destroy
+    end
+  end
+
 
   # WARNING: Do not use this unless you have good reason to!
   # This exposes the raw lat/long coordinates that were submitted
