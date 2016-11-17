@@ -12,8 +12,8 @@ namespace :smell_report do
   task :summary_notifications => :environment do
     right_now = DateTime.now
 
-    # start listening for smell reports at 6am
-    if [6].include?(right_now.hour)
+    # start listening for smell reports at 7am
+    if [7].include?(right_now.hour)
       SmellReportTracker.listening_for_smell_reports(true)
     end
 

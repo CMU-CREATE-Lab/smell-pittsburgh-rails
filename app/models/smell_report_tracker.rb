@@ -9,7 +9,7 @@ class SmellReportTracker < ActiveRecord::Base
     if Rails.cache.read("listening_for_smell_reports").nil?
       # depending on the hour of the day, we should either be listening or not listening by default
       hour = Time.now.hour
-      is_listening = (hour >= 6 and hour < 14)
+      is_listening = (hour >= 7 and hour < 14)
       Rails.cache.write("listening_for_smell_reports", is_listening)
     end
     return Rails.cache.read("listening_for_smell_reports")
