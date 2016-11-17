@@ -56,6 +56,9 @@ GEM
     capistrano-rails (1.2.0)
       capistrano (~> 3.1)
       capistrano-bundler (~> 1.1)
+    capistrano-sudo (0.0.4)
+      capistrano (~> 3.3)
+      sshkit-sudo (>= 0.0.4)
     coffee-rails (4.1.1)
       coffee-script (>= 2.2.0)
       railties (>= 4.0.0, < 5.1.x)
@@ -133,6 +136,9 @@ GEM
     rdoc (4.2.2)
       json (~> 1.4)
     ref (2.0.0)
+    rvm1-capistrano3 (1.4.0)
+      capistrano (~> 3.0)
+      sshkit (>= 1.2)
     sass (3.4.22)
     sass-rails (5.0.6)
       railties (>= 4.0.0, < 6)
@@ -154,6 +160,8 @@ GEM
     sshkit (1.11.3)
       net-scp (>= 1.1.2)
       net-ssh (>= 2.8.0)
+    sshkit-sudo (0.1.0)
+      sshkit (~> 1.8)
     therubyracer (0.12.2)
       libv8 (~> 3.16.14.0)
       ref
@@ -182,6 +190,7 @@ DEPENDENCIES
   byebug
   capistrano (= 3.5.0)
   capistrano-rails
+  capistrano-sudo
   coffee-rails (~> 4.1.0)
   geokit-rails
   highline
@@ -189,6 +198,7 @@ DEPENDENCIES
   jquery-rails
   mysql2
   rails (= 4.2.7.1)
+  rvm1-capistrano3
   sass-rails (~> 5.0)
   sdoc (~> 0.4.0)
   spring

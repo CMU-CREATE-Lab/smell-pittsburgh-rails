@@ -15,6 +15,10 @@ set :repo_url, 'https://github.com/CMU-CREATE-Lab/smell-pittsburgh-rails.git'
 set :branch, "master"
 set :repo_path, "#{fetch(:deploy_to)}/repo"
 
+# RVM: you can specify your ruby version here, or specify to use RVM's default ruby version (recommended since this is probably the version that production is currently at)
+# set :rvm1_ruby_version, "2.2.5"
+set :rvm1_ruby_version, "default"
+
 
 # deploy tasks
 namespace :deploy do

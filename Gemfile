@@ -29,9 +29,6 @@ gem 'sdoc', '~> 0.4.0', group: :doc
 # Use Unicorn as the app server
 # gem 'unicorn'
 
-# Use Capistrano for deployment
-# gem 'capistrano-rails', group: :development
-
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
   gem 'byebug'
@@ -54,5 +51,7 @@ gem 'geokit-rails'
 # Capistrano
 gem 'capistrano', '3.5.0'
 gem 'capistrano-rails'
+gem 'capistrano-sudo'
+gem 'rvm1-capistrano3'
 # terminal input-hiding for capistrano
 gem 'highline'
