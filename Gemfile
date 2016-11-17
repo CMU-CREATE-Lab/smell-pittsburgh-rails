@@ -49,9 +49,9 @@ end
 gem 'geokit-rails'
 
 # Capistrano
-gem 'capistrano', '3.5.0'
-gem 'capistrano-rails'
-gem 'capistrano-sudo'
-gem 'rvm1-capistrano3'
+gem 'capistrano', '3.5.0', require: false
+gem 'capistrano-sudo', require: false
+# replaces old rvm-capistrano gem: https://github.com/rvm/rvm1-capistrano3
+gem 'rvm1-capistrano3', require: false
 # terminal input-hiding for capistrano
-gem 'highline'
+gem 'highline', require: false
