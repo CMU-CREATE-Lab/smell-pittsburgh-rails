@@ -640,6 +640,11 @@ function drawSingleSensor(sensor) {
     var txt = val < 0 ? no_data_txt : val + " &mu;g/m<sup>3</sup>";
     html += '<b>Maximum PM<sub>2.5</sub>:</b> ' + txt + '<br>';
   }
+  if (typeof sensor["PM25_now"] !== "undefined" && sensor["wind_speed"] !== "undefined") {
+    val = sensor["wind_speed"];
+    var txt = val < 0 ? no_data_txt : val + " MPH";
+    html += '<b>Latest Wind Speed:</b> ' + txt + '<br>';
+  }
 
   var color_idx = sensorValToColorIndex(val);
   var markerArray, rotation = 0;
@@ -703,7 +708,7 @@ function sensorValToColorIndex(val) {
     return 0;
   } else {
     val = parseFloat(val);
-    if (val < 0) {
+    if (isNaN(val) || val < 0) {
       return 0;
     } else if (val >= 0 && val <= scale[0]) {
       return 1;
