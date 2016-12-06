@@ -641,8 +641,8 @@ function drawSingleSensor(sensor) {
     html += '<b>Maximum PM<sub>2.5</sub>:</b> ' + txt + '<br>';
   }
   if (typeof sensor["PM25_now"] !== "undefined" && sensor["wind_speed"] !== "undefined") {
-    val = sensor["wind_speed"];
-    var txt = val < 0 ? no_data_txt : val + " MPH";
+    var windVal = sensor["wind_speed"];
+    var txt = windVal < 0 ? no_data_txt : windVal + " MPH";
     html += '<b>Latest Wind Speed:</b> ' + txt + '<br>';
   }
 
