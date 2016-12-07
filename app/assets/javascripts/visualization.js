@@ -632,18 +632,18 @@ function drawSingleSensor(sensor) {
 
   if (typeof(sensor["PM25_now"]) !== "undefined") {
     val = sensor["PM25_now"];
-    var txt = val < 0 ? no_data_txt : val + " &mu;g/m<sup>3</sup>";
+    var txt = (isNaN(val) || val < 0) ? no_data_txt : val + " &mu;g/m<sup>3</sup>";
     html += '<b>Latest PM<sub>2.5</sub>:</b> ' + txt + '<br>';
   }
   if (typeof(sensor["PM25_max"]) !== "undefined") {
     val = sensor["PM25_max"];
-    var txt = val < 0 ? no_data_txt : val + " &mu;g/m<sup>3</sup>";
+    var txt = (isNaN(val) || val < 0) ? no_data_txt : val + " &mu;g/m<sup>3</sup>";
     html += '<b>Maximum PM<sub>2.5</sub>:</b> ' + txt + '<br>';
   }
 
   if (typeof(sensor["PM25_now"]) !== "undefined" && typeof(sensor["wind_speed"]) !== "undefined") {
     var windVal = sensor["wind_speed"];
-    var txt = windVal < 0 ? no_data_txt : windVal + " MPH";
+    var txt = (isNaN(windVal) || windVal < 0) ? no_data_txt : windVal + " MPH";
     html += '<b>Latest Wind Speed:</b> ' + txt + '<br>';
   }
 
