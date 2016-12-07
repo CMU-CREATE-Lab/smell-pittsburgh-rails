@@ -24,6 +24,14 @@ set :rvm1_ruby_version, "default"
 namespace :deploy do
 
 
+  # remove the RVM scripts that capistrano creates (breaks when trying to chmod from someone else)
+  before "rvm1:hook", :remove_rvmscripts do
+    on roles(:web) do
+      sudo(:rm,"-rf","#{fetch(:deploy_to)}/rvm1scripts")
+    end
+  end
+
+
   # ASSERT: group 'rvm' exists and all deploy users are members
   before :starting, :fix_permissions do
     on roles(:web) do
@@ -65,6 +73,7 @@ namespace :deploy do
       within "#{fetch(:deploy_to)}/current" do
         execute(:git, "init", "--separate-git-dir=#{fetch(:repo_path)}")
         execute(:mkdir,"-p","tmp")
+        sudo(:chmod, "-R", "777", "tmp")
         execute(:rake, "assets:precompile")
         sudo(:chown, "-R", "#{fetch(:ssh_username)}:rvm", "#{fetch(:deploy_to)}")
         execute(:touch,"tmp/restart.txt")
