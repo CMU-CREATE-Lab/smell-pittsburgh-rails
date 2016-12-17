@@ -36,7 +36,7 @@ var $dialog_ok_button;
 var $timeline_container;
 var esdr_root_url = "https://esdr.cmucreatelab.org/api/v1/";
 var aqi_root_url = "http://api.smellpittsburgh.org/api/v1/get_aqi?city=";
-var staging_base_url = "http://api.smellpittsburgh.org";
+var staging_base_url = "http://bayarea.staging.api.smellpittsburgh.org";
 var api_url = "/api/v1/smell_reports?";
 var no_data_txt = "No data in last four hours.";
 var timelineTouched = false;
@@ -187,6 +187,13 @@ function createGoogleMap() {
       ]
     }
   ];
+  //get user location
+  var hash = window.location.hash.slice(1).split("&");
+  var loc = hash.find(function(hashVar) {
+    return hashVar.includes("loc");
+  }),
+  parseLoc = (s) => {return s.slice(4).split(",").map(parseFloat)};
+  init_latlng = loc ? {"lat":parseLoc(loc)[0],"lng":parseLoc(loc)[1]} : init_latlng;
 
   // Set Google map
   map = new google.maps.Map(document.getElementById("map"), {
