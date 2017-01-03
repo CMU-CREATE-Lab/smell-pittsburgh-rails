@@ -191,9 +191,11 @@ function createGoogleMap() {
   var hash = window.location.hash.slice(1).split("&");
   var loc = hash.find(function(hashVar) {
     return hashVar.includes("loc");
-  }),
-  parseLoc = (s) => {return s.slice(4).split(",").map(parseFloat)};
-  init_latlng = loc ? {"lat":parseLoc(loc)[0],"lng":parseLoc(loc)[1]} : init_latlng;
+  });
+  if (loc) {
+    var parsedLoc = loc.slice(4).split(",").map(parseFloat);
+    init_latlng = {"lat":parsedLoc[0],"lng":parsedLoc[1]};
+  }
 
   // Set Google map
   map = new google.maps.Map(document.getElementById("map"), {
