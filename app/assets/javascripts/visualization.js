@@ -21,6 +21,7 @@ var $calendar_dialog;
 var $calendar;
 
 // Map parameters
+var city = "PGH";
 var init_zoom_desktop = 12;
 var init_zoom_mobile = 11;
 var init_latlng = {"lat": 40.42, "lng": -79.94};
@@ -188,10 +189,13 @@ function createGoogleMap() {
     }
   ];
   //get user location
-  var hash = window.location.hash.slice(1).split("&");
-  var loc = hash.find(function(hashVar) {
-    return hashVar.includes("loc");
-  });
+  var query = window.location.search.slice(1).split("&");
+  var loc;
+  for (var i=0;i<query.length;i++) {
+    var queryVar = query[i];
+    if(queryVar.indexOf("loc") != -1) loc = queryVar;
+    if(queryVar.indexOf("user_hash") != -1 && queryVar.match(/[A-Z]{2,}/)) city = queryVar.match(/[A-Z]{2,}/)[0];
+  }
   if (loc) {
     var parsedLoc = loc.slice(4).split(",").map(parseFloat);
     init_latlng = {"lat":parsedLoc[0],"lng":parsedLoc[1]};
