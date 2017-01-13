@@ -190,15 +190,14 @@ function createGoogleMap() {
   ];
   //get user location
   var query = window.location.search.slice(1).split("&");
-  var loc;
   for (var i=0;i<query.length;i++) {
     var queryVar = query[i];
-    if(queryVar.indexOf("loc") != -1) loc = queryVar;
-    if(queryVar.indexOf("user_hash") != -1 && queryVar.match(/[A-Z]{2,}/)) city = queryVar.match(/[A-Z]{2,}/)[0];
+    if(queryVar.indexOf("user_hash") != -1 && queryVar.match(/[A-Z]{2,}/)){
+      city = queryVar.match(/[A-Z]{2,}/)[0];
+    }
   }
-  if (loc) {
-    var parsedLoc = loc.slice(4).split(",").map(parseFloat);
-    init_latlng = {"lat":parsedLoc[0],"lng":parsedLoc[1]};
+  if (city == "BA") {
+    init_latlng = {"lat":38.004472, "lng":-122.260693};
   }
 
   // Set Google map
@@ -323,7 +322,9 @@ function genSmellURL(date_obj) {
     //var last_day = new Date(y, m + 1, 0).getTime() / 1000;
     //api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=" + first_day + "&end_time=" + last_day;
   }
-
+  if (city != "PGH") {
+    api_paras += "&area=" + city;
+  }
   var root_url = window.location.origin;
   return root_url + api_url + api_paras;
 }
@@ -429,16 +430,18 @@ function deleteTimeline() {
 function drawTimeline() {
   var last_month;
   var td_count = 0;
-  // June 04 2016
-  var date = new Date(1465012800000);
+  // June 04 2016 var date = new Date(1465012800000);
+  var date = new Date(1459728000000);
   for (var k = 0; k < smell_reports.length; k++) {
     var report_k = smell_reports[k];
+    console.log("report_k " + report_k);
     //if (report_k.length == 0) {
     //  continue;
     //}
     //var color = Math.round((0.95 - Math.tanh(report_k.length / 10)) * 255);
     var smell_average = 0;
     for (var i = 0; i < report_k.length; i++) {
+      console.log("report_k[i] " + report_k[i]);
       smell_average += report_k[i].smell_value;
     }
     if (smell_average > 0)
@@ -548,8 +551,8 @@ function loadAndDrawSingleSensor(time) {
     use_PM25_now = false;
   }
 
-  // Show current Pittsburgh AQI if on current day
-  if (use_PM25_now) {
+  // Show current Pittsburgh AQI if on current day and user is in Pittsburgh
+  if (use_PM25_now && city == "PGH") {
     if (sensorLoadCount == 0) {
       $.getJSON(aqi_root_url + "Pittsburgh", function (response) {
         if (response) {

@@ -101,6 +101,7 @@ class ApiController < ApplicationController
     end_time = params["end_time"]
     aggregate = params["aggregate"]
     timezone_offset = params["timezone_offset"]
+    area = params["area"] == nil ? "'^[^A-Z]'" : "'^"+params["area"]+"'"
 
     if start_time
       start_datetime = Time.at(start_time.to_i).to_datetime if start_time
@@ -114,7 +115,7 @@ class ApiController < ApplicationController
       end_datetime = Time.now.to_datetime
     end
 
-    @reports = SmellReport.where(:created_at => start_datetime...end_datetime).order('created_at ASC')
+    @reports = SmellReport.where(:created_at => start_datetime...end_datetime).where("user_hash REGEXP BINARY " + area).order('created_at ASC')
 
     if aggregate == "created_at"
         reports_aggr = []
@@ -141,7 +142,7 @@ class ApiController < ApplicationController
         end
         @reports = reports_aggr
     elsif aggregate == "month"
-        reports_aggr = SmellReport.order('created_at ASC').group("year(created_at)").group("month(created_at)").count
+        reports_aggr = SmellReport.where("user_hash REGEXP BINARY " + area).order('created_at ASC').group("year(created_at)").group("month(created_at)").count
         @reports = {month: reports_aggr.keys}
     end
 
