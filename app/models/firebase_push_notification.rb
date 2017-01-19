@@ -14,7 +14,6 @@ class FirebasePushNotification < ActiveRecord::Base
 		"https://fcm.googleapis.com/fcm/send"
 	end
 
-
 	# pushes to those subscribed to Pittsburgh AQI notifications
 	# aqi_has_increased: true indicates increase, false indicates decrease (if neither increase/decrease, the function should not be called)
 	def self.push_aqi_pittsburgh_change(aqi_has_increased,cities,pittsburgh)
@@ -52,19 +51,19 @@ class FirebasePushNotification < ActiveRecord::Base
 
 
 	# pushes to those subscribed to smell reports on the same level as smell_report
-	def self.push_smell_report(smell_report)
-		topic = self.TOPIC_PREFIX+"SmellReports"
+	def self.push_smell_report(smell_report, area=nil)
+		topic = self.setTopic(area)
 
 		title = "How does your air smell?"
 		body = "A smell report rated #{smell_report.smell_value} was just submitted"
 
-		self.send_push_notification(topic,title,body)
+		self.send_push_notification(topic,title,body,{"area"=>area})
 	end
 
 
 	# list: list of smell reports
-	def self.push_smell_report_daily_summary(list)
-		topic = self.TOPIC_PREFIX+"SmellReports"
+	def self.push_smell_report_daily_summary(list, area=nil)
+		topic = self.setTopic(area)
 
 		title = "Smell Report Summary"
 		body = "#{list.size}"
@@ -74,12 +73,12 @@ class FirebasePushNotification < ActiveRecord::Base
 			body += " smell reports were submitted today"
 		end
 
-		self.send_push_notification(topic,title,body)
+		self.send_push_notification(topic,title,body,{"area"=>area})
 	end
 
 
-	def self.push_smell_report_hourly_summary(list)
-		topic = self.TOPIC_PREFIX+"SmellReports"
+	def self.push_smell_report_hourly_summary(list, area=nil)
+		topic = self.setTopic(area)
 
 		# title depends on how many reports we have
 		title = list.size >= 15 ? "Did you submit a report?" : "View map of smell reports"
@@ -90,7 +89,7 @@ class FirebasePushNotification < ActiveRecord::Base
 			body += " odors were reported in the last 2 hours"
 		end
 
-		self.send_push_notification(topic,title,body)
+		self.send_push_notification(topic,title,body,{"area"=>area})
 	end
 
 
@@ -110,7 +109,12 @@ class FirebasePushNotification < ActiveRecord::Base
 
 	# TODO add options
 	def self.send_push_notification(to, title, body, options=nil)
-		current_hour = Time.now.hour
+		if options["area"] == "BA"
+			current_hour = (Time.now - 3 * 60 * 60).hour
+		else
+			current_hour = Time.now.hour
+		end
+
 		Rails.logger.info("FirebasePushNotification(#{DateTime.now}): Sending notification to=#{to}, title=#{title}, body=#{body}")
 		json = {}
 		json["to"] = to
@@ -139,6 +143,7 @@ class FirebasePushNotification < ActiveRecord::Base
 		if Rails.env == "production"
 			# do not send any notifications from 9 PM until 7 AM
 			if current_hour.between?(21,24) or current_hour.between?(0,6)
+				#TODO make this error message reflect when it's Pacific time
 				Rails.logger.info("Refusing to send push notification at hour=#{current_hour}; info was: headers=#{headers}, url=#{url}, data=#{data}")
 			else
 				response = `curl -X POST #{headers} #{url} -d '#{data}'`
@@ -153,6 +158,15 @@ class FirebasePushNotification < ActiveRecord::Base
 		else
 			Rails.logger.info("FirebasePushNotification (non-production): curl -X POST #{headers} #{url} -d '#{data}'")
 		end
+	end
+
+	def self.setTopic(area)
+		if area
+			topic = self.TOPIC_PREFIX+area+"SmellReports"
+		else
+			topic = self.TOPIC_PREFIX+"SmellReports"
+		end
+		return topic
 	end
 
 end

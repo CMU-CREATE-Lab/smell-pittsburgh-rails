@@ -21,7 +21,7 @@ var $calendar_dialog;
 var $calendar;
 
 // Map parameters
-var city = "PGH";
+var area = "PGH";
 var init_zoom_desktop = 12;
 var init_zoom_mobile = 11;
 var init_latlng = {"lat": 40.42, "lng": -79.94};
@@ -193,10 +193,10 @@ function createGoogleMap() {
   for (var i=0;i<query.length;i++) {
     var queryVar = query[i];
     if(queryVar.indexOf("user_hash") != -1 && queryVar.match(/[A-Z]{2,}/)){
-      city = queryVar.match(/[A-Z]{2,}/)[0];
+      area = queryVar.match(/[A-Z]{2,}/)[0];
     }
   }
-  if (city == "BA") {
+  if (area == "BA") {
     init_latlng = {"lat":38.004472, "lng":-122.260693};
   }
 
@@ -322,8 +322,8 @@ function genSmellURL(date_obj) {
     //var last_day = new Date(y, m + 1, 0).getTime() / 1000;
     //api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=" + first_day + "&end_time=" + last_day;
   }
-  if (city != "PGH") {
-    api_paras += "&area=" + city;
+  if (area != "PGH") {
+    api_paras += "&area=" + area;
   }
   var root_url = window.location.origin;
   return root_url + api_url + api_paras;
@@ -430,18 +430,17 @@ function deleteTimeline() {
 function drawTimeline() {
   var last_month;
   var td_count = 0;
-  // June 04 2016 var date = new Date(1465012800000);
+  //TODO: add bounding box for Bay area and Pittsburgh; in loop on line 443, check if report is within appropriate bounding box
+  // April 04 2016
   var date = new Date(1459728000000);
   for (var k = 0; k < smell_reports.length; k++) {
     var report_k = smell_reports[k];
-    console.log("report_k " + report_k);
     //if (report_k.length == 0) {
     //  continue;
     //}
     //var color = Math.round((0.95 - Math.tanh(report_k.length / 10)) * 255);
     var smell_average = 0;
     for (var i = 0; i < report_k.length; i++) {
-      console.log("report_k[i] " + report_k[i]);
       smell_average += report_k[i].smell_value;
     }
     if (smell_average > 0)
@@ -552,7 +551,7 @@ function loadAndDrawSingleSensor(time) {
   }
 
   // Show current Pittsburgh AQI if on current day and user is in Pittsburgh
-  if (use_PM25_now && city == "PGH") {
+  if (use_PM25_now && area == "PGH") {
     if (sensorLoadCount == 0) {
       $.getJSON(aqi_root_url + "Pittsburgh", function (response) {
         if (response) {

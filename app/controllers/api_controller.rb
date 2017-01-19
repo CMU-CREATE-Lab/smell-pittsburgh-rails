@@ -71,6 +71,14 @@ class ApiController < ApplicationController
         FirebasePushNotification.push_smell_report(smell_report)
       end
 
+      # send push notifications for smell values at or above 3 in Bay Area
+      if BASmellReportTracker.is_listening_for_smell_reports? and smell_report.smell_value >= 3 and smell_report.is_within_bay_area?
+        BASmellReportTracker.set_last_reported(smell_report.created_at.to_i)
+        BASmellReportTracker.listening_for_smell_reports(false)
+        BASmellReportTracker.generating_hourly_summary(true)
+        FirebasePushNotification.push_smell_report(smell_report,smell_report.user_hash[/[A-Z]{2,}/])
+      end
+
       # send email
       if smell_report.submit_achd_form
         options = {
@@ -101,7 +109,7 @@ class ApiController < ApplicationController
     end_time = params["end_time"]
     aggregate = params["aggregate"]
     timezone_offset = params["timezone_offset"]
-    area = params["area"] == nil ? "'^[^A-Z]'" : "'^"+params["area"]+"'"
+    area = params["area"] == nil ? "PGH" : params["area"]
 
     if start_time
       start_datetime = Time.at(start_time.to_i).to_datetime if start_time
@@ -115,7 +123,7 @@ class ApiController < ApplicationController
       end_datetime = Time.now.to_datetime
     end
 
-    @reports = SmellReport.where(:created_at => start_datetime...end_datetime).where("user_hash REGEXP BINARY " + area).order('created_at ASC')
+    @reports = SmellReport.where(:created_at => start_datetime...end_datetime).from_area(area).order('created_at ASC')
 
     if aggregate == "created_at"
         reports_aggr = []
@@ -142,7 +150,7 @@ class ApiController < ApplicationController
         end
         @reports = reports_aggr
     elsif aggregate == "month"
-        reports_aggr = SmellReport.where("user_hash REGEXP BINARY " + area).order('created_at ASC').group("year(created_at)").group("month(created_at)").count
+        reports_aggr = SmellReport.from_area(area).order('created_at ASC').group("year(created_at)").group("month(created_at)").count
         @reports = {month: reports_aggr.keys}
     end
 
