@@ -17,7 +17,7 @@ class SmellReport < ActiveRecord::Base
 
   scope :in_pittsburgh, -> { where("real_latitude < 40.916992 AND real_latitude > 40.102992 AND real_longitude < -79.428193 AND real_longitude > -80.471694") }
   scope :in_bay_area, -> { where("real_latitude < 37.995264 AND real_latitude > 37.071794 AND real_longitude < -121.570188 AND real_longitude > -122.399811")}
-  scope :from_area, ->(area) { where("user_hash REGEXP BINARY ?", area == "PGH" ? "^[^A-Z]" : "^"+area) } 
+  scope :from_app, ->(area) { where("user_hash REGEXP BINARY ?", area == "PGH" ? "^[^A-Z]" : "^"+area) } 
 
   def self.is_within_pittsburgh?(latitude,longitude)
     return false if latitude.nil? or longitude.nil?

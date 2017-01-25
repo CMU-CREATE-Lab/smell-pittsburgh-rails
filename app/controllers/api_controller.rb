@@ -76,7 +76,7 @@ class ApiController < ApplicationController
         BASmellReportTracker.set_last_reported(smell_report.created_at.to_i)
         BASmellReportTracker.listening_for_smell_reports(false)
         BASmellReportTracker.generating_hourly_summary(true)
-        FirebasePushNotification.push_smell_report(smell_report,smell_report.user_hash[/[A-Z]{2,}/])
+        FirebasePushNotification.push_smell_report(smell_report,"BA")
       end
 
       # send email
@@ -123,7 +123,7 @@ class ApiController < ApplicationController
       end_datetime = Time.now.to_datetime
     end
 
-    @reports = SmellReport.where(:created_at => start_datetime...end_datetime).from_area(area).order('created_at ASC')
+    @reports = SmellReport.where(:created_at => start_datetime...end_datetime).from_app(area).order('created_at ASC')
 
     if aggregate == "created_at"
         reports_aggr = []
@@ -150,7 +150,7 @@ class ApiController < ApplicationController
         end
         @reports = reports_aggr
     elsif aggregate == "month"
-        reports_aggr = SmellReport.from_area(area).order('created_at ASC').group("year(created_at)").group("month(created_at)").count
+        reports_aggr = SmellReport.from_app(area).order('created_at ASC').group("year(created_at)").group("month(created_at)").count
         @reports = {month: reports_aggr.keys}
     end
 

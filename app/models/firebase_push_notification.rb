@@ -52,7 +52,7 @@ class FirebasePushNotification < ActiveRecord::Base
 
 	# pushes to those subscribed to smell reports on the same level as smell_report
 	def self.push_smell_report(smell_report, area=nil)
-		topic = self.setTopic(area)
+		topic = self.getTopicFromArea(area)
 
 		title = "How does your air smell?"
 		body = "A smell report rated #{smell_report.smell_value} was just submitted"
@@ -63,7 +63,7 @@ class FirebasePushNotification < ActiveRecord::Base
 
 	# list: list of smell reports
 	def self.push_smell_report_daily_summary(list, area=nil)
-		topic = self.setTopic(area)
+		topic = self.getTopicFromArea(area)
 
 		title = "Smell Report Summary"
 		body = "#{list.size}"
@@ -78,7 +78,7 @@ class FirebasePushNotification < ActiveRecord::Base
 
 
 	def self.push_smell_report_hourly_summary(list, area=nil)
-		topic = self.setTopic(area)
+		topic = self.getTopicFromArea(area)
 
 		# title depends on how many reports we have
 		title = list.size >= 15 ? "Did you submit a report?" : "View map of smell reports"
@@ -160,8 +160,8 @@ class FirebasePushNotification < ActiveRecord::Base
 		end
 	end
 
-	def self.setTopic(area)
-		if area
+	def self.getTopicFromArea(area)
+		if area || area != "PGH"
 			topic = self.TOPIC_PREFIX+area+"SmellReports"
 		else
 			topic = self.TOPIC_PREFIX+"SmellReports"
