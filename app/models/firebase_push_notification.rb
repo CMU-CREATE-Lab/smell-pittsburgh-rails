@@ -14,6 +14,7 @@ class FirebasePushNotification < ActiveRecord::Base
 		"https://fcm.googleapis.com/fcm/send"
 	end
 
+
 	# pushes to those subscribed to Pittsburgh AQI notifications
 	# aqi_has_increased: true indicates increase, false indicates decrease (if neither increase/decrease, the function should not be called)
 	def self.push_aqi_pittsburgh_change(aqi_has_increased,cities,pittsburgh)
@@ -160,6 +161,7 @@ class FirebasePushNotification < ActiveRecord::Base
 			Rails.logger.info("FirebasePushNotification (non-production): curl -X POST #{headers} #{url} -d '#{data}'")
 		end
 	end
+
 
 	def self.getTopicFromArea(area)
 		if area || area != "PGH"
