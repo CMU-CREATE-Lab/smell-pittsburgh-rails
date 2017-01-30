@@ -37,7 +37,7 @@ var $dialog_ok_button;
 var $timeline_container;
 var esdr_root_url = "https://esdr.cmucreatelab.org/api/v1/";
 var aqi_root_url = "http://api.smellpittsburgh.org/api/v1/get_aqi?city=";
-var staging_base_url = "http://bayarea.staging.api.smellpittsburgh.org";
+var staging_base_url = "http://api.smellpittsburgh.org";
 var api_url = "/api/v1/smell_reports?";
 var no_data_txt = "No data in last four hours.";
 var timelineTouched = false;
