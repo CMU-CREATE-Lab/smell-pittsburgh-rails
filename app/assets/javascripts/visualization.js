@@ -21,10 +21,9 @@ var $calendar_dialog;
 var $calendar;
 
 // Map parameters
-var area = "PGH";
+var area, init_latlng;
 var init_zoom_desktop = 12;
 var init_zoom_mobile = 11;
-var init_latlng = {"lat": 40.42, "lng": -79.94};
 
 // Marker parameters
 var zoom_level_to_smell_icon_size = [24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 36, 60, 90, 180, 240, 360];
@@ -188,6 +187,9 @@ function createGoogleMap() {
       ]
     }
   ];
+  //default to Pittsburgh
+  area = "PGH";
+  init_latlng = {"lat": 40.42, "lng": -79.94};
   //get user location
   var query = window.location.search.slice(1).split("&");
   for (var i=0;i<query.length;i++) {
@@ -428,11 +430,28 @@ function deleteTimeline() {
 }
 
 function drawTimeline() {
-  var last_month;
+  var last_month, bounds;
   var td_count = 0;
-  //TODO: add bounding box for Bay area and Pittsburgh; in loop on line 443, check if report is within appropriate bounding box
   // April 04 2016
+  //default start date if no smell reports were submitted for that time range
+  //note: this becomes a problem if the first entry is blank and the range starts before the default start date
   var date = new Date(1459728000000);
+  if(area == "BA") {
+    bounds = {
+      max_lat: 37.995264,
+      min_lat: 37.071794,
+      max_lng: -121.570188,
+      min_lng: -122.399811
+    }
+  }
+  else if(area == "PGH") {
+    bounds = {
+      max_lat: 40.916992,
+      min_lat: 40.102992,
+      max_lng: -79.428193,
+      min_lng: -80.471694
+    }
+  }
   for (var k = 0; k < smell_reports.length; k++) {
     var report_k = smell_reports[k];
     //if (report_k.length == 0) {
@@ -441,7 +460,11 @@ function drawTimeline() {
     //var color = Math.round((0.95 - Math.tanh(report_k.length / 10)) * 255);
     var smell_average = 0;
     for (var i = 0; i < report_k.length; i++) {
-      smell_average += report_k[i].smell_value;
+      var report = report_k[i];
+      if (report.latitude < bounds.max_lat && report.latitude > bounds.min_lat
+         && report.longitude < bounds.max_lng && report.longitude > bounds.min_lng) {
+        smell_average += report_k[i].smell_value;
+      }
     }
     if (smell_average > 0)
       smell_average /= report_k.length;
