@@ -94,8 +94,9 @@ class FirebasePushNotification < ActiveRecord::Base
 
 
 	# all Smell PGH clients should be subscribed to these messages
-	def self.push_global(title, body)
-		self.send_push_notification(self.TOPIC_PREFIX+self.GLOBAL_TOPIC, title, body)
+	def self.push_global(title, body, area=nil)
+		topic = self.getTopicFromArea(area)+self.GLOBAL_TOPIC
+		self.send_push_notification(topic, title, body)
 	end
 
 
