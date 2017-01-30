@@ -21,9 +21,9 @@ var $calendar_dialog;
 var $calendar;
 
 // Map parameters
+var area, init_latlng;
 var init_zoom_desktop = 12;
 var init_zoom_mobile = 11;
-var init_latlng = {"lat": 40.42, "lng": -79.94};
 
 // Marker parameters
 var zoom_level_to_smell_icon_size = [24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 36, 60, 90, 180, 240, 360];
@@ -187,6 +187,20 @@ function createGoogleMap() {
       ]
     }
   ];
+  //default to Pittsburgh
+  area = "PGH";
+  init_latlng = {"lat": 40.42, "lng": -79.94};
+  //get user location
+  var query = window.location.search.slice(1).split("&");
+  for (var i=0;i<query.length;i++) {
+    var queryVar = query[i];
+    if(queryVar.indexOf("user_hash") != -1 && queryVar.match(/[A-Z]{2,}/)){
+      area = queryVar.match(/[A-Z]{2,}/)[0];
+    }
+  }
+  if (area == "BA") {
+    init_latlng = {"lat":38.004472, "lng":-122.260693};
+  }
 
   // Set Google map
   map = new google.maps.Map(document.getElementById("map"), {
@@ -310,7 +324,9 @@ function genSmellURL(date_obj) {
     //var last_day = new Date(y, m + 1, 0).getTime() / 1000;
     //api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=" + first_day + "&end_time=" + last_day;
   }
-
+  if (area != "PGH") {
+    api_paras += "&area=" + area;
+  }
   var root_url = window.location.origin;
   return root_url + api_url + api_paras;
 }
@@ -414,10 +430,28 @@ function deleteTimeline() {
 }
 
 function drawTimeline() {
-  var last_month;
+  var last_month, bounds;
   var td_count = 0;
-  // June 04 2016
-  var date = new Date(1465012800000);
+  // April 04 2016
+  //default start date if no smell reports were submitted for that time range
+  //note: this becomes a problem if the first entry is blank and the range starts before the default start date
+  var date = new Date(1459728000000);
+  if(area == "BA") {
+    bounds = {
+      max_lat: 37.995264,
+      min_lat: 37.071794,
+      max_lng: -121.570188,
+      min_lng: -122.399811
+    }
+  }
+  else if(area == "PGH") {
+    bounds = {
+      max_lat: 40.916992,
+      min_lat: 40.102992,
+      max_lng: -79.428193,
+      min_lng: -80.471694
+    }
+  }
   for (var k = 0; k < smell_reports.length; k++) {
     var report_k = smell_reports[k];
     //if (report_k.length == 0) {
@@ -426,7 +460,11 @@ function drawTimeline() {
     //var color = Math.round((0.95 - Math.tanh(report_k.length / 10)) * 255);
     var smell_average = 0;
     for (var i = 0; i < report_k.length; i++) {
-      smell_average += report_k[i].smell_value;
+      var report = report_k[i];
+      if (report.latitude < bounds.max_lat && report.latitude > bounds.min_lat
+         && report.longitude < bounds.max_lng && report.longitude > bounds.min_lng) {
+        smell_average += report_k[i].smell_value;
+      }
     }
     if (smell_average > 0)
       smell_average /= report_k.length;
@@ -535,8 +573,8 @@ function loadAndDrawSingleSensor(time) {
     use_PM25_now = false;
   }
 
-  // Show current Pittsburgh AQI if on current day
-  if (use_PM25_now) {
+  // Show current Pittsburgh AQI if on current day and user is in Pittsburgh
+  if (use_PM25_now && area == "PGH") {
     if (sensorLoadCount == 0) {
       $.getJSON(aqi_root_url + "Pittsburgh", function (response) {
         if (response) {
