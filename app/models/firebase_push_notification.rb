@@ -164,7 +164,7 @@ class FirebasePushNotification < ActiveRecord::Base
 
 
 	def self.getTopicFromArea(area)
-		if area || area != "PGH"
+		if not area.nil? and area != "PGH"
 			topic = self.TOPIC_PREFIX+area+"SmellReports"
 		else
 			topic = self.TOPIC_PREFIX+"SmellReports"
