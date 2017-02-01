@@ -438,10 +438,10 @@ function drawTimeline() {
   var date = new Date(1459728000000);
   if(area == "BA") {
     bounds = {
-      max_lat: 37.995264,
-      min_lat: 37.071794,
-      max_lng: -121.570188,
-      min_lng: -122.399811
+      max_lat: 38.8286208,
+      min_lat: 36.906913,
+      max_lng: -121.209588,
+      min_lng: -123.017998
     }
   }
   else if(area == "PGH") {
@@ -463,7 +463,7 @@ function drawTimeline() {
       var report = report_k[i];
       if (report.latitude < bounds.max_lat && report.latitude > bounds.min_lat
          && report.longitude < bounds.max_lng && report.longitude > bounds.min_lng) {
-        smell_average += report_k[i].smell_value;
+        smell_average += report.smell_value;
       }
     }
     if (smell_average > 0)
