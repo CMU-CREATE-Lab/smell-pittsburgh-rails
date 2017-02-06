@@ -19,6 +19,7 @@ var month_names = ["January", "February", "March", "April", "May", "June",
 ];
 var $calendar_dialog;
 var $calendar;
+var init_date;
 
 // Map parameters
 var area, init_latlng;
@@ -190,6 +191,7 @@ function createGoogleMap() {
   //default to Pittsburgh
   area = "PGH";
   init_latlng = {"lat": 40.42, "lng": -79.94};
+  init_date = new Date(2016,5,4);
   //get user location
   var query = window.location.search.slice(1).split("&");
   for (var i=0;i<query.length;i++) {
@@ -200,6 +202,7 @@ function createGoogleMap() {
   }
   if (area == "BA") {
     init_latlng = {"lat":38.004472, "lng":-122.260693};
+    init_date = new Date(2017,0,1);
   }
 
   // Set Google map
@@ -325,7 +328,8 @@ function genSmellURL(date_obj) {
     //api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=" + first_day + "&end_time=" + last_day;
   }
   if (area != "PGH") {
-    api_paras += "&area=" + area;
+    //specify default start time
+    api_paras += "&area=" + area + "&start_time=" + (init_date.getTime() / 1000);
   }
   var root_url = window.location.origin;
   return root_url + api_url + api_paras;
@@ -435,7 +439,7 @@ function drawTimeline() {
   // April 04 2016
   //default start date if no smell reports were submitted for that time range
   //note: this becomes a problem if the first entry is blank and the range starts before the default start date
-  var date = new Date(1459728000000);
+  var date = init_date;
   if(area == "BA") {
     bounds = {
       max_lat: 38.8286208,
