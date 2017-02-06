@@ -6,7 +6,7 @@ set :application, 'smellpgh'
 set :deploy_to, "/var/www/rails-apps/#{fetch(:application)}/#{fetch(:stage)}"
 
 # shared resources
-set :linked_dirs, %w(log public/system)
+set :linked_dirs, %w(log public/system tmp/cache)
 set :linked_files, %w(config/database.yml config/secrets.yml config/environment.rb config/environments/production.rb)
 
 # git/version control info
