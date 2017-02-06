@@ -436,9 +436,6 @@ function deleteTimeline() {
 function drawTimeline() {
   var last_month, bounds;
   var td_count = 0;
-  // April 04 2016
-  //default start date if no smell reports were submitted for that time range
-  //note: this becomes a problem if the first entry is blank and the range starts before the default start date
   var date = init_date;
   if(area == "BA") {
     bounds = {
