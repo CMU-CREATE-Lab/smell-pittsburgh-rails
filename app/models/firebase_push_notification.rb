@@ -111,7 +111,7 @@ class FirebasePushNotification < ActiveRecord::Base
 
 	# TODO add options
 	def self.send_push_notification(to, title, body, options=nil)
-		if options["area"] == "BA"
+		if not options.nil? and options["area"] == "BA"
 			current_hour = (Time.now - 3 * 60 * 60).hour
 		else
 			current_hour = Time.now.hour
