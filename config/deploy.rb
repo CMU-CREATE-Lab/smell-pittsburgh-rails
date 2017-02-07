@@ -74,6 +74,8 @@ namespace :deploy do
         execute(:git, "init", "--separate-git-dir=#{fetch(:repo_path)}")
         execute(:mkdir,"-p","tmp")
         sudo(:chmod, "-R", "777", "tmp")
+        # since cache is now symlinked we have to specify the dir
+        sudo(:chmod, "-R", "777", "tmp/cache/*")
         execute(:rake, "assets:precompile")
         sudo(:chown, "-R", "#{fetch(:ssh_username)}:rvm", "#{fetch(:deploy_to)}")
         execute(:touch,"tmp/restart.txt")
