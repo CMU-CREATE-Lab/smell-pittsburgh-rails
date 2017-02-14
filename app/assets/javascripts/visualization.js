@@ -427,16 +427,15 @@ function drawTimeline() {
   var data = [];
   for (var k = 0; k < smell_reports.length; k++) {
     var report_k = smell_reports[k];
-    var smell_average = 0;
+    var count = 0;
     for (var i = 0; i < report_k.length; i++) {
       var report = report_k[i];
+      if (report.smell_value <= 2) continue;
       if (report.latitude < bounds.max_lat && report.latitude > bounds.min_lat
         && report.longitude < bounds.max_lng && report.longitude > bounds.min_lng) {
-        smell_average += report.smell_value;
+        count += 1;
       }
     }
-    if (smell_average > 0)
-      smell_average /= report_k.length;
     if (report_k[0])
       date = new Date(report_k[0].created_at);
     else
@@ -445,7 +444,7 @@ function drawTimeline() {
     var date_str_seg = date_str.split(" ");
     var label = date_str_seg[1] + " " + date_str_seg[2];
     var epochtime = date.getTime() / 1000;
-    data.push([label, smell_average, epochtime]);
+    data.push([label, count, epochtime]);
     // Save the index if necessary
     var month = date.getMonth();
     if (last_month != month) {
@@ -470,7 +469,6 @@ function drawTimeline() {
     format: ["label", "value", "epochtime"],
     dataIndexForLabels: 0,
     dataIndexForValues: 1
-
   };
   timeline = new EdaVizJS.FlatBlockChart("timeline-container", chart_settings);
 }
