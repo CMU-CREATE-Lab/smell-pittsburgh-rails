@@ -1,9 +1,11 @@
 function isOriginStaging() {
   var url_hostname = window.location.hostname;
-  if (url_hostname.indexOf("api.smellpittsburgh") > 0) {
-    return true;
-  } else {
+  var index = url_hostname.indexOf("api.smellpittsburgh");
+  if (index == 0) {
     return false;
+  } else {
+    // This includes all development environments (staging or localhost)
+    return true;
   }
 }
 
