@@ -1,50 +1,45 @@
 "use strict";
 
-// Map variables
+// URL variables
+var api_url = "/api/v1/smell_reports?";
+var esdr_root_url = "https://esdr.cmucreatelab.org/api/v1/";
+var aqi_root_url = "http://api.smellpittsburgh.org/api/v1/get_aqi?city=";
+
+// Google map variables
 var map;
-var infowindow_smell;
-var infowindow_sensor;
+var area;
+var init_latlng;
+var init_date;
+var init_zoom_desktop = 12;
+var init_zoom_mobile = 11;
+
+// Smell reports variables
 var smell_reports;
 var smell_reports_jump_index = [];
-var smell_markers = [];
+var zoom_level_to_smell_icon_size = [24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 36, 60, 90, 180, 240, 360];
+var previous_icon_size;
+var no_data_txt = "No data in last four hours.";
+var infowindow_smell;
+var infowindow_sensor;
 var sensor_color_wind = ["sensor_0_wind.png", "sensor_1_wind.png", "sensor_2_wind.png", "sensor_3_wind.png", "sensor_4_wind.png", "sensor_5_wind.png"];
 var sensor_color = ["sensor_0.png", "sensor_1.png", "sensor_2.png", "sensor_3.png", "sensor_4.png", "sensor_5.png"];
 var smell_value_text = ["Just fine!", "Barely noticeable", "Definitely noticeable",
   "It's getting pretty bad", "About as bad as it gets!"
 ];
+var smell_markers = [];
 
-// Calendar
-var month_names = ["January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
+// Calendar variables
+var month_names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 var $calendar_dialog;
 var $calendar;
-var init_date;
-
-// Map parameters
-var area;
-var init_latlng;
-var init_zoom_desktop = 12;
-var init_zoom_mobile = 11;
-
-// Marker parameters
-var zoom_level_to_smell_icon_size = [24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 36, 60, 90, 180, 240, 360];
-var previous_icon_size;
+var $dialog_ok_button;
 
 // Timeline variables
 var timeline;
-var $dialog_ok_button;
-var esdr_root_url = "https://esdr.cmucreatelab.org/api/v1/";
-var aqi_root_url = "http://api.smellpittsburgh.org/api/v1/get_aqi?city=";
-var api_url = "/api/v1/smell_reports?";
-var no_data_txt = "No data in last four hours.";
 
-var requests = [];
-
-// Sensors
+// Sensor variables
 // NOTE: Put all sensors that are not drawn first.
-// This is needed so that the data is available for the sensors
-// that are drawn.
+// This is needed so that the data is available for the sensors that are drawn.
 var sensorList = [
   {
     feed: 28,
@@ -108,21 +103,18 @@ var sensorList = [
     doDraw: true
   }
 ];
+var requests = [];
 var sensor_markers = [];
 var sensorLoadCount = 0;
 var sensors = {};
 var totalSensors = sensorList.length;
 
 function init() {
-  // Store objects
-  $calendar = $("#calendar");
-  $calendar_dialog = $("#calendar-dialog");
-  $dialog_ok_button = $("#dialog-ok-button");
-
   // Create the page
-  createGoogleMap();
-  createToolbar();
-  createCalendarDialog();
+  createGoogleMapAndHomeButton();
+  createCalendarButtonAndDialog();
+
+  // Load data
   loadCalendar();
   loadSmellReports(new Date());
 
@@ -135,13 +127,9 @@ function init() {
   $('body').on("click", "a", function (e) {
     e.preventDefault();
   });
-
-  // Add horizontal scrolling to the timeline
-  // Needed because Android <= 4.4 won't scroll without this
-  addTouchHorizontalScroll($("#timeline-container"));
 }
 
-function createGoogleMap() {
+function createGoogleMapAndHomeButton() {
   // Set Google map style
   var styleArray = [
     {
@@ -164,10 +152,12 @@ function createGoogleMap() {
       ]
     }
   ];
+
   //default to Pittsburgh
   area = "PGH";
   init_latlng = {"lat": 40.42, "lng": -79.94};
   init_date = new Date(2016, 5, 4);
+
   //get user location
   var query = window.location.search.slice(1).split("&");
   for (var i = 0; i < query.length; i++) {
@@ -215,20 +205,18 @@ function createGoogleMap() {
   infowindow_sensor = new google.maps.InfoWindow({
     pixelOffset: new google.maps.Size(0, 37)
   });
-}
 
-function createToolbar() {
+  // Add event to the home button
   $("#home-btn").on("click", function () {
     map.setCenter(init_latlng);
     map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
   });
-  $("#calendar-btn").on("click", function () {
-    $calendar_dialog.dialog("open");
-    $dialog_ok_button.focus();
-  });
 }
 
-function createCalendarDialog() {
+function createCalendarButtonAndDialog() {
+  $calendar = $("#calendar");
+  $calendar_dialog = $("#calendar-dialog");
+  $dialog_ok_button = $("#dialog-ok-button");
   $calendar_dialog.dialog({
     autoOpen: false,
     draggable: false,
@@ -259,6 +247,10 @@ function createCalendarDialog() {
   });
   $dialog_ok_button.on("click", function () {
     $calendar_dialog.dialog("close");
+  });
+  $("#calendar-btn").on("click", function () {
+    $calendar_dialog.dialog("open");
+    $dialog_ok_button.focus();
   });
 }
 
@@ -402,11 +394,8 @@ function drawCalendar(data) {
 }
 
 function drawTimeline() {
-  var last_month;
+// Set the bound you filtering smell reports
   var bounds;
-  var td_count = 0;
-  var date = init_date;
-  // Set the bound you filtering smell reports
   if (area == "BA") {
     bounds = {
       max_lat: 38.8286208,
@@ -423,11 +412,16 @@ function drawTimeline() {
       min_lng: -80.471694
     }
   }
-  // Compute the average smell value
+
+  // Collect the data for drawing the timeline
   var data = [];
+  var td_count = 0;
+  var date = init_date;
+  var last_month;
   for (var k = 0; k < smell_reports.length; k++) {
     var report_k = smell_reports[k];
     var count = 0;
+    // Count the number of smell reports which have values > 2
     for (var i = 0; i < report_k.length; i++) {
       var report = report_k[i];
       if (report.smell_value <= 2) continue;
@@ -436,16 +430,17 @@ function drawTimeline() {
         count += 1;
       }
     }
+    // Compute the date string and the epoch time
     if (report_k[0])
       date = new Date(report_k[0].created_at);
     else
       date = new Date(date.setDate(date.getDate() + 1));
-    var date_str = date.toDateString();
-    var date_str_seg = date_str.split(" ");
+    var date_str_seg = date.toDateString().split(" ");
     var label = date_str_seg[1] + " " + date_str_seg[2];
     var epochtime = date.getTime() / 1000;
+    // Push a data point
     data.push([label, count, epochtime]);
-    // Save the index if necessary
+    // Save the index if necessary (the calendar will use this)
     var month = date.getMonth();
     if (last_month != month) {
       smell_reports_jump_index.push(td_count);
@@ -453,17 +448,14 @@ function drawTimeline() {
     }
     td_count++;
   }
+
   // Use the charting library to draw the timeline
   var chart_settings = {
     click: function ($e) {
-      // Add google analytics
-      var label = {
-        "dimension5": (parseInt($e.data("epochtime")) * 1000).toString()
-      };
-      addGoogleAnalyticEvent("timeline", "click", label);
+      handleTimelineButtonClicked(parseInt($e.data("epochtime")));
     },
     select: function ($e) {
-      selectTimelineButton(parseInt($e.data("index")), parseInt($e.data("epochtime")));
+      handleTimelineButtonSelected(parseInt($e.data("index")), parseInt($e.data("epochtime")));
     },
     data: data,
     format: ["label", "value", "epochtime"],
@@ -471,9 +463,21 @@ function drawTimeline() {
     dataIndexForValues: 1
   };
   timeline = new EdaVizJS.FlatBlockChart("timeline-container", chart_settings);
+
+  // Add horizontal scrolling to the timeline
+  // Needed because Android <= 4.4 won't scroll without this
+  addTouchHorizontalScroll($("#timeline-container"));
 }
 
-function selectTimelineButton(index, epochtime) {
+function handleTimelineButtonClicked(epochtime) {
+  // Add google analytics
+  var label = {
+    "dimension5": (epochtime * 1000).toString()
+  };
+  addGoogleAnalyticEvent("timeline", "click", label);
+}
+
+function handleTimelineButtonSelected(index, epochtime) {
   infowindow_smell.close();
   infowindow_sensor.close();
   deleteAllSmellReports();
