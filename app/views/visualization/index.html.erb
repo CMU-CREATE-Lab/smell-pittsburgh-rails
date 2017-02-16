@@ -8,16 +8,16 @@
 <% content_for :js do %>
   <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js" %>
   <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js" %>
-  <%= javascript_include_tag "https://maps.googleapis.com/maps/api/js?v=3.26&key=AIzaSyD2nqIondaBl-YWGlaD_mo1L0w3j2yvehQ" %>
+  <%= javascript_include_tag "https://maps.googleapis.com/maps/api/js?key=AIzaSyD2nqIondaBl-YWGlaD_mo1L0w3j2yvehQ" %>
 <% end %>
 
 <% content_for :body do %>
   <div id="page" data-role="page" class="noselect">
     <div id="map-container">
       <div id="map"></div>
-      <div id="home-btn" class="custom-button ui-icon-custom-home"></div>
-      <div id="calendar-btn" class="custom-button ui-icon-custom-calendar"></div>
-      <div id="playback-btn" class="custom-button ui-icon-custom-play"></div>
+      <div id="home-btn" class="custom-button ui-icon-custom-home noselect"></div>
+      <div id="calendar-btn" class="custom-button ui-icon-custom-calendar noselect"></div>
+      <div id="playback-btn" class="custom-button ui-icon-custom-play noselect"></div>
       <table id="legend-smell-value">
         <tr>
           <td></td>
