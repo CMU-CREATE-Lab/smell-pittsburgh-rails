@@ -308,7 +308,7 @@ function drawSingleSmellReport(report_i) {
   var latlng = {"lat": report_i.latitude, "lng": report_i.longitude};
 
   // Add marker
-  var date = new Date(report_i.created_at);
+  var date = new Date(report_i.created_at * 1000);
   var date_str = date.toLocaleString();
   var smell_value = report_i.smell_value;
   var feelings_symptoms = report_i.feelings_symptoms ? report_i.feelings_symptoms : "No data.";
@@ -432,7 +432,7 @@ function drawTimeline() {
     }
     // Compute the date string and the epoch time
     if (report_k[0])
-      date = new Date(report_k[0].created_at);
+      date = new Date(report_k[0].created_at * 1000);
     else
       date = new Date(date.setDate(date.getDate() + 1));
     var date_str_seg = date.toDateString().split(" ");

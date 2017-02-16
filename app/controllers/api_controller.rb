@@ -123,38 +123,49 @@ class ApiController < ApplicationController
       end_datetime = Time.now.to_datetime
     end
 
-    @reports = SmellReport.where(:created_at => start_datetime...end_datetime).from_app(area).order('created_at ASC')
-
-    if aggregate == "created_at"
-        reports_aggr = []
-        offset_str = "+00:00"
-        if timezone_offset
-            a = timezone_offset.to_i
-            # Convert the timezone offset returned from JavaScript
-            # to a string for ruby's localtime method
-            timezone_sign = ((a <=> 0) ? "-" : "+").to_s # reverse the sign
-            timezone_hr = (a.abs/60).to_s.rjust(2, "0") # get the hour part
-            timezone_min = (a.abs%60).to_s.rjust(2, "0") # get the minute part
-            offset_str = timezone_sign + timezone_hr + ":" + timezone_min
+    if aggregate == "month"
+      # If aggregated by month
+      reports = SmellReport.from_app(area).order('created_at ASC').group("year(created_at)").group("month(created_at)").count
+      reports = {month: reports.keys}
+    elsif aggregate == "created_at"
+      # If aggregated by the created date
+      reports = SmellReport.where(:created_at => start_datetime...end_datetime).from_app(area).order('created_at ASC')
+      reports_aggr = []
+      offset_str = "+00:00"
+      if timezone_offset
+        a = timezone_offset.to_i
+        # Convert the timezone offset returned from JavaScript
+        # to a string for ruby's localtime method
+        timezone_sign = ((a <=> 0) ? "-" : "+").to_s # reverse the sign
+        timezone_hr = (a.abs/60).to_s.rjust(2, "0") # get the hour part
+        timezone_min = (a.abs%60).to_s.rjust(2, "0") # get the minute part
+        offset_str = timezone_sign + timezone_hr + ":" + timezone_min
+      end
+      start_datetime.to_date.upto(end_datetime.to_date).each do |date|
+        date_str = date.to_s
+        reports_aggr << reports.select{|u| u["created_at"].utc.localtime(offset_str).to_date.to_s == date_str}
+        #Rails.logger.info(date.to_s)
+      end
+      # Select only some fields
+      reports = reports_aggr.as_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
+      # Convert created_at to epoch time
+      for i in 0..reports.size()-1
+        for j in 0..reports[i].size()-1
+          reports[i][j]["created_at"] = reports[i][j]["created_at"].to_i
         end
-        start_datetime.to_date.upto(end_datetime.to_date).each do |date|
-            date_str = date.to_s
-            reports_aggr << @reports.select{|u| u.created_at.utc.localtime(offset_str).to_date.to_s == date_str}
-            #Rails.logger.info(date.to_s)
-        end
-        # Convert created_at to utc time string
-        for i in 0..reports_aggr.size()-1
-            for j in 0..reports_aggr[i].size()-1
-                reports_aggr[i][j].created_at = reports_aggr[i][j].created_at.utc.to_s
-            end
-        end
-        @reports = reports_aggr
-    elsif aggregate == "month"
-        reports_aggr = SmellReport.from_app(area).order('created_at ASC').group("year(created_at)").group("month(created_at)").count
-        @reports = {month: reports_aggr.keys}
+      end
+    else
+      # If not aggregated
+      reports = SmellReport.where(:created_at => start_datetime...end_datetime).from_app(area).order('created_at ASC')
+      # Select only some fields
+      reports = reports.as_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
+      # Convert created_at to epoch time
+      for i in 0..reports.size()-1
+        reports[i]["created_at"] = reports[i]["created_at"].to_i
+      end
     end
 
-    render :json => @reports.to_json(:only => [:month, :latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
+    render :json => reports
   end
 
   # GET /api/v1/get_aqi
