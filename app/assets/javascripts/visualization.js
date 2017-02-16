@@ -14,7 +14,7 @@ var init_zoom_desktop = 12;
 var init_zoom_mobile = 11;
 
 // Smell reports variables
-var smell_reports;
+var smell_reports_cache = {};
 var smell_reports_jump_index = [];
 var zoom_level_to_smell_icon_size = [24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 36, 60, 90, 180, 240, 360];
 var previous_icon_size;
@@ -280,17 +280,30 @@ function loadTimeline() {
 }
 
 function loadAndDrawSmellReports(epochtime_milisec) {
-  $.ajax({
-    url: genSmellURL(new Date(epochtime_milisec)),
-    success: function (data) {
-      for (var i = 0; i < data.length; i++) {
-        drawSingleSmellReport(data[i]);
-      }
-    },
-    error: function (response) {
-      console.log("server error:", response);
+  // Check if data exists in the cache
+  var data = smell_reports_cache[epochtime_milisec];
+  if (typeof data != "undefined") {
+    // Draw smell reports
+    for (var i = 0; i < data.length; i++) {
+      drawSingleSmellReport(data[i]);
     }
-  });
+  } else {
+    // Load data from server
+    $.ajax({
+      url: genSmellURL(new Date(epochtime_milisec)),
+      success: function (data) {
+        // Cache data
+        smell_reports_cache[epochtime_milisec] = data;
+        // Draw smell reports
+        for (var i = 0; i < data.length; i++) {
+          drawSingleSmellReport(data[i]);
+        }
+      },
+      error: function (response) {
+        console.log("server error:", response);
+      }
+    });
+  }
 }
 
 function genSmellURL(date_obj) {
