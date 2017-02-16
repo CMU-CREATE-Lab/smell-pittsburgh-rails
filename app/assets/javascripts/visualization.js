@@ -27,6 +27,12 @@ var smell_value_text = ["Just fine!", "Barely noticeable", "Definitely noticeabl
   "It's getting pretty bad", "About as bad as it gets!"
 ];
 var smell_markers = [];
+var selected_epochtime_milisec;
+
+// Animation variables
+var isPlaying = false;
+var $playback_button;
+var animate_smell_report_interval = null;
 
 // Calendar variables
 var month_names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -113,6 +119,7 @@ function init() {
   // Create the page
   createGoogleMapAndHomeButton();
   createCalendarButtonAndDialog();
+  createAnimationButton();
 
   // Load data
   loadCalendar();
@@ -254,6 +261,17 @@ function createCalendarButtonAndDialog() {
   });
 }
 
+function createAnimationButton() {
+  $playback_button = $("#playback-btn");
+  $playback_button.on("click", function () {
+    if (isPlaying) {
+      animateSmellReport("pause");
+    } else {
+      animateSmellReport("play");
+    }
+  });
+}
+
 function loadCalendar() {
   $.ajax({
     url: genSmellURL("month"),
@@ -280,6 +298,7 @@ function loadTimeline() {
 }
 
 function loadAndDrawSmellReports(epochtime_milisec) {
+  selected_epochtime_milisec = epochtime_milisec;
   // Check if data exists in the cache
   var data = smell_reports_cache[epochtime_milisec];
   if (typeof data != "undefined") {
@@ -330,6 +349,45 @@ function genSmellURL(date_obj) {
   }
   var root_url = window.location.origin;
   return root_url + api_url + api_paras;
+}
+
+function animateSmellReport(desire_status, settings) {
+  if (desire_status == "play" && isPlaying == false) {
+    var data = smell_reports_cache[selected_epochtime_milisec];
+    if (animate_smell_report_interval == null && data.length > 0) {
+      isPlaying = true;
+      // Handle UI
+      if ($playback_button.hasClass("ui-icon-custom-play")) {
+        $playback_button.removeClass("ui-icon-custom-play");
+        $playback_button.addClass("ui-icon-custom-pause");
+      }
+      // Start animation
+      var idx = 0;
+      deleteAllSmellReports();
+      animate_smell_report_interval = setInterval(function () {
+        if (idx > data.length - 1) {
+          idx = 0;
+          deleteAllSmellReports();
+        } else {
+          drawSingleSmellReport(data[idx]);
+          idx += 1;
+        }
+      }, 100);
+    }
+  } else if (desire_status == "pause" && isPlaying == true) {
+    isPlaying = false;
+    // Handle UI
+    if ($playback_button.hasClass("ui-icon-custom-pause")) {
+      $playback_button.removeClass("ui-icon-custom-pause");
+      $playback_button.addClass("ui-icon-custom-play");
+    }
+    // Stop animation
+    if (animate_smell_report_interval != null) {
+      clearInterval(animate_smell_report_interval);
+      animate_smell_report_interval = null;
+    }
+    loadAndDrawSmellReports(selected_epochtime_milisec);
+  }
 }
 
 function drawSingleSmellReport(report_i) {
@@ -447,7 +505,7 @@ function drawTimeline(data) {
       handleTimelineButtonClicked(parseInt($e.data("epochtime_milisec")));
     },
     select: function ($e) {
-      handleTimelineButtonSelected(parseInt($e.data("index")), parseInt($e.data("epochtime_milisec")));
+      handleTimelineButtonSelected(parseInt($e.data("epochtime_milisec")));
     },
     data: pts,
     format: ["label", "value", "epochtime_milisec"],
@@ -469,13 +527,14 @@ function handleTimelineButtonClicked(epochtime_milisec) {
   addGoogleAnalyticEvent("timeline", "click", label);
 }
 
-function handleTimelineButtonSelected(index, epochtime_milisec) {
+function handleTimelineButtonSelected(epochtime_milisec) {
   infowindow_smell.close();
   infowindow_sensor.close();
   deleteAllSmellReports();
   loadAndDrawSmellReports(epochtime_milisec);
   deleteAllSensors();
   loadAndDrawAllSensors(epochtime_milisec);
+  animateSmellReport("pause");
 }
 
 function isMobile() {

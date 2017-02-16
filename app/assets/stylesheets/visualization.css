@@ -51,6 +51,17 @@
   opacity: 0.75;
 }
 
+#playback-btn {
+  position: absolute;
+  font-size: 11px;
+  left: 9px;
+  bottom: 30px;
+  width: 50px;
+  height: 50px;
+  border-radius: 25px;
+  opacity: 0.75;
+}
+
 #legend-smell-value {
   pointer-events: none;
   position: absolute;
@@ -212,6 +223,20 @@
   background-position: center center;
 }
 
+.ui-icon-custom-play {
+  background-image: url(/img/play.png);
+  background-size: 22px 22px;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
+
+.ui-icon-custom-pause {
+  background-image: url(/img/pause.png);
+  background-size: 22px 22px;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
+
 .custom-td-button {
   width: 100%;
   height: 100%;
@@ -271,16 +296,18 @@
   top: 11px;
 }
 
-.ui-dialog-titlebar-close.ui-state-default{
+.ui-dialog-titlebar-close.ui-state-default {
   background: none;
   border: none;
   height: auto;
 }
+
 .ui-dialog-titlebar-close .ui-button-text {
   padding: 0;
   text-indent: 0;
 }
-.ui-dialog-titlebar-close .ui-icon-closethick{
+
+.ui-dialog-titlebar-close .ui-icon-closethick {
   background: none;
 }
 
