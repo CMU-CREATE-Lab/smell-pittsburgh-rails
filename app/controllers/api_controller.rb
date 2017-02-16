@@ -110,6 +110,7 @@ class ApiController < ApplicationController
     aggregate = params["aggregate"]
     timezone_offset = params["timezone_offset"]
     area = params["area"] == nil ? "PGH" : params["area"]
+    min_smell_value = params["min_smell_value"] == nil ? 0 : params["min_smell_value"]
 
     if start_time
       start_datetime = Time.at(start_time.to_i).to_datetime if start_time
@@ -127,9 +128,9 @@ class ApiController < ApplicationController
       # If aggregated by month
       reports = SmellReport.from_app(area).order('created_at ASC').group("year(created_at)").group("month(created_at)").count
       reports = {month: reports.keys}
-    elsif aggregate == "created_at"
-      # If aggregated by the created date
-      reports = SmellReport.where(:created_at => start_datetime...end_datetime).from_app(area).order('created_at ASC')
+    elsif aggregate == "day"
+      # If aggregated by day
+      reports = SmellReport.where(:created_at => start_datetime...end_datetime).where("smell_value>=" + min_smell_value.to_s).from_app(area).order('created_at ASC')
       reports_aggr = []
       offset_str = "+00:00"
       if timezone_offset
@@ -143,17 +144,10 @@ class ApiController < ApplicationController
       end
       start_datetime.to_date.upto(end_datetime.to_date).each do |date|
         date_str = date.to_s
-        reports_aggr << reports.select{|u| u["created_at"].utc.localtime(offset_str).to_date.to_s == date_str}
+        reports_aggr << [date_str, reports.select{|u| u["created_at"].utc.localtime(offset_str).to_date.to_s == date_str}.count]
         #Rails.logger.info(date.to_s)
       end
-      # Select only some fields
-      reports = reports_aggr.as_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
-      # Convert created_at to epoch time
-      for i in 0..reports.size()-1
-        for j in 0..reports[i].size()-1
-          reports[i][j]["created_at"] = reports[i][j]["created_at"].to_i
-        end
-      end
+      reports = reports_aggr
     else
       # If not aggregated
       reports = SmellReport.where(:created_at => start_datetime...end_datetime).from_app(area).order('created_at ASC')

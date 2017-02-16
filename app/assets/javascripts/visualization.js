@@ -116,7 +116,7 @@ function init() {
 
   // Load data
   loadCalendar();
-  loadSmellReports(new Date());
+  loadTimeline();
 
   // Disable vertical bouncing effect on mobile browsers
   $(document).on("scrollstart", function (e) {
@@ -256,7 +256,7 @@ function createCalendarButtonAndDialog() {
 
 function loadCalendar() {
   $.ajax({
-    url: genSmellURL(),
+    url: genSmellURL("month"),
     success: function (data) {
       drawCalendar(data);
     },
@@ -266,13 +266,26 @@ function loadCalendar() {
   });
 }
 
-function loadSmellReports(date) {
+function loadTimeline() {
   $.ajax({
-    url: genSmellURL(date),
+    url: genSmellURL("day"),
     success: function (data) {
-      smell_reports = data;
-      drawTimeline();
+      drawTimeline(data);
       timeline.selectLastBlock();
+    },
+    error: function (response) {
+      console.log("server error:", response);
+    }
+  });
+}
+
+function loadAndDrawSmellReports(epochtime_milisec) {
+  $.ajax({
+    url: genSmellURL(new Date(epochtime_milisec)),
+    success: function (data) {
+      for (var i = 0; i < data.length; i++) {
+        drawSingleSmellReport(data[i]);
+      }
     },
     error: function (response) {
       console.log("server error:", response);
@@ -282,23 +295,25 @@ function loadSmellReports(date) {
 
 function genSmellURL(date_obj) {
   var api_paras;
-  if (typeof date_obj == "undefined") {
+  if (date_obj == "month") {
     api_paras = "aggregate=month";
-  } else {
+  } else if (date_obj == "day") {
+    var min_smell_value = 3;
     var timezone_offset = new Date().getTimezoneOffset();
-    api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset;
-    // An alternative usage is to add starting time, ending time, and timezone offset
-    // (see the following code)
-    //var timezone_offset = new Date().getTimezoneOffset();
-    //var y = date_obj.getFullYear();
-    //var m = date_obj.getMonth();
-    //var first_day = new Date(y, m, 1).getTime() / 1000;
-    //var last_day = new Date(y, m + 1, 0).getTime() / 1000;
-    //api_paras = "aggregate=created_at&timezone_offset=" + timezone_offset + "&start_time=" + first_day + "&end_time=" + last_day;
+    api_paras = "aggregate=day&min_smell_value=" + min_smell_value + "&timezone_offset=" + timezone_offset;
+  } else {
+    date_obj = typeof date_obj == "undefined" ? new Date() : date_obj;
+    // Get only the smell reports for one day
+    var y = date_obj.getFullYear();
+    var m = date_obj.getMonth();
+    var d = date_obj.getDate();
+    var first_day_epochtime = parseInt((new Date(y, m, d).getTime()) / 1000);
+    var last_day_epochtime = first_day_epochtime + 86399;
+    api_paras = "start_time=" + first_day_epochtime + "&end_time=" + last_day_epochtime;
   }
   if (area != "PGH") {
     //specify default start time
-    api_paras += "&area=" + area + "&start_time=" + (init_date.getTime() / 1000);
+    api_paras += "&area=" + area + "&start_time=" + parseInt(init_date.getTime() / 1000);
   }
   var root_url = window.location.origin;
   return root_url + api_url + api_paras;
@@ -354,27 +369,6 @@ function drawSingleSmellReport(report_i) {
   smell_markers.push(marker);
 }
 
-function drawAllSmellReports() {
-  for (var k = 0; k < smell_reports.length; k++) {
-    var report_k = smell_reports[k];
-    if (report_k.length == 0) {
-      continue;
-    }
-    for (var i = 0; i < report_k.length; i++) {
-      drawSingleSmellReport(report_k[i]);
-    }
-  }
-}
-
-function drawSmellReportsByIndex(idx) {
-  if (idx) {
-    var report_k = smell_reports[idx];
-    for (var i = 0; i < report_k.length; i++) {
-      drawSingleSmellReport(report_k[i]);
-    }
-  }
-}
-
 function deleteAllSmellReports() {
   for (var i = 0; i < smell_markers.length; i++) {
     smell_markers[i].setMap(null);
@@ -393,7 +387,7 @@ function drawCalendar(data) {
   }
 }
 
-function drawTimeline() {
+function drawTimeline(data) {
 // Set the bound you filtering smell reports
   var bounds;
   if (area == "BA") {
@@ -414,32 +408,17 @@ function drawTimeline() {
   }
 
   // Collect the data for drawing the timeline
-  var data = [];
+  var pts = [];
   var td_count = 0;
-  var date = init_date;
   var last_month;
-  for (var k = 0; k < smell_reports.length; k++) {
-    var report_k = smell_reports[k];
-    var count = 0;
-    // Count the number of smell reports which have values > 2
-    for (var i = 0; i < report_k.length; i++) {
-      var report = report_k[i];
-      if (report.smell_value <= 2) continue;
-      if (report.latitude < bounds.max_lat && report.latitude > bounds.min_lat
-        && report.longitude < bounds.max_lng && report.longitude > bounds.min_lng) {
-        count += 1;
-      }
-    }
-    // Compute the date string and the epoch time
-    if (report_k[0])
-      date = new Date(report_k[0].created_at * 1000);
-    else
-      date = new Date(date.setDate(date.getDate() + 1));
-    var date_str_seg = date.toDateString().split(" ");
-    var label = date_str_seg[1] + " " + date_str_seg[2];
-    var epochtime = date.getTime() / 1000;
+  for (var i = 0; i < data.length; i++) {
+    var date_str_in = data[i][0].split("-");
+    var date = new Date(date_str_in[0], date_str_in[1] - 1, date_str_in[2]);
+    var date_str_out = date.toDateString().split(" ");
+    var label = date_str_out[1] + " " + date_str_out[2];
+    var epochtime_milisec = date.getTime();
     // Push a data point
-    data.push([label, count, epochtime]);
+    pts.push([label, data[i][1], epochtime_milisec]);
     // Save the index if necessary (the calendar will use this)
     var month = date.getMonth();
     if (last_month != month) {
@@ -452,13 +431,13 @@ function drawTimeline() {
   // Use the charting library to draw the timeline
   var chart_settings = {
     click: function ($e) {
-      handleTimelineButtonClicked(parseInt($e.data("epochtime")));
+      handleTimelineButtonClicked(parseInt($e.data("epochtime_milisec")));
     },
     select: function ($e) {
-      handleTimelineButtonSelected(parseInt($e.data("index")), parseInt($e.data("epochtime")));
+      handleTimelineButtonSelected(parseInt($e.data("index")), parseInt($e.data("epochtime_milisec")));
     },
-    data: data,
-    format: ["label", "value", "epochtime"],
+    data: pts,
+    format: ["label", "value", "epochtime_milisec"],
     dataIndexForLabels: 0,
     dataIndexForValues: 1
   };
@@ -469,21 +448,21 @@ function drawTimeline() {
   addTouchHorizontalScroll($("#timeline-container"));
 }
 
-function handleTimelineButtonClicked(epochtime) {
+function handleTimelineButtonClicked(epochtime_milisec) {
   // Add google analytics
   var label = {
-    "dimension5": (epochtime * 1000).toString()
+    "dimension5": epochtime_milisec.toString()
   };
   addGoogleAnalyticEvent("timeline", "click", label);
 }
 
-function handleTimelineButtonSelected(index, epochtime) {
+function handleTimelineButtonSelected(index, epochtime_milisec) {
   infowindow_smell.close();
   infowindow_sensor.close();
   deleteAllSmellReports();
-  drawSmellReportsByIndex(index);
+  loadAndDrawSmellReports(epochtime_milisec);
   deleteAllSensors();
-  loadAndDrawAllSensors(epochtime);
+  loadAndDrawAllSensors(epochtime_milisec);
 }
 
 function isMobile() {
@@ -491,15 +470,15 @@ function isMobile() {
   return useragent.indexOf("iPhone") != -1 || useragent.indexOf("Android") != -1;
 }
 
-function loadAndDrawAllSensors(time) {
+function loadAndDrawAllSensors(epochtime_milisec) {
   sensorLoadCount = 0;
-  loadAndDrawSingleSensor(time);
+  loadAndDrawSingleSensor(epochtime_milisec);
 }
 
-function loadAndDrawSingleSensor(time) {
+function loadAndDrawSingleSensor(epochtime_milisec) {
   var info = sensorList[sensorLoadCount];
   var sensor = {};
-  var date_str_sensor = (new Date(time * 1000)).toDateString();
+  var date_str_sensor = (new Date(epochtime_milisec)).toDateString();
   var date_hour_now = (new Date()).getHours();
   var date_str_now = (new Date()).toDateString();
   var feed_url = esdr_root_url + "feeds/" + info.feed;
@@ -513,11 +492,12 @@ function loadAndDrawSingleSensor(time) {
   sensor["feed"] = info.feed;
 
   // Channel max values are not calculated until 3am, so to be safe we wait until 4.
+  var epochtime = parseInt(epochtime_milisec / 1000);
   if (date_str_sensor == date_str_now || date_hour_now < 4) {
-    data_url = feed_url + "/channels/" + info.channels.toString() + "/export?format=json&from=" + time + "&to=" + (time + 86399);
+    data_url = feed_url + "/channels/" + info.channels.toString() + "/export?format=json&from=" + epochtime + "&to=" + (epochtime + 86399);
     use_PM25_now = true;
   } else if (info["channel_max"]) {
-    data_url = feed_url + "/channels/" + info["channel_max"] + "/export?format=json&from=" + time + "&to=" + (time + 86399);
+    data_url = feed_url + "/channels/" + info["channel_max"] + "/export?format=json&from=" + epochtime + "&to=" + (epochtime + 86399);
     use_PM25_now = false;
   }
 
@@ -605,7 +585,7 @@ function loadAndDrawSingleSensor(time) {
       drawSingleSensor(sensors[sensor.name]);
     sensorLoadCount++;
     if (sensorLoadCount < totalSensors)
-      loadAndDrawSingleSensor(time, info[sensorLoadCount]);
+      loadAndDrawSingleSensor(epochtime_milisec, info[sensorLoadCount]);
   });
 }
 
