@@ -459,44 +459,45 @@ function drawCalendar(data) {
 }
 
 function drawTimeline(data) {
-// Set the bound you filtering smell reports
-  var bounds;
-  if (area == "BA") {
-    bounds = {
-      max_lat: 38.8286208,
-      min_lat: 36.906913,
-      max_lng: -121.209588,
-      min_lng: -123.017998
-    }
-  }
-  else if (area == "PGH") {
-    bounds = {
-      max_lat: 40.916992,
-      min_lat: 40.102992,
-      max_lng: -79.428193,
-      min_lng: -80.471694
-    }
-  }
-
   // Collect the data for drawing the timeline
   var pts = [];
   var td_count = 0;
   var last_month;
-  for (var i = 0; i < data.length; i++) {
-    var date_str_in = data[i][0].split("-");
-    var date = new Date(date_str_in[0], date_str_in[1] - 1, date_str_in[2]);
-    var date_str_out = date.toDateString().split(" ");
-    var label = date_str_out[1] + " " + date_str_out[2];
-    var epochtime_milisec = date.getTime();
-    // Push a data point
-    pts.push([label, data[i][1], epochtime_milisec]);
-    // Save the index if necessary (the calendar will use this)
-    var month = date.getMonth();
-    if (last_month != month) {
-      smell_reports_jump_index.push(td_count);
-      last_month = month;
+  var day = data["day"];
+  var count = data["count"];
+  for (var i = 0; i < day.length; i++) {
+    var date_i = dateStringToObject(day[i]);
+    var date_array = [date_i];
+    var count_array = [count[i]];
+    // Check if we need to pad missing days
+    var date_ii;
+    if (i < day.length - 1) {
+      date_ii = dateStringToObject(day[i + 1]);
+    } else {
+      date_ii = new Date();
     }
-    td_count++;
+    var diff_days = Math.floor(date_ii.getTime() - date_i.getTime()) / 86400000;
+    if (diff_days > 1) {
+      var date_i_time = date_i.getTime();
+      for (var j = 1; j < diff_days; j++) {
+        date_array.push(new Date(date_i_time + 86400000 * j));
+        count_array.push(0);
+      }
+    }
+    // Push a data point
+    for (var k = 0; k < date_array.length; k++) {
+      var date = date_array[k];
+      var date_str = date.toDateString().split(" ");
+      var label = date_str[1] + " " + date_str[2];
+      pts.push([label, count_array[k], date.getTime()]);
+      // Save the index if necessary (the calendar will use this)
+      var month = date.getMonth();
+      if (last_month != month) {
+        smell_reports_jump_index.push(td_count);
+        last_month = month;
+      }
+      td_count++;
+    }
   }
 
   // Use the charting library to draw the timeline

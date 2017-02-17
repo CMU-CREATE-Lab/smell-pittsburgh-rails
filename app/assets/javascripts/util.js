@@ -13,3 +13,11 @@ function roundTo(val, n) {
   var d = Math.pow(10, n);
   return Math.round(parseFloat(val) * d) / d;
 }
+
+function dateStringToObject(str) {
+  var str_split = str.split("-");
+  var year = parseInt(str_split[0]);
+  var month = parseInt(str_split[1]);
+  var day = parseInt(str_split[2]);
+  return new Date(year, month - 1, day);
+}
