@@ -31,10 +31,12 @@ var selected_epochtime_milisec;
 
 // Animation variables
 var isPlaying = false;
+var isDwelling = false;
 var $playback_button;
 var animate_smell_report_interval = null;
 var smell_reports_cache_hist = {};
-var markers_of_previous_bins = [[]];
+var $playback_txt;
+var animation_labels;
 
 // Calendar variables
 var month_names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -119,9 +121,9 @@ var totalSensors = sensorList.length;
 
 function init() {
   // Create the page
-  createGoogleMapAndHomeButton();
-  createCalendarButtonAndDialog();
-  createAnimationButton();
+  initGoogleMapAndHomeButton();
+  initCalendarButtonAndDialog();
+  initAnimationUI();
 
   // Load data
   loadCalendar();
@@ -138,7 +140,7 @@ function init() {
   });
 }
 
-function createGoogleMapAndHomeButton() {
+function initGoogleMapAndHomeButton() {
   // Set Google map style
   var styleArray = [
     {
@@ -222,7 +224,7 @@ function createGoogleMapAndHomeButton() {
   });
 }
 
-function createCalendarButtonAndDialog() {
+function initCalendarButtonAndDialog() {
   $calendar = $("#calendar");
   $calendar_dialog = $("#calendar-dialog");
   $dialog_ok_button = $("#dialog-ok-button");
@@ -263,15 +265,16 @@ function createCalendarButtonAndDialog() {
   });
 }
 
-function createAnimationButton() {
+function initAnimationUI() {
   $playback_button = $("#playback-btn");
   $playback_button.on("click", function () {
     if (isPlaying) {
-      animateSmellReport("pause");
+      stopAnimation();
     } else {
-      animateSmellReport("play");
+      startAnimation();
     }
   });
+  $playback_txt = $("#playback-txt");
 }
 
 function loadCalendar() {
@@ -382,99 +385,121 @@ function histSmellReport(r) {
   return histogram;
 }
 
-function animateSmellReport(desire_status) {
-  if (desire_status == "play" && isPlaying == false) {
-    var hist = smell_reports_cache_hist[selected_epochtime_milisec];
-    if (animate_smell_report_interval == null && hist.length > 0) {
-      isPlaying = true;
-      // Handle UI
-      if ($playback_button.hasClass("ui-icon-custom-play")) {
-        $playback_button.removeClass("ui-icon-custom-play");
-        $playback_button.addClass("ui-icon-custom-pause");
-      }
-      // Find all bin indices that have data
-      var bin_indices_have_data = [];
-      for (var i = 0; i < hist.length; i++) {
-        if (hist[i]["data"].length > 0) {
-          bin_indices_have_data.push(i);
-        }
-      }
-      // Start animation
-      var b = 0;
-      var bin_idx = bin_indices_have_data[b];
-      var data_idx = 0;
-      deleteAllSmellReports();
-      animate_smell_report_interval = setInterval(function () {
-        if (b > bin_indices_have_data.length - 1) {
-          /////////////////////////////////////////////////////////////////////////////////
-          // This condition means that we animated all smell reports in all bins
-          /////////////////////////////////////////////////////////////////////////////////
-          b = 0;
-          bin_idx = bin_indices_have_data[b];
-          data_idx = 0;
-          deleteAllSmellReports();
-          markers_of_previous_bins = [[]];
-        } else {
-          //console.log(hist[bin_idx]["hour"], hist[bin_idx]["minute"]);
-          if (data_idx > hist[bin_idx]["data"].length - 1) {
-            /////////////////////////////////////////////////////////////////////////////////
-            // This condition means that we animated all smell reports in the previous bin
-            /////////////////////////////////////////////////////////////////////////////////
-            // Set the opacity of smell report makers in the previous bin to a lower value
-            //var ms = markers_of_previous_bins[markers_of_previous_bins.length - 1];
-            //for (var i = 0; i < ms.length; i++) {
-            //  ms[i].setOpacity(0.5);
-            //  ms[i].setZIndex(0);
-            //}
-            if (markers_of_previous_bins.length > 0) {
-              var ms = markers_of_previous_bins.shift();
-              for (var i = 0; i < ms.length; i++) {
-                ms[i].setOpacity(0.2);
-                ms[i].setZIndex(0);
-              }
-            }
-            // Increase the bin counter
-            b += 1;
-            // Find the index of next bin that has data
-            bin_idx = bin_indices_have_data[b];
-            // Reset the smell report counter
-            data_idx = 0;
-            // Push a new array of previous bins
-            markers_of_previous_bins.push([]);
-            // Draw the first smell report in the bin
-            //if (b <= bin_indices_have_data.length - 1) {
-            //  var m = drawSingleSmellReport(hist[bin_idx]["data"][data_idx]);
-            //  markers_of_previous_bins[markers_of_previous_bins.length - 1].push(m);
-            //  data_idx += 1;
-            //}
-          } else {
-            /////////////////////////////////////////////////////////////////////////////////
-            // This condition means that we need to animate the smell report
-            /////////////////////////////////////////////////////////////////////////////////
-            // Draw a smell report marker on the Google map
-            var m = drawSingleSmellReport(hist[bin_idx]["data"][data_idx]);
-            markers_of_previous_bins[markers_of_previous_bins.length - 1].push(m);
-            // Increase the smell report counter
-            data_idx += 1;
-          }
-        }
-      }, 200);
-    }
-  } else if (desire_status == "pause" && isPlaying == true) {
-    isPlaying = false;
-    // Handle UI
-    if ($playback_button.hasClass("ui-icon-custom-pause")) {
-      $playback_button.removeClass("ui-icon-custom-pause");
-      $playback_button.addClass("ui-icon-custom-play");
-    }
-    // Stop animation
-    if (animate_smell_report_interval != null) {
-      clearInterval(animate_smell_report_interval);
-      animate_smell_report_interval = null;
-      markers_of_previous_bins = [[]];
-    }
-    loadAndDrawSmellReports(selected_epochtime_milisec);
+function startAnimation() {
+  if (isPlaying == true) return;
+  isPlaying = true;
+  isDwelling = false;
+
+  var reports = smell_reports_cache[selected_epochtime_milisec];
+  if (animate_smell_report_interval != null || reports.length == 0) return;
+
+  // Handle UI
+  if ($playback_button.hasClass("ui-icon-custom-play")) {
+    $playback_button.removeClass("ui-icon-custom-play");
+    $playback_button.addClass("ui-icon-custom-pause");
   }
+  $playback_txt.show();
+
+  // Animation variables
+  var frames_per_sec = 60;
+  var secs_to_animate_one_day = 20;
+  var increments_per_frame = Math.round(86400000 / (secs_to_animate_one_day * frames_per_sec));
+  var interval = 1000 / frames_per_sec;
+  var marker_fade_milisec = 1000;
+  var dwell_sec = 2;
+  var dwell_increments = dwell_sec * frames_per_sec * increments_per_frame;
+  var label = getAnimationLabels();
+
+  // Initialize animation
+  var r_idx = 0;
+  var elapsed_milisec = 0;
+  deleteAllSmellReports();
+  var label_idx = 0;
+  $playback_txt.text(label[label_idx]["text"]);
+
+  // Start animation
+  animate_smell_report_interval = setInterval(function () {
+    if (elapsed_milisec < 86400000) {
+      // This condition means that we need to animate smell reports
+      // Draw smell reports
+      for (var i = r_idx; i < reports.length - 1; i++) {
+        if ((reports[i]["created_at"] * 1000) <= (selected_epochtime_milisec + elapsed_milisec)) {
+          var marker = drawSingleSmellReport(reports[i]);
+          fadeGoogleMapMarker(marker, marker_fade_milisec);
+        } else {
+          r_idx = i;
+          break;
+        }
+      }
+      // Display label
+      if (elapsed_milisec >= label[label_idx]["milisec"]) {
+        label_idx += 1;
+        $playback_txt.text(label[label_idx]["text"]);
+      }
+    } else {
+      isDwelling = true;
+    }
+    if (elapsed_milisec > 86400000 + dwell_increments) {
+      isDwelling = false;
+      // This condition means that we already animated all smell reports in one day
+      r_idx = 0;
+      elapsed_milisec = 0;
+      deleteAllSmellReports();
+      label_idx = 0;
+      $playback_txt.text(label[label_idx]["text"]);
+    }
+    elapsed_milisec += increments_per_frame;
+  }, interval);
+}
+
+function stopAnimation() {
+  if (isPlaying == false) return;
+  isPlaying = false;
+  isDwelling = false;
+
+  // Handle UI
+  if ($playback_button.hasClass("ui-icon-custom-pause")) {
+    $playback_button.removeClass("ui-icon-custom-pause");
+    $playback_button.addClass("ui-icon-custom-play");
+  }
+  $playback_txt.text("");
+  $playback_txt.hide();
+
+  // Stop animation
+  if (animate_smell_report_interval != null) {
+    clearInterval(animate_smell_report_interval);
+    animate_smell_report_interval = null;
+  }
+
+  // Draw all smell reports to the map
+  deleteAllSmellReports();
+  loadAndDrawSmellReports(selected_epochtime_milisec);
+}
+
+function getAnimationLabels() {
+  if (typeof animation_labels != "undefined") return animation_labels;
+  animation_labels = [];
+  var increments = 86400000 / 48;
+  var milisec = increments;
+  for (var i = 0; i < 48; i++) {
+    var hour = Math.floor(i / 2);
+    var minute = (i % 2) * 30;
+    animation_labels.push({
+      text: ("0" + hour).slice(-2) + ":" + ("0" + minute).slice(-2),
+      milisec: milisec
+    });
+    milisec += increments;
+  }
+  return animation_labels;
+}
+
+function fadeGoogleMapMarker(marker, time) {
+  setTimeout(function () {
+    if (isPlaying == true && isDwelling == false) {
+      marker.setZIndex(0);
+      marker.setOpacity(0.3);
+    }
+  }, time);
 }
 
 function drawSingleSmellReport(report_i) {
@@ -624,7 +649,7 @@ function handleTimelineButtonSelected(epochtime_milisec) {
   loadAndDrawSmellReports(epochtime_milisec);
   deleteAllSensors();
   loadAndDrawAllSensors(epochtime_milisec);
-  animateSmellReport("pause");
+  stopAnimation();
 }
 
 function isMobile() {

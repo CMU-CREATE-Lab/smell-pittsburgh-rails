@@ -14,13 +14,13 @@
 }
 
 .flat-block-chart td {
-  font-size: 14px;
-  min-width: 55px;
-  max-width: 55px;
+  font-size: 12px;
+  min-width: 50px;
+  max-width: 50px;
 }
 
 .flat-block-chart-value {
-  height: 70%;
+  height: 75%;
 }
 
 .flat-block-chart-label td {

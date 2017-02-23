@@ -9,7 +9,7 @@
   left: 0px;
   right: 0px;
   top: 0px;
-  bottom: 90px;
+  bottom: 75px;
   width: auto;
   height: auto;
 }
@@ -25,7 +25,7 @@
   bottom: 0px;
   right: 0px;
   top: auto;
-  height: 90px;
+  height: 75px;
   width: auto;
   overflow-x: scroll;
   background-color: white;
@@ -35,9 +35,10 @@
   position: absolute;
   font-size: 11px;
   left: 9px;
-  top: 72px;
-  width: 50px;
-  height: 50px;
+  top: 65px;
+  width: 45px;
+  height: 45px;
+  border-radius: 23px;
   opacity: 0.75;
 }
 
@@ -46,8 +47,9 @@
   font-size: 11px;
   left: 9px;
   top: 9px;
-  width: 50px;
-  height: 50px;
+  width: 45px;
+  height: 45px;
+  border-radius: 23px;
   opacity: 0.75;
 }
 
@@ -55,11 +57,21 @@
   position: absolute;
   font-size: 11px;
   left: 9px;
-  bottom: 30px;
-  width: 50px;
-  height: 50px;
-  border-radius: 25px;
+  bottom: 25px;
+  width: 45px;
+  height: 45px;
+  border-radius: 23px;
   opacity: 0.75;
+}
+
+#playback-txt {
+  position: absolute;
+  font-size: 35px;
+  left: 64px;
+  bottom: 26px;
+  color: black;
+  text-shadow: -1px 0 1px white, 0 1px 1px white, 1px 0 1px white, 0 -1px 1px white;
+  display: none;
 }
 
 #legend-smell-value {
@@ -72,36 +84,33 @@
   background-color: rgba(255, 255, 255, 0.75);
   border: 1px solid #777777;
   border-radius: 2px;
-  padding-top: 3px;
-  padding-right: 5px;
-  padding-left: 5px;
-  padding-bottom: 5px;
+  padding-top: 4px;
+  padding-right: 4px;
+  padding-left: 4px;
+  padding-bottom: 4px;
 }
 
 #legend-smell-value td {
-  font-size: 11px;
-  width: 15px;
-  height: 6px;
+  font-size: 10px;
   text-align: center;
+  margin: 0;
 }
 
 #legend-smell-value .smell-color-td {
   color: black;
   opacity: 0.9;
-  width: 15px;
-  height: 15px;
+  min-width: 13px;
+  max-width: 13px;
   background-repeat: no-repeat;
-  background-size: 17px 17px;
+  background-size: 15px 15px;
   background-position: center;
 }
 
 #legend-smell-value .wind-arrow-td {
   color: black;
   opacity: 0.9;
-  width: 39px;
-  height: 15px;
   background-repeat: no-repeat;
-  background-size: 41px 17px;
+  background-size: 40px 15px;
 }
 
 #legend-smell-value .entry-title {
@@ -211,28 +220,28 @@
 
 .ui-icon-custom-home {
   background-image: url(/img/home.png);
-  background-size: 26px 26px;
+  background-size: 20px 20px;
   background-repeat: no-repeat;
   background-position: center;
 }
 
 .ui-icon-custom-calendar {
   background-image: url(/img/calendar.png);
-  background-size: 26px 26px;
+  background-size: 20px 20px;
   background-repeat: no-repeat;
   background-position: center center;
 }
 
 .ui-icon-custom-play {
   background-image: url(/img/play.png);
-  background-size: 22px 22px;
+  background-size: 20px 20px;
   background-repeat: no-repeat;
   background-position: center center;
 }
 
 .ui-icon-custom-pause {
   background-image: url(/img/pause.png);
-  background-size: 22px 22px;
+  background-size: 20px 20px;
   background-repeat: no-repeat;
   background-position: center center;
 }
