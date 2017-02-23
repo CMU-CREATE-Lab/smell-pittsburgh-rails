@@ -166,7 +166,7 @@ function initGoogleMapAndHomeButton() {
 
   //default to Pittsburgh
   area = "PGH";
-  init_latlng = {"lat": 40.42, "lng": -79.94};
+  init_latlng = {"lat": 40.45, "lng": -79.93};
   init_date = new Date(2016, 5, 4);
 
   //get user location
