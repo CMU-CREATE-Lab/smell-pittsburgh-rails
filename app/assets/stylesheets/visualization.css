@@ -62,6 +62,7 @@
   height: 45px;
   border-radius: 23px;
   opacity: 0.75;
+  display: none;
 }
 
 #playback-txt {
