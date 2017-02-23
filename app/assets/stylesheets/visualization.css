@@ -66,11 +66,12 @@
 
 #playback-txt {
   position: absolute;
-  font-size: 35px;
+  font-size: 39px;
   left: 64px;
-  bottom: 26px;
-  color: black;
-  text-shadow: -1px 0 1px white, 0 1px 1px white, 1px 0 1px white, 0 -1px 1px white;
+  bottom: 23px;
+  color: #494949;
+  font-weight: 700;
+  text-shadow: -2px 0 2px white, 0 2px 2px white, 2px 0 2px white, 0 -2px 2px white;
   display: none;
 }
 
