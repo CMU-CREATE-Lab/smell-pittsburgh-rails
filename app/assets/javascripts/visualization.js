@@ -15,26 +15,14 @@ var init_zoom_mobile = 11;
 
 // Smell reports variables
 var smell_reports_cache = {};
-var smell_reports_jump_index = [];
-var zoom_level_to_smell_icon_size = [24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 36, 60, 90, 180, 240, 360];
-var previous_icon_size;
-var no_data_txt = "No data in last four hours.";
+var current_epochtime_milisec;
 var infowindow_smell;
-var infowindow_sensor;
-var sensor_color_wind = ["sensor_0_wind.png", "sensor_1_wind.png", "sensor_2_wind.png", "sensor_3_wind.png", "sensor_4_wind.png", "sensor_5_wind.png"];
-var sensor_color = ["sensor_0.png", "sensor_1.png", "sensor_2.png", "sensor_3.png", "sensor_4.png", "sensor_5.png"];
-var smell_value_text = ["Just fine!", "Barely noticeable", "Definitely noticeable",
-  "It's getting pretty bad", "About as bad as it gets!"
-];
-var smell_markers = [];
-var selected_epochtime_milisec;
 
 // Animation variables
 var isPlaying = false;
 var isDwelling = false;
-var $playback_button;
 var animate_smell_report_interval = null;
-var smell_reports_cache_hist = {};
+var $playback_button;
 var $playback_txt;
 var animation_labels;
 
@@ -46,6 +34,7 @@ var $dialog_ok_button;
 
 // Timeline variables
 var timeline;
+var timeline_jump_index = [];
 
 // Sensor variables
 // NOTE: Put all sensors that are not drawn first.
@@ -118,6 +107,10 @@ var sensor_markers = [];
 var sensorLoadCount = 0;
 var sensors = {};
 var totalSensors = sensorList.length;
+var sensor_and_wind_icons = ["sensor_0_wind.png", "sensor_1_wind.png", "sensor_2_wind.png", "sensor_3_wind.png", "sensor_4_wind.png", "sensor_5_wind.png"];
+var sensor_icons = ["sensor_0.png", "sensor_1.png", "sensor_2.png", "sensor_3.png", "sensor_4.png", "sensor_5.png"];
+var infowindow_sensor;
+var no_data_txt = "No data in last four hours.";
 
 function init() {
   // Create the page
@@ -126,8 +119,8 @@ function init() {
   initAnimationUI();
 
   // Load data
-  loadCalendar();
-  loadTimeline();
+  loadAndDrawCalendar();
+  loadAndDrawTimeline();
 
   // Disable vertical bouncing effect on mobile browsers
   $(document).on("scrollstart", function (e) {
@@ -191,24 +184,6 @@ function initGoogleMapAndHomeButton() {
     mapTypeId: google.maps.MapTypeId.ROADMAP
   });
 
-  // Add events
-  map.addListener('zoom_changed', function () {
-    var zoom_level = map.getZoom();
-    var icon_size = zoom_level_to_smell_icon_size[zoom_level];
-    if (icon_size != previous_icon_size) {
-      var icon_size_half = icon_size / 2;
-      for (var i = 0; i < smell_markers.length; i++) {
-        var icon = smell_markers[i]["icon"];
-        icon["url"] = getSmellColor(smell_markers[i]["smell_value"] - 1);
-        icon["scaledSize"] = new google.maps.Size(icon_size, icon_size);
-        icon["anchor"] = new google.maps.Point(icon_size_half, icon_size_half);
-        icon["size"] = new google.maps.Size(icon_size, icon_size);
-        smell_markers[i].setIcon(icon);
-      }
-      previous_icon_size = icon_size;
-    }
-  });
-
   // Set smell report information window
   infowindow_smell = new google.maps.InfoWindow({
     pixelOffset: new google.maps.Size(-1, 0)
@@ -242,7 +217,7 @@ function initCalendarButtonAndDialog() {
     if ($selected.val() == -1) {
       timeline.selectLastBlock();
     } else {
-      var desired_index = smell_reports_jump_index[$selected.val()];
+      var desired_index = timeline_jump_index[$selected.val()];
       if (typeof desired_index != "undefined") {
         timeline.selectBlockByIndex(desired_index);
         // Google Analytics
@@ -277,7 +252,7 @@ function initAnimationUI() {
   $playback_txt = $("#playback-txt");
 }
 
-function loadCalendar() {
+function loadAndDrawCalendar() {
   $.ajax({
     url: genSmellURL("month"),
     success: function (data) {
@@ -289,7 +264,7 @@ function loadCalendar() {
   });
 }
 
-function loadTimeline() {
+function loadAndDrawTimeline() {
   $.ajax({
     url: genSmellURL("day"),
     success: function (data) {
@@ -303,33 +278,78 @@ function loadTimeline() {
 }
 
 function loadAndDrawSmellReports(epochtime_milisec) {
-  selected_epochtime_milisec = epochtime_milisec;
+  if (typeof epochtime_milisec == "undefined") {
+    epochtime_milisec = current_epochtime_milisec;
+  } else {
+    current_epochtime_milisec = epochtime_milisec;
+  }
+
   // Check if data exists in the cache
-  var data = smell_reports_cache[epochtime_milisec];
-  if (typeof data != "undefined") {
-    // Draw smell reports
-    for (var i = 0; i < data.length; i++) {
-      drawSingleSmellReport(data[i]);
+  var r = smell_reports_cache[epochtime_milisec];
+  if (typeof r != "undefined") {
+    // Make smell markers visible on the map
+    var markers = r["markers"];
+    for (var i = 0; i < markers.length; i++) {
+      markers[i].setMap(map);
     }
   } else {
     // Load data from server
     $.ajax({
       url: genSmellURL(new Date(epochtime_milisec)),
       success: function (data) {
-        // Cache data
-        smell_reports_cache[epochtime_milisec] = data;
-        // Draw smell reports
-        for (var i = 0; i < data.length; i++) {
-          drawSingleSmellReport(data[i]);
-        }
-        // Bin smell reports
-        smell_reports_cache_hist[epochtime_milisec] = histSmellReport(data);
+        createSmellReportMarkers(data, epochtime_milisec);
       },
       error: function (response) {
         console.log("server error:", response);
       }
     });
   }
+}
+
+function createSmellReportMarkers(data, epochtime_milisec) {
+  var init_zoom_level = map.getZoom();
+  var markers = [];
+
+  for (var i = 0; i < data.length; i++) {
+    var m = new CustomMapMarker({
+      type: "smell",
+      data: data[i],
+      initZoomLevel: init_zoom_level,
+      click: function (marker) {
+        handleSmellMarkerClicked(marker);
+      }
+    });
+    m.setMap(map); // Make the maker visible on the map
+    markers.push(m);
+  }
+
+  // Cache data and markers
+  smell_reports_cache[epochtime_milisec] = {
+    data: data,
+    markers: markers
+  };
+
+  // Update marker size when users zoom the map
+  map.addListener('zoom_changed', function () {
+    var current_markers = smell_reports_cache[current_epochtime_milisec]["markers"];
+    var current_zoom_level = map.getZoom();
+    for (var i = 0; i < current_markers.length; i++) {
+      current_markers[i].updateIconByZoomLevel(current_zoom_level);
+    }
+  });
+}
+
+function handleSmellMarkerClicked(marker) {
+  infowindow_sensor.close();
+  infowindow_smell.setContent(marker.getContent());
+  infowindow_smell.open(map, marker.getGoogleMapMarker());
+
+  // Add google analytics event
+  var label = {
+    "dimension5": marker.getTimestamp().toString(),
+    "metric1": marker.getSmellValue()
+  };
+  addGoogleAnalyticEvent("smell", "click", label);
 }
 
 function genSmellURL(date_obj) {
@@ -390,8 +410,8 @@ function startAnimation() {
   isPlaying = true;
   isDwelling = false;
 
-  var reports = smell_reports_cache[selected_epochtime_milisec];
-  if (animate_smell_report_interval != null || reports.length == 0) return;
+  var smell_markers = smell_reports_cache[current_epochtime_milisec]["markers"];
+  if (animate_smell_report_interval != null || smell_markers.length == 0) return;
 
   // Handle UI
   if ($playback_button.hasClass("ui-icon-custom-play")) {
@@ -413,7 +433,7 @@ function startAnimation() {
   // Initialize animation
   var r_idx = 0;
   var elapsed_milisec = 0;
-  deleteAllSmellReports();
+  removeSmellMarkersFromMap();
   var label_idx = 0;
   $playback_txt.text(label[label_idx]["text"]);
 
@@ -421,14 +441,18 @@ function startAnimation() {
   animate_smell_report_interval = setInterval(function () {
     if (elapsed_milisec < 86400000) {
       // This condition means that we need to animate smell reports
-      // Draw smell reports
-      for (var i = r_idx; i < reports.length - 1; i++) {
-        if ((reports[i]["created_at"] * 1000) <= (selected_epochtime_milisec + elapsed_milisec)) {
-          var marker = drawSingleSmellReport(reports[i]);
-          fadeGoogleMapMarker(marker, marker_fade_milisec);
-        } else {
-          r_idx = i;
-          break;
+      // Check all smell reports that are not on the map
+      // Draw a smell report only if it has time less than the current elapsed time
+      if (r_idx < smell_markers.length) {
+        for (var i = r_idx; i < smell_markers.length; i++) {
+          var smell_epochtime_milisec = smell_markers[i].getTimestamp() * 1000;
+          if (smell_epochtime_milisec <= (current_epochtime_milisec + elapsed_milisec)) {
+            smell_markers[i].setMap(map);
+            fadeMarker(smell_markers[i], marker_fade_milisec);
+            r_idx += 1;
+          } else {
+            break;
+          }
         }
       }
       // Display label
@@ -444,7 +468,7 @@ function startAnimation() {
       // This condition means that we already animated all smell reports in one day
       r_idx = 0;
       elapsed_milisec = 0;
-      deleteAllSmellReports();
+      removeSmellMarkersFromMap();
       label_idx = 0;
       $playback_txt.text(label[label_idx]["text"]);
     }
@@ -472,13 +496,14 @@ function stopAnimation() {
   }
 
   // Draw all smell reports to the map
-  deleteAllSmellReports();
-  loadAndDrawSmellReports(selected_epochtime_milisec);
+  removeSmellMarkersFromMap();
+  loadAndDrawSmellReports();
 }
 
 function getAnimationLabels() {
   if (typeof animation_labels != "undefined") return animation_labels;
   animation_labels = [];
+  // One bin is equal to 30 minutes
   var increments = 86400000 / 48;
   var milisec = increments;
   for (var i = 0; i < 48; i++) {
@@ -493,7 +518,7 @@ function getAnimationLabels() {
   return animation_labels;
 }
 
-function fadeGoogleMapMarker(marker, time) {
+function fadeMarker(marker, time) {
   setTimeout(function () {
     if (isPlaying == true && isDwelling == false) {
       marker.setZIndex(0);
@@ -502,63 +527,14 @@ function fadeGoogleMapMarker(marker, time) {
   }, time);
 }
 
-function drawSingleSmellReport(report_i) {
-  var latlng = {"lat": report_i.latitude, "lng": report_i.longitude};
-
-  // Add marker
-  var date = new Date(report_i.created_at * 1000);
-  var date_str = date.toLocaleString();
-  var smell_value = report_i.smell_value;
-  var feelings_symptoms = report_i.feelings_symptoms ? report_i.feelings_symptoms : "No data.";
-  var smell_description = report_i.smell_description ? report_i.smell_description : "No data.";
-  var icon_size = zoom_level_to_smell_icon_size[map.getZoom()];
-  previous_icon_size = icon_size;
-  var icon_size_half = icon_size / 2;
-  var marker = new google.maps.Marker({
-    position: latlng,
-    map: map,
-    created_date: date.getTime(),
-    smell_value: report_i.smell_value,
-    content: '<b>Date:</b> ' + date_str + '<br>'
-    + '<b>Smell Rating:</b> ' + smell_value + " (" + smell_value_text[smell_value - 1] + ")" + '<br>'
-    + '<b>Symptoms:</b> ' + feelings_symptoms + '<br>'
-    + '<b>Smell Description:</b> ' + smell_description,
-    icon: {
-      url: getSmellColor(report_i.smell_value - 1),
-      scaledSize: new google.maps.Size(icon_size, icon_size),
-      size: new google.maps.Size(icon_size, icon_size),
-      origin: new google.maps.Point(0, 0),
-      anchor: new google.maps.Point(icon_size_half, icon_size_half)
-    },
-    zIndex: report_i.smell_value,
-    opacity: 1
-  });
-
-  // Add marker event
-  marker.addListener("click", function () {
-    //map.panTo(this.getPosition());
-    infowindow_sensor.close();
-    infowindow_smell.setContent(this.content);
-    infowindow_smell.open(map, this);
-    // Add google analytics event
-    var label = {
-      "dimension5": this.created_date.toString(),
-      "metric1": this.smell_value
-    };
-    addGoogleAnalyticEvent("smell", "click", label);
-  });
-
-  // Save markers
-  smell_markers.push(marker);
-
-  return marker;
-}
-
-function deleteAllSmellReports() {
-  for (var i = 0; i < smell_markers.length; i++) {
-    smell_markers[i].setMap(null);
+function removeSmellMarkersFromMap() {
+  var r = smell_reports_cache[current_epochtime_milisec];
+  if (typeof r == "undefined") return;
+  var current_markers = r["markers"];
+  for (var i = 0; i < current_markers.length; i++) {
+    current_markers[i].setMap(null);
+    current_markers[i].reset();
   }
-  smell_markers = [];
 }
 
 function drawCalendar(data) {
@@ -607,7 +583,7 @@ function drawTimeline(data) {
       // Save the index if necessary (the calendar will use this)
       var month = date.getMonth();
       if (last_month != month) {
-        smell_reports_jump_index.push(td_count);
+        timeline_jump_index.push(td_count);
         last_month = month;
       }
       td_count++;
@@ -645,7 +621,7 @@ function handleTimelineButtonClicked(epochtime_milisec) {
 function handleTimelineButtonSelected(epochtime_milisec) {
   infowindow_smell.close();
   infowindow_sensor.close();
-  deleteAllSmellReports();
+  removeSmellMarkersFromMap();
   loadAndDrawSmellReports(epochtime_milisec);
   deleteAllSensors();
   loadAndDrawAllSensors(epochtime_milisec);
@@ -800,17 +776,17 @@ function drawSingleSensor(sensor) {
     html += '<b>Latest Wind Speed:</b> ' + txt + '<br>';
   }
 
-  var color_idx = sensorValToColorIndex(val);
+  var icon_idx = sensorValToIconIndex(val);
   var markerArray, rotation = 0;
   if (typeof(sensor["wind_speed"]) !== "undefined" && typeof(sensor["wind_direction"]) !== "undefined") {
-    markerArray = sensor_color_wind;
+    markerArray = sensor_and_wind_icons;
     // The direction given by ACHD is the direction _from_ which the wind is coming.
     // We reverse it to show where the wind is going to. (+180)
     // Also, the arrow we start with is already rotated 90 degrees, so we need to account for this. (-90)
     // This means we add 90 to the sensor wind direction value for the correct angle of the wind arrow.
     rotation = sensor["wind_direction"] + 90;
   } else {
-    markerArray = sensor_color;
+    markerArray = sensor_icons;
   }
 
   // Add marker
@@ -831,7 +807,7 @@ function drawSingleSensor(sensor) {
         anchor: new google.maps.Point(50, 50)
       },
       shape: {coords: [50, 50, 12.5], type: "circle"}, /* Modify click region */
-      zIndex: color_idx,
+      zIndex: icon_idx,
       opacity: 1
     });
 
@@ -853,10 +829,10 @@ function drawSingleSensor(sensor) {
     sensor_markers.push(marker);
   });
 
-  image.src = "/img/" + markerArray[color_idx];
+  image.src = "/img/" + markerArray[icon_idx];
 }
 
-function sensorValToColorIndex(val) {
+function sensorValToIconIndex(val) {
   var scale = [12, 35.4, 55.4, 150.4];
   if (val == no_data_txt) {
     return 0;
@@ -940,21 +916,6 @@ function getRotatedMarker(image, deg) {
   ctx.drawImage(image, 0, 0);
   ctx.restore();
   return canvas.toDataURL('image/png');
-}
-
-function getSmellColor(idx) {
-  var path = "/img/";
-  var smell_color = ["smell_1.png", "smell_2.png", "smell_3.png", "smell_4.png", "smell_5.png"];
-  var smell_color_med = ["smell_1_med.png", "smell_2_med.png", "smell_3_med.png", "smell_4_med.png", "smell_5_med.png"];
-  var smell_color_big = ["smell_1_big.png", "smell_2_big.png", "smell_3_big.png", "smell_4_big.png", "smell_5_big.png"];
-  var map_zoom = map.getZoom();
-  if (map_zoom >= 20) {
-    return path + smell_color_big[idx];
-  } else if (map_zoom < 20 && map_zoom >= 17) {
-    return path + smell_color_med[idx];
-  } else {
-    return path + smell_color[idx];
-  }
 }
 
 $(function () {
