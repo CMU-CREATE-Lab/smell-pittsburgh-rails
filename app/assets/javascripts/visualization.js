@@ -352,7 +352,7 @@ function genSmellURL(date_obj) {
   }
   if (area != "PGH") {
     //specify default start time
-    api_paras += "&area=" + area + "&start_time=" + parseInt(init_date.getTime() / 1000);
+    api_paras += "&area=" + area;
   }
   var root_url = window.location.origin;
   return root_url + api_url + api_paras;
