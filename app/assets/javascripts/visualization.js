@@ -37,8 +37,85 @@ var timeline;
 var timeline_jump_index = [];
 
 // Sensor variables
-// NOTE: Put all sensors that are not drawn first.
-// This is needed so that the data is available for the sensors that are drawn.
+var sensors_cache = {};
+var infowindow_sensor;
+var sensors_list = [
+  {
+    feed: 28,
+    name: "County AQ Monitor - Liberty",
+    type: "wind",
+    channels: [
+      "SONICWS_MPH",
+      "SONICWD_DEG"
+    ]
+  }, {
+    feed: 26,
+    name: "County AQ Monitor - Lawrenceville",
+    type: "wind",
+    channels: [
+      "SONICWS_MPH",
+      "SONICWD_DEG"
+    ]
+  }, {
+    feed: 43,
+    name: "County AQ Monitor - Parkway East",
+    type: "wind",
+    channels: [
+      "SONICWS_MPH",
+      "SONICWD_DEG"
+    ]
+  }, {
+    feed: 1,
+    name: "County AQ Monitor - Avalon",
+    type: "wind",
+    channels: [
+      "SONICWS_MPH",
+      "SONICWD_DEG"
+    ]
+  },
+  {
+    feed: 29,
+    name: "County AQ Monitor - Liberty",
+    type: "sensor",
+    channel_max: "PM25_UG_M3_daily_max",
+    channels: [
+      "PM25_UG_M3"
+    ]
+  }, {
+    feed: 26,
+    name: "County AQ Monitor - Lawrenceville",
+    type: "sensor",
+    channel_max: "PM25B_UG_M3_daily_max",
+    channels: [
+      "PM25B_UG_M3"
+    ]
+  }, {
+    feed: 5975,
+    name: "County AQ Monitor - Parkway East",
+    type: "sensor",
+    channel_max: "PM2_5_daily_max",
+    channels: [
+      "PM2_5"
+    ]
+  }, {
+    feed: 30,
+    name: "County AQ Monitor - Lincoln",
+    type: "sensor",
+    channel_max: "PM25_UG_M3_daily_max",
+    channels: [
+      "PM25_UG_M3"
+    ]
+  }, {
+    feed: 1,
+    name: "County AQ Monitor - Avalon",
+    type: "sensor",
+    channel_max: "PM25B_UG_M3_daily_max",
+    channels: [
+      "PM25B_UG_M3"
+    ]
+  }
+];
+
 var sensorList = [
   {
     feed: 28,
@@ -109,7 +186,6 @@ var sensors = {};
 var totalSensors = sensorList.length;
 var sensor_and_wind_icons = ["sensor_0_wind.png", "sensor_1_wind.png", "sensor_2_wind.png", "sensor_3_wind.png", "sensor_4_wind.png", "sensor_5_wind.png"];
 var sensor_icons = ["sensor_0.png", "sensor_1.png", "sensor_2.png", "sensor_3.png", "sensor_4.png", "sensor_5.png"];
-var infowindow_sensor;
 var no_data_txt = "No data in last four hours.";
 
 function init() {
@@ -254,7 +330,7 @@ function initAnimationUI() {
 
 function loadAndDrawCalendar() {
   $.ajax({
-    url: genSmellURL("month"),
+    url: genSmellURL({"aggregate": "month"}),
     success: function (data) {
       drawCalendar(data);
     },
@@ -266,7 +342,7 @@ function loadAndDrawCalendar() {
 
 function loadAndDrawTimeline() {
   $.ajax({
-    url: genSmellURL("day"),
+    url: genSmellURL({"aggregate": "day"}),
     success: function (data) {
       drawTimeline(data);
       timeline.selectLastBlock();
@@ -295,7 +371,7 @@ function loadAndDrawSmellReports(epochtime_milisec) {
   } else {
     // Load data from server
     $.ajax({
-      url: genSmellURL(new Date(epochtime_milisec)),
+      url: genSmellURL({"epochtime_milisec": epochtime_milisec}),
       success: function (data) {
         createSmellReportMarkers(data, epochtime_milisec);
       },
@@ -352,16 +428,16 @@ function handleSmellMarkerClicked(marker) {
   addGoogleAnalyticEvent("smell", "click", label);
 }
 
-function genSmellURL(date_obj) {
+function genSmellURL(method) {
   var api_paras;
-  if (date_obj == "month") {
+  if (typeof method != "undefined" && method["aggregate"] == "month") {
     api_paras = "aggregate=month";
-  } else if (date_obj == "day") {
+  } else if (typeof method != "undefined" && method["aggregate"] == "day") {
     var min_smell_value = 3;
     var timezone_offset = new Date().getTimezoneOffset();
     api_paras = "aggregate=day&min_smell_value=" + min_smell_value + "&timezone_offset=" + timezone_offset;
   } else {
-    date_obj = typeof date_obj == "undefined" ? new Date() : date_obj;
+    var date_obj = typeof method == "undefined" ? new Date() : new Date(method["epochtime_milisec"]);
     // Get only the smell reports for one day
     var y = date_obj.getFullYear();
     var m = date_obj.getMonth();
@@ -376,6 +452,16 @@ function genSmellURL(date_obj) {
   }
   var root_url = window.location.origin;
   return root_url + api_url + api_paras;
+}
+
+function removeSmellMarkersFromMap() {
+  var r = smell_reports_cache[current_epochtime_milisec];
+  if (typeof r == "undefined") return;
+  var current_markers = r["markers"];
+  for (var i = 0; i < current_markers.length; i++) {
+    current_markers[i].setMap(null);
+    current_markers[i].reset();
+  }
 }
 
 function histSmellReport(r) {
@@ -522,19 +608,9 @@ function fadeMarker(marker, time) {
   setTimeout(function () {
     if (isPlaying == true && isDwelling == false) {
       marker.setZIndex(0);
-      marker.setOpacity(0.3);
+      marker.setOpacity(0.4);
     }
   }, time);
-}
-
-function removeSmellMarkersFromMap() {
-  var r = smell_reports_cache[current_epochtime_milisec];
-  if (typeof r == "undefined") return;
-  var current_markers = r["markers"];
-  for (var i = 0; i < current_markers.length; i++) {
-    current_markers[i].setMap(null);
-    current_markers[i].reset();
-  }
 }
 
 function drawCalendar(data) {
@@ -628,9 +704,142 @@ function handleTimelineButtonSelected(epochtime_milisec) {
   stopAnimation();
 }
 
-function isMobile() {
-  var useragent = navigator.userAgent;
-  return useragent.indexOf("iPhone") != -1 || useragent.indexOf("Android") != -1;
+function loadAndDrawAllSensors_(epochtime_milisec) {
+  if (typeof epochtime_milisec == "undefined") {
+    epochtime_milisec = current_epochtime_milisec;
+  } else {
+    current_epochtime_milisec = epochtime_milisec;
+  }
+
+  sensors_cache[epochtime_milisec] = [];
+
+  for (var i = 0; i < sensors_list.length; i++) {
+    loadAndDrawSingleSensor(epochtime_milisec, sensors_list[i], i);
+  }
+}
+
+function loadAndDrawAllSensors_(epochtime_milisec) {
+  if (typeof epochtime_milisec == "undefined") {
+    epochtime_milisec = current_epochtime_milisec;
+  } else {
+    current_epochtime_milisec = epochtime_milisec;
+  }
+
+  // Check if sensor data exists in the cache
+  if (typeof sensors_cache["data"] == "undefined") {
+    sensors_cache["data"] = {};
+  }
+  if (typeof sensors_cache["data"][epochtime_milisec] == "undefined") {
+    sensors_cache["data"][epochtime_milisec] = [];
+    for (var i = 0; i < sensors_list.length; i++) {
+      var info = sensors_list[i];
+      var url = genSensorDataURL(info, epochtime_milisec);
+      sensors_cache["data"][epochtime_milisec][i] = {};
+      $.when(
+        $.getJSON(url["data_url_channels"], function (json) {
+          console.log(json);
+          sensors_cache["data"][epochtime_milisec][i]["channels"] = json["data"];
+        }),
+        $.getJSON(url["data_url_channel_max"], function (json) {
+          sensors_cache["data"][epochtime_milisec][i]["channel_max"] = json["data"];
+        })
+      ).then(function () {
+        console.log(sensors_cache);
+      });
+    }
+  }
+
+  // Check if lat lng data exists in the cache
+  if (typeof sensors_cache["feed_to_latlng"] == "undefined") {
+    var feeds = $.map(sensors_list, function (n) {
+      return n["feed"];
+    });
+    console.log(feeds);
+  }
+
+  var feeds_want_to_load = unique();
+  for (var i = 0; i < sensors_list.length; i++) {
+    var feed = sensors_list[i]["feed"].toString();
+    if (!(feed in r) && feeds_want_to_load.indexOf(feed) == -1) {
+      feeds_want_to_load.push(feed);
+    }
+  }
+  console.log(feeds_want_to_load);
+  // Load lat lng data from server
+  for (var j = 0; j < feeds_want_to_load.length; j++) {
+    var feed = feeds_want_to_load[j];
+    $.ajax({
+      url: esdr_root_url + "feeds/" + feed,
+      success: function (response) {
+        var feed = response["data"]["id"].toString();
+        sensors_cache["feed_to_latlng"][feed] = {
+          lat: roundTo(response["data"]["latitude"], 4),
+          lng: roundTo(response["data"]["longitude"], 4)
+        };
+      },
+      error: function (response) {
+        console.log("server error:", response);
+      }
+    });
+  }
+}
+
+function loadAndDrawSingleSensor_(epochtime_milisec, info, i) {
+  var urls = genSensorDataURL(epochtime_milisec, info);
+  var data = {};
+  $.getJSON(urls["data_url_channels"], function (json) {
+    data["channels"] = json["data"];
+  }).then(function () {
+    if (typeof urls["data_url_channel_max"] != "undefined") {
+      $.getJSON(urls["data_url_channel_max"], function (json) {
+        data["channel_max"] = json["data"];
+      });
+    }
+  }).done(function () {
+    sensors_cache[epochtime_milisec][i] = data;
+    console.log(sensors_cache);
+  });
+}
+
+function genSensorDataURL(epochtime_milisec, info) {
+  var date_str_sensor = (new Date(epochtime_milisec)).toDateString();
+  var date_str_now = (new Date()).toDateString();
+  var date_hour_now = (new Date()).getHours();
+  var data_url = esdr_root_url + "feeds/" + info["feed"] + "/channels/";
+  var epochtime = parseInt(epochtime_milisec / 1000);
+  var time_range_url_part = "/export?format=json&from=" + epochtime + "&to=" + (epochtime + 86399);
+
+  var is_current_day = false;
+  var data_url_channels = data_url + info["channels"].toString() + time_range_url_part;
+  var data_url_channel_max;
+  if (typeof info["channel_max"] != "undefined") {
+    data_url_channel_max = data_url + info["channel_max"] + time_range_url_part;
+  }
+
+  // Channel max values are not calculated until 3am, so to be safe we wait until 4.
+  if (date_str_sensor == date_str_now && date_hour_now >= 4) {
+    is_current_day = true;
+  }
+
+  // Show current Pittsburgh AQI if on current day and user is in Pittsburgh
+  // TODO: move this part out from this function
+  if (is_current_day && area == "PGH") {
+    if (sensorLoadCount == 0) {
+      $.getJSON(aqi_root_url + "Pittsburgh", function (response) {
+        if (response) {
+          $(".aqi-td").text(response);
+          $(".aqi-tr").show();
+        }
+      });
+    }
+  } else {
+    $(".aqi-tr").hide();
+  }
+
+  return {
+    "data_url_channels": data_url_channels,
+    "data_url_channel_max": data_url_channel_max
+  };
 }
 
 function loadAndDrawAllSensors(epochtime_milisec) {
@@ -873,31 +1082,6 @@ function deleteAllSensors() {
     sensor_markers[mi].setMap(null);
   }
   sensor_markers = [];
-}
-
-function addTouchHorizontalScroll(elem) {
-  var scrollStartPos, startTime, endTime, newPos, startTouchX, endTouchX;
-  $(elem).on("touchstart", function (e) {
-    startTime = new Date().getTime();
-    newPos = 0;
-    endTouchX = null;
-    startTouchX = e.originalEvent.touches[0].pageX;
-    scrollStartPos = this.scrollLeft + startTouchX;
-    e.preventDefault();
-  }).on("touchmove", function (e) {
-    endTouchX = e.originalEvent.touches[0].pageX;
-    newPos = scrollStartPos - endTouchX;
-    this.scrollLeft = newPos;
-    e.preventDefault();
-  }).on("touchend touchcancel", function (e) {
-    // TODO: Flick/swip ability
-    //endTime = new Date().getTime();
-    //if (endTouchX && endTime - startTime < 100) {
-    //  var flickVal = 200 * Math.abs(newPos - scrollStartPos) / (endTime - startTime);
-    //  if (endTouchX > startTouchX) flickVal *= -1;
-    //  this.scrollLeft = this.scrollLeft + flickVal;
-    //}
-  });
 }
 
 function getRotatedMarker(image, deg) {
