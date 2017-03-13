@@ -45,7 +45,19 @@
     function init() {
       if (marker_type == "smell") {
         drawSmellMarker();
+      } else if (marker_type == "wind") {
+        drawWindMarker();
+      } else if (marker_type == "sensor") {
+        drawSensorMarker();
       }
+    }
+
+    function drawWindMarker() {
+      console.log(data);
+    }
+
+    function drawSensorMarker() {
+      console.log(data);
     }
 
     function drawSmellMarker() {
