@@ -23,9 +23,9 @@
     var google_map_marker;
     var html_content;
     var this_obj = this;
+    var marker_default_opacity = 1;
 
     // Smell Marker
-    var smell_marker_default_opacity = 1;
     var current_icon_size;
     var zoom_level_to_icon_size = [
       24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 36, 60, 90, 180, 240, 360
@@ -44,48 +44,41 @@
     //
     function init() {
       if (marker_type == "smell") {
-        drawSmellMarker();
-      } else if (marker_type == "wind") {
-        drawWindMarker();
+        createSmellMarker();
       } else if (marker_type == "sensor") {
-        drawSensorMarker();
+        createSensorMarker();
+      }
+
+      addMarkerEvent();
+    }
+
+    function addMarkerEvent() {
+      if (typeof google_map_marker != "undefined") {
+        google_map_marker.addListener("click", function () {
+          if (typeof (click_event_callback) == "function") {
+            click_event_callback(this_obj);
+          }
+        });
       }
     }
 
-    function drawWindMarker() {
-      console.log(data);
-    }
-
-    function drawSensorMarker() {
-      console.log(data);
-    }
-
-    function drawSmellMarker() {
-      var date_str = (new Date(data["created_at"] * 1000)).toLocaleString();
+    function createSmellMarker() {
       var feelings_symptoms = data["feelings_symptoms"] ? data["feelings_symptoms"] : "No data.";
       var smell_description = data["smell_description"] ? data["smell_description"] : "No data.";
       var smell_value = data["smell_value"];
 
       current_icon_size = zoom_level_to_icon_size[init_zoom_level];
       html_content = "";
-      html_content += "<b>Date:</b> " + date_str + "<br>";
+      html_content += "<b>Date:</b> " + (new Date(data["created_at"] * 1000)).toLocaleString() + "<br>";
       html_content += "<b>Smell Rating:</b> " + smell_value + " (" + smell_value_to_text[smell_value - 1] + ")<br>";
       html_content += "<b>Symptoms:</b> " + feelings_symptoms + "<br>";
       html_content += "<b>Smell Description:</b> " + smell_description;
 
-      // Add Google map marker
       google_map_marker = new google.maps.Marker({
         position: new google.maps.LatLng({lat: data["latitude"], lng: data["longitude"]}),
         icon: generateSmellIcon(smell_value, init_zoom_level, current_icon_size),
         zIndex: smell_value,
-        opacity: smell_marker_default_opacity
-      });
-
-      // Add marker event
-      google_map_marker.addListener("click", function () {
-        if (typeof (click_event_callback) == "function") {
-          click_event_callback(this_obj);
-        }
+        opacity: marker_default_opacity
       });
     }
 
@@ -120,6 +113,66 @@
       return path + smell_icon;
     }
 
+    function createSensorMarker() {
+      var PM25_value = data["PM25_value"];
+      var sensor_icon_idx = sensorValToIconIndex(PM25_value);
+      var no_data_txt = "No data in last four hours.";
+      var txt = (isNaN(PM25_value) || PM25_value < 0) ? no_data_txt : PM25_value + " &mu;g/m<sup>3</sup>";
+
+      html_content = "";
+      html_content += "<b>Name:</b> " + data["name"] + "<br>";
+      if (data["is_current_day"]) {
+        html_content += "<b>Latest PM<sub>2.5</sub>:</b> " + txt + "<br>";
+        html_content += "<b>Latest Reported Date:</b> " + (new Date(data["data_time"])).toLocaleString();
+      } else {
+        html_content += "<b>Maximum PM<sub>2.5</sub>:</b> " + txt;
+      }
+
+      google_map_marker = new google.maps.Marker({
+        position: new google.maps.LatLng({lat: data["latitude"], lng: data["longitude"]}),
+        icon: generateSensorIcon(sensor_icon_idx),
+        zIndex: sensor_icon_idx,
+        opacity: marker_default_opacity,
+        shape: {coords: [50, 50, 12.5], type: "circle"} // Modify click region
+      });
+    }
+
+    function generateSensorIcon(sensor_icon_idx) {
+      var icon_size = 100;
+      var icon_size_half = 50;
+
+      return {
+        url: getSensorIconURL(sensor_icon_idx),
+        scaledSize: new google.maps.Size(icon_size, icon_size),
+        size: new google.maps.Size(icon_size, icon_size),
+        anchor: new google.maps.Point(icon_size_half, icon_size_half),
+        origin: new google.maps.Point(0, 0)
+      };
+    }
+
+    function getSensorIconURL(sensor_icon_idx) {
+      var path = "/img/";
+      var sensor_icon_all = ["sensor_0.png", "sensor_1.png", "sensor_2.png", "sensor_3.png", "sensor_4.png", "sensor_5.png"];
+      return path + sensor_icon_all[sensor_icon_idx];
+    }
+
+    function sensorValToIconIndex(sensor_value) {
+      var scale = [12, 35.4, 55.4, 150.4];
+      if (isNaN(sensor_value) || sensor_value < 0) {
+        return 0;
+      } else if (sensor_value >= 0 && sensor_value <= scale[0]) {
+        return 1;
+      } else if (sensor_value > scale[0] && sensor_value <= scale[1]) {
+        return 2;
+      } else if (sensor_value > scale[1] && sensor_value <= scale[2]) {
+        return 3;
+      } else if (sensor_value > scale[2] && sensor_value <= scale[3]) {
+        return 4;
+      } else {
+        return 5;
+      }
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
     // Privileged methods
@@ -136,7 +189,7 @@
 
     var reset = function () {
       if (marker_type == "smell") {
-        google_map_marker.setOpacity(smell_marker_default_opacity);
+        google_map_marker.setOpacity(marker_default_opacity);
         google_map_marker.setZIndex(data["smell_value"]);
       }
     };
@@ -149,7 +202,7 @@
     }
     this.getTimestamp = getTimestamp;
 
-    var getSmellValue = function() {
+    var getSmellValue = function () {
       if (marker_type == "smell") {
         return data["smell_value"];
       }

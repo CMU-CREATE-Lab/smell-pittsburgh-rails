@@ -41,96 +41,88 @@ var sensors_cache = {};
 var infowindow_sensor;
 var sensors_list = [
   {
-    feed: 28,
     name: "County AQ Monitor - Liberty",
-    type: "wind",
-    channels: [
-      "SONICWS_MPH",
-      "SONICWD_DEG"
-    ],
-    lat: 40.32377,
-    lng: -79.86806
+    wind: {
+      feed: 28,
+      channels: [
+        "SONICWS_MPH",
+        "SONICWD_DEG"
+      ]
+    },
+    PM25: {
+      feed: 29,
+      channel_max: "PM25_UG_M3_daily_max",
+      channels: [
+        "PM25_UG_M3"
+      ]
+    },
+    latitude: 40.32377,
+    longitude: -79.86806
   }, {
-    feed: 26,
     name: "County AQ Monitor - Lawrenceville",
-    type: "wind",
-    channels: [
-      "SONICWS_MPH",
-      "SONICWD_DEG"
-    ],
-    lat: 40.46542,
-    lng: -79.960757
+    wind: {
+      feed: 26,
+      channels: [
+        "SONICWS_MPH",
+        "SONICWD_DEG"
+      ]
+    },
+    PM25: {
+      feed: 26,
+      channel_max: "PM25B_UG_M3_daily_max",
+      channels: [
+        "PM25B_UG_M3"
+      ]
+    },
+    latitude: 40.46542,
+    longitude: -79.960757
   }, {
-    feed: 43,
     name: "County AQ Monitor - Parkway East",
-    type: "wind",
-    channels: [
-      "SONICWS_MPH",
-      "SONICWD_DEG"
-    ],
-    lat: 40.43743,
-    lng: -79.86357
+    wind: {
+      feed: 43,
+      channels: [
+        "SONICWS_MPH",
+        "SONICWD_DEG"
+      ]
+    },
+    PM25: {
+      feed: 5975,
+      channel_max: "PM2_5_daily_max",
+      channels: [
+        "PM2_5"
+      ]
+    },
+    latitude: 40.43743,
+    longitude: -79.86357
   }, {
-    feed: 1,
     name: "County AQ Monitor - Avalon",
-    type: "wind",
-    channels: [
-      "SONICWS_MPH",
-      "SONICWD_DEG"
-    ],
-    lat: 40.49977,
-    lng: -80.07134
-  },
-  {
-    feed: 29,
-    name: "County AQ Monitor - Liberty",
-    type: "sensor",
-    channel_max: "PM25_UG_M3_daily_max",
-    channels: [
-      "PM25_UG_M3"
-    ],
-    lat: 40.32377,
-    lng: -79.86806
+    wind: {
+      feed: 1,
+      channels: [
+        "SONICWS_MPH",
+        "SONICWD_DEG"
+      ]
+    },
+    PM25: {
+      feed: 1,
+      channel_max: "PM25B_UG_M3_daily_max",
+      channels: [
+        "PM25B_UG_M3"
+      ]
+    },
+    latitude: 40.49977,
+    longitude: -80.07134
   }, {
-    feed: 26,
-    name: "County AQ Monitor - Lawrenceville",
-    type: "sensor",
-    channel_max: "PM25B_UG_M3_daily_max",
-    channels: [
-      "PM25B_UG_M3"
-    ],
-    lat: 40.46542,
-    lng: -79.960757
-  }, {
-    feed: 5975,
-    name: "County AQ Monitor - Parkway East",
-    type: "sensor",
-    channel_max: "PM2_5_daily_max",
-    channels: [
-      "PM2_5"
-    ],
-    lat: 40.43743,
-    lng: -79.86357
-  }, {
-    feed: 30,
     name: "County AQ Monitor - Lincoln",
-    type: "sensor",
-    channel_max: "PM25_UG_M3_daily_max",
-    channels: [
-      "PM25_UG_M3"
-    ],
-    lat: 40.30822,
-    lng: -79.86913
-  }, {
-    feed: 1,
-    name: "County AQ Monitor - Avalon",
-    type: "sensor",
-    channel_max: "PM25B_UG_M3_daily_max",
-    channels: [
-      "PM25B_UG_M3"
-    ],
-    lat: 40.49977,
-    lng: -80.07134
+    PM25: {
+      feed: 30,
+      channel_max: "PM25_UG_M3_daily_max",
+      channels: [
+        "PM25_UG_M3"
+      ]
+    },
+    latitude: 40.30822,
+    longitude: -79.86913
   }
 ];
 
@@ -372,11 +364,7 @@ function loadAndDrawTimeline() {
 }
 
 function showSmellMarkers(epochtime_milisec) {
-  if (typeof epochtime_milisec == "undefined") {
-    epochtime_milisec = current_epochtime_milisec;
-  } else {
-    current_epochtime_milisec = epochtime_milisec;
-  }
+  if (typeof epochtime_milisec == "undefined") return;
 
   // Check if data exists in the cache
   var r = smell_reports_cache[epochtime_milisec];
@@ -429,7 +417,7 @@ function createAndShowSmellMarker(data, epochtime_milisec) {
   // Make the maker visible on the map
   m.setMap(map);
 
-  // Cache data and markers
+  // Cache markers
   smell_reports_cache[epochtime_milisec]["markers"].push(m);
 }
 
@@ -446,8 +434,8 @@ function handleSmellMarkerClicked(marker) {
   addGoogleAnalyticEvent("smell", "click", label);
 }
 
-function removeSmellMarkers() {
-  var r = smell_reports_cache[current_epochtime_milisec];
+function hideSmellMarkers(epochtime_milisec) {
+  var r = smell_reports_cache[epochtime_milisec];
   if (typeof r == "undefined") return;
   var current_markers = r["markers"];
   for (var i = 0; i < current_markers.length; i++) {
@@ -537,7 +525,7 @@ function startAnimation() {
   // Initialize animation
   var r_idx = 0;
   var elapsed_milisec = 0;
-  removeSmellMarkers();
+  hideSmellMarkers(current_epochtime_milisec);
   var label_idx = 0;
   $playback_txt.text(label[label_idx]["text"]);
 
@@ -572,7 +560,7 @@ function startAnimation() {
       // This condition means that we already animated all smell reports in one day
       r_idx = 0;
       elapsed_milisec = 0;
-      removeSmellMarkers();
+      hideSmellMarkers(current_epochtime_milisec);
       label_idx = 0;
       $playback_txt.text(label[label_idx]["text"]);
     }
@@ -600,8 +588,8 @@ function stopAnimation() {
   }
 
   // Draw all smell reports to the map
-  removeSmellMarkers();
-  showSmellMarkers();
+  hideSmellMarkers(current_epochtime_milisec);
+  showSmellMarkers(current_epochtime_milisec);
 }
 
 function getAnimationLabels() {
@@ -715,21 +703,18 @@ function handleTimelineButtonClicked(epochtime_milisec) {
 function handleTimelineButtonSelected(epochtime_milisec) {
   infowindow_smell.close();
   infowindow_sensor.close();
-  removeSmellMarkers();
+  hideSmellMarkers(current_epochtime_milisec);
+  //hideSensorMarkers(current_epochtime_milisec); // Will be added
   showSmellMarkers(epochtime_milisec);
-  //removeSensorMarkers(); // Will be added
   //showSensorMarkers(epochtime_milisec); // Will be added
   deleteAllSensors(); // Will be deprecated
   loadAndDrawAllSensors(epochtime_milisec); // Will be deprecated
   stopAnimation();
+  current_epochtime_milisec = epochtime_milisec;
 }
 
 function showSensorMarkers(epochtime_milisec) {
-  if (typeof epochtime_milisec == "undefined") {
-    epochtime_milisec = current_epochtime_milisec;
-  } else {
-    current_epochtime_milisec = epochtime_milisec;
-  }
+  if (typeof epochtime_milisec == "undefined") return;
 
   // Check if data exists in the cache
   var r = sensors_cache[epochtime_milisec];
@@ -750,26 +735,62 @@ function showSensorMarkers(epochtime_milisec) {
 
 function loadAndCreateSensorMarkers(epochtime_milisec, info, i) {
   var urls = genSensorDataURL(epochtime_milisec, info);
-  var data = {"info": info};
-  $.getJSON(urls["data_url_channels"], function (json) {
-    data["channels"] = json["data"];
-  }).then(function () {
-    if (typeof urls["data_url_channel_max"] != "undefined") {
-      $.getJSON(urls["data_url_channel_max"], function (json) {
-        data["channel_max"] = json["data"];
+  var data = {"info": info, "is_current_day": urls["is_current_day"]};
+  $.when(
+    $.getJSON(urls["PM25_channels"], function (json) {
+      data["PM25_channels"] = json["data"];
+    }), $.getJSON(urls["PM25_channel_max"], function (json) {
+      data["PM25_channel_max"] = json["data"];
+    })
+  ).then(function () {
+    if (typeof urls["wind_channels"] != "undefined") {
+      $.getJSON(urls["wind_channels"], function (json) {
+        data["wind_channel_max"] = json["data"];
+        createAndShowSensorMarker(data, epochtime_milisec, i);
       });
+    } else {
+      createAndShowSensorMarker(data, epochtime_milisec, i);
     }
-  }).done(function () {
-    createAndShowSensorMarker(data, epochtime_milisec, i);
   });
 }
 
 function createAndShowSensorMarker(data, epochtime_milisec, i) {
+  var is_current_day = data["is_current_day"];
+  var marker_data = {
+    "is_current_day": is_current_day,
+    "name": data["info"]["name"],
+    "latitude": data["info"]["latitude"],
+    "longitude": data["info"]["longitude"]
+  };
+
+  if (is_current_day) {
+    // If the selected day is the current day, check if the latest data is too old
+    var PM25_all = data["PM25_channels"];
+    var PM25_latest = PM25_all[PM25_all.length - 1];
+    var data_time = PM25_latest[0] * 1000;
+    var current_time = Date.now();
+    var diff_hour = (current_time - data_time) / 3600000;
+    if (typeof PM25_latest == "undefined" || diff_hour > 4) {
+      marker_data["PM25_value"] = -1;
+    } else {
+      marker_data["PM25_value"] = Math.max(-1, roundTo(PM25_latest[1], 2));
+    }
+    marker_data["data_time"] = data_time;
+  } else {
+    // If the selected day is not the current day, just use the max
+    var PM25_max = data["PM25_channel_max"][0];
+    if (typeof PM25_max == "undefined") {
+      marker_data["PM25_value"] = -1;
+    } else {
+      marker_data["PM25_value"] = Math.max(-1, roundTo(PM25_max[1], 2));
+    }
+  }
+
   var m = new CustomMapMarker({
-    "type": data["info"]["type"],
-    "data": data,
+    "type": "sensor",
+    "data": marker_data,
     "click": function (marker) {
-      //handleSensorMarkerClicked(marker);
+      handleSensorMarkerClicked(marker);
     }
   });
 
@@ -778,6 +799,7 @@ function createAndShowSensorMarker(data, epochtime_milisec, i) {
 
   // Cache data and markers
   sensors_cache[epochtime_milisec]["markers"][i] = m;
+  sensors_cache[epochtime_milisec]["data"] = data;
 }
 
 function handleSensorMarkerClicked(marker) {
@@ -787,16 +809,18 @@ function handleSensorMarkerClicked(marker) {
 
   // Add google analytics
   // TODO: fix this
-  var label = {
-    "dimension5": this.data_time.toString(),
-    "dimension6": this.feed.toString(),
-    "metric2": this.PM25_now != -1 ? this.PM25_now : this.PM25_max
-  };
-  addGoogleAnalyticEvent("sensor", "click", label);
+  /*
+   var label = {
+   "dimension5": this.data_time.toString(),
+   "dimension6": this.feed.toString(),
+   "metric2": this.PM25_now != -1 ? this.PM25_now : this.PM25_max
+   };
+   addGoogleAnalyticEvent("sensor", "click", label);
+   */
 }
 
-function removeSensorMarkers() {
-  var r = sensors_cache[current_epochtime_milisec];
+function hideSensorMarkers(epochtime_milisec) {
+  var r = sensors_cache[epochtime_milisec];
   if (typeof r == "undefined") return;
   var current_markers = r["markers"];
   for (var i = 0; i < current_markers.length; i++) {
@@ -806,21 +830,30 @@ function removeSensorMarkers() {
 }
 
 function genSensorDataURL(epochtime_milisec, info) {
-  var date_str_sensor = (new Date(epochtime_milisec)).toDateString();
-  var date_str_now = (new Date()).toDateString();
-  var date_hour_now = (new Date()).getHours();
-  var data_url = esdr_root_url + "feeds/" + info["feed"] + "/channels/";
   var epochtime = parseInt(epochtime_milisec / 1000);
   var time_range_url_part = "/export?format=json&from=" + epochtime + "&to=" + (epochtime + 86399);
 
-  var is_current_day = false;
-  var data_url_channels = data_url + info["channels"].toString() + time_range_url_part;
-  var data_url_channel_max;
-  if (typeof info["channel_max"] != "undefined") {
-    data_url_channel_max = data_url + info["channel_max"] + time_range_url_part;
+  // For PM25
+  var data_url_PM25_channels;
+  var data_url_PM25_channel_max;
+  if (typeof info["PM25"] != "undefined") {
+    var data_url_PM25 = esdr_root_url + "feeds/" + info["PM25"]["feed"] + "/channels/";
+    data_url_PM25_channels = data_url_PM25 + info["PM25"]["channels"].toString() + time_range_url_part;
+    data_url_PM25_channel_max = data_url_PM25 + info["PM25"]["channel_max"] + time_range_url_part;
+  }
+
+  // For wind
+  var data_url_wind_channels;
+  if (typeof info["wind"] != "undefined") {
+    var data_url_wind = esdr_root_url + "feeds/" + info["wind"]["feed"] + "/channels/";
+    data_url_wind_channels = data_url_wind + info["wind"]["channels"].toString() + time_range_url_part;
   }
 
   // Channel max values are not calculated until 3am, so to be safe we wait until 4.
+  var date_str_sensor = (new Date(epochtime_milisec)).toDateString();
+  var date_str_now = (new Date()).toDateString();
+  var date_hour_now = (new Date()).getHours();
+  var is_current_day = false;
   if (date_str_sensor == date_str_now && date_hour_now >= 4) {
     is_current_day = true;
   }
@@ -841,8 +874,10 @@ function genSensorDataURL(epochtime_milisec, info) {
   }
 
   return {
-    "data_url_channels": data_url_channels,
-    "data_url_channel_max": data_url_channel_max
+    "PM25_channels": data_url_PM25_channels,
+    "PM25_channel_max": data_url_PM25_channel_max,
+    "wind_channels": data_url_wind_channels,
+    "is_current_day": is_current_day
   };
 }
 
