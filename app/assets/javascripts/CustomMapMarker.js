@@ -19,6 +19,7 @@
     var data = settings["data"];
     var init_zoom_level = settings["initZoomLevel"];
     var click_event_callback = settings["click"];
+    var complete_event_callback = settings["complete"];
 
     var google_map_marker;
     var html_content;
@@ -48,8 +49,6 @@
       } else if (marker_type == "sensor") {
         createSensorMarker();
       }
-
-      addMarkerEvent();
     }
 
     function addMarkerEvent() {
@@ -67,6 +66,7 @@
       var smell_description = data["smell_description"] ? data["smell_description"] : "No data.";
       var smell_value = data["smell_value"];
 
+      // Create HTML content for the info window
       current_icon_size = zoom_level_to_icon_size[init_zoom_level];
       html_content = "";
       html_content += "<b>Date:</b> " + (new Date(data["created_at"] * 1000)).toLocaleString() + "<br>";
@@ -74,12 +74,19 @@
       html_content += "<b>Symptoms:</b> " + feelings_symptoms + "<br>";
       html_content += "<b>Smell Description:</b> " + smell_description;
 
+      // Create google map marker
       google_map_marker = new google.maps.Marker({
         position: new google.maps.LatLng({lat: data["latitude"], lng: data["longitude"]}),
         icon: generateSmellIcon(smell_value, init_zoom_level, current_icon_size),
         zIndex: smell_value,
         opacity: marker_default_opacity
       });
+      addMarkerEvent();
+
+      // Fire complete event
+      if (typeof (complete_event_callback) == "function") {
+        complete_event_callback(this_obj);
+      }
     }
 
     function generateSmellIcon(smell_value, zoom_level, icon_size) {
@@ -115,34 +122,66 @@
 
     function createSensorMarker() {
       var PM25_value = data["PM25_value"];
-      var sensor_icon_idx = sensorValToIconIndex(PM25_value);
+      var wind_speed = data["wind_speed"];
       var no_data_txt = "No data in last four hours.";
-      var txt = (isNaN(PM25_value) || PM25_value < 0) ? no_data_txt : PM25_value + " &mu;g/m<sup>3</sup>";
+      var PM25_txt = (PM25_value < 0) ? no_data_txt : PM25_value + " &mu;g/m<sup>3</sup>";
 
+      // Create HTML content for the info window
       html_content = "";
       html_content += "<b>Name:</b> " + data["name"] + "<br>";
       if (data["is_current_day"]) {
-        html_content += "<b>Latest PM<sub>2.5</sub>:</b> " + txt + "<br>";
-        html_content += "<b>Latest Reported Date:</b> " + (new Date(data["data_time"])).toLocaleString();
+        var PM25_time = new Date(data["PM25_data_time"]);
+        var PM25_time_txt = " at time " + padTimeString(PM25_time.getHours() + 1) + ":" + padTimeString(PM25_time.getMinutes() + 1);
+        html_content += "<b>Latest PM<sub>2.5</sub>:</b> " + PM25_txt + PM25_time_txt + "<br>";
+        if (typeof wind_speed != "undefined") {
+          var wind_txt = (wind_speed < 0) ? no_data_txt : wind_speed + " MPH";
+          var wind_time = new Date(data["wind_data_time"]);
+          var wind_time_txt = " at time " + padTimeString(wind_time.getHours() + 1) + ":" + padTimeString(wind_time.getMinutes() + 1);
+          html_content += '<b>Latest Wind Speed:</b> ' + wind_txt + wind_time_txt;
+        }
       } else {
-        html_content += "<b>Maximum PM<sub>2.5</sub>:</b> " + txt;
+        html_content += "<b>Maximum PM<sub>2.5</sub>:</b> " + PM25_txt;
       }
 
-      google_map_marker = new google.maps.Marker({
-        position: new google.maps.LatLng({lat: data["latitude"], lng: data["longitude"]}),
-        icon: generateSensorIcon(sensor_icon_idx),
-        zIndex: sensor_icon_idx,
-        opacity: marker_default_opacity,
-        shape: {coords: [50, 50, 12.5], type: "circle"} // Modify click region
+      var sensor_icon_idx = sensorValToIconIndex(PM25_value);
+      var wind_direction = data["wind_direction"];
+      var image = new Image();
+
+      // Create google map marker
+      image.addEventListener("load", function () {
+        google_map_marker = new google.maps.Marker({
+          position: new google.maps.LatLng({lat: data["latitude"], lng: data["longitude"]}),
+          icon: generateSensorIcon(image, wind_direction),
+          zIndex: sensor_icon_idx,
+          opacity: marker_default_opacity,
+          shape: {coords: [50, 50, 12.5], type: "circle"} // Modify click region
+        });
+        addMarkerEvent();
+        // Fire complete event
+        if (typeof (complete_event_callback) == "function") {
+          complete_event_callback(this_obj);
+        }
       });
+      image.src = getSensorIconURL(sensor_icon_idx, (typeof wind_direction != "undefined"));
     }
 
-    function generateSensorIcon(sensor_icon_idx) {
+    function generateSensorIcon(image, wind_direction) {
       var icon_size = 100;
       var icon_size_half = 50;
 
+      var rotation_degree;
+      if (typeof wind_direction != "undefined") {
+        // The direction given by ACHD is the direction _from_ which the wind is coming.
+        // We reverse it to show where the wind is going to. (+180)
+        // Also, the arrow we start with is already rotated 90 degrees, so we need to account for this. (-90)
+        // This means we add 90 to the sensor wind direction value for the correct angle of the wind arrow.
+        rotation_degree = wind_direction + 90;
+      } else {
+        rotation_degree = 0;
+      }
+
       return {
-        url: getSensorIconURL(sensor_icon_idx),
+        url: getRotatedMarker(image, rotation_degree),
         scaledSize: new google.maps.Size(icon_size, icon_size),
         size: new google.maps.Size(icon_size, icon_size),
         anchor: new google.maps.Point(icon_size_half, icon_size_half),
@@ -150,10 +189,12 @@
       };
     }
 
-    function getSensorIconURL(sensor_icon_idx) {
+    function getSensorIconURL(sensor_icon_idx, has_wind) {
       var path = "/img/";
       var sensor_icon_all = ["sensor_0.png", "sensor_1.png", "sensor_2.png", "sensor_3.png", "sensor_4.png", "sensor_5.png"];
-      return path + sensor_icon_all[sensor_icon_idx];
+      var sensor_icon_wind_all = ["sensor_0_wind.png", "sensor_1_wind.png", "sensor_2_wind.png", "sensor_3_wind.png", "sensor_4_wind.png", "sensor_5_wind.png"];
+      var sensor_icon = has_wind ? sensor_icon_wind_all[sensor_icon_idx] : sensor_icon_all[sensor_icon_idx];
+      return path + sensor_icon;
     }
 
     function sensorValToIconIndex(sensor_value) {
@@ -171,6 +212,28 @@
       } else {
         return 5;
       }
+    }
+
+    function padTimeString(str) {
+      return ("0" + str).slice(-2);
+    }
+
+    function getRotatedMarker(image, degree) {
+      var angle = degree * Math.PI / 180;
+      var canvas = document.createElement("canvas");
+      var ctx = canvas.getContext("2d");
+      canvas.width = image.width;
+      canvas.height = image.height;
+      var centerX = canvas.width / 2;
+      var centerY = canvas.height / 2;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(angle);
+      ctx.translate(-centerX, -centerY);
+      ctx.drawImage(image, 0, 0);
+      ctx.restore();
+      return canvas.toDataURL('image/png');
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -194,20 +257,6 @@
       }
     };
     this.reset = reset;
-
-    var getTimestamp = function () {
-      if (marker_type == "smell") {
-        return data["created_at"];
-      }
-    }
-    this.getTimestamp = getTimestamp;
-
-    var getSmellValue = function () {
-      if (marker_type == "smell") {
-        return data["smell_value"];
-      }
-    };
-    this.getSmellValue = getSmellValue;
 
     var getContent = function () {
       return html_content;
