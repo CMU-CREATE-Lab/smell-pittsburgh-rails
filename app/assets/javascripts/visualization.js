@@ -126,78 +126,6 @@ var sensors_list = [
   }
 ];
 
-var sensorList = [
-  {
-    feed: 28,
-    name: "County AQ Monitor - Liberty",
-    channels: [
-      "SONICWS_MPH",
-      "SONICWD_DEG"
-    ],
-    doDraw: false
-  }, {
-    feed: 29,
-    name: "County AQ Monitor - Liberty",
-    channel_max: "PM25_UG_M3_daily_max",
-    channels: [
-      "PM25_UG_M3"
-    ],
-    doDraw: true
-  }, {
-    feed: 26,
-    name: "County AQ Monitor - Lawrenceville",
-    channel_max: "PM25B_UG_M3_daily_max",
-    channels: [
-      "PM25B_UG_M3",
-      "SONICWS_MPH",
-      "SONICWD_DEG"
-    ],
-    doDraw: true
-  }, {
-    feed: 43,
-    name: "County AQ Monitor - Parkway East",
-    channels: [
-      "SONICWS_MPH",
-      "SONICWD_DEG"
-    ],
-    doDraw: false
-  }, {
-    feed: 5975,
-    name: "County AQ Monitor - Parkway East",
-    channel_max: "PM2_5_daily_max",
-    channels: [
-      "PM2_5"
-    ],
-    doDraw: true
-  }, {
-    feed: 30,
-    name: "County AQ Monitor - Lincoln",
-    channel_max: "PM25_UG_M3_daily_max",
-    channels: [
-      "PM25_UG_M3"
-    ],
-    doDraw: true
-  }, {
-    feed: 1,
-    name: "County AQ Monitor - Avalon",
-    channel_max: "PM25B_UG_M3_daily_max",
-    channels: [
-      "PM25B_UG_M3",
-      "SONICWS_MPH",
-      "SONICWD_DEG"
-    ],
-    doDraw: true
-  }
-];
-var requests = [];
-var sensor_markers = [];
-var sensorLoadCount = 0;
-var sensors = {};
-var totalSensors = sensorList.length;
-var sensor_and_wind_icons = ["sensor_0_wind.png", "sensor_1_wind.png", "sensor_2_wind.png", "sensor_3_wind.png", "sensor_4_wind.png", "sensor_5_wind.png"];
-var sensor_icons = ["sensor_0.png", "sensor_1.png", "sensor_2.png", "sensor_3.png", "sensor_4.png", "sensor_5.png"];
-var no_data_txt = "No data in last four hours.";
-
 function init() {
   // Create the page
   initGoogleMapAndHomeButton();
@@ -268,6 +196,15 @@ function initGoogleMapAndHomeButton() {
     zoom: isMobile() ? init_zoom_mobile : init_zoom_desktop,
     disableDefaultUI: true,
     mapTypeId: google.maps.MapTypeId.ROADMAP
+  });
+
+  // Update marker size when users zoom the map
+  map.addListener("zoom_changed", function () {
+    var current_markers = smell_reports_cache[current_epochtime_milisec]["markers"];
+    var current_zoom_level = map.getZoom();
+    for (var i = 0; i < current_markers.length; i++) {
+      current_markers[i].updateIconByZoomLevel(current_zoom_level);
+    }
   });
 
   // Set smell report information window
@@ -389,14 +326,6 @@ function loadAndCreateSmellMarkers(epochtime_milisec) {
       for (var i = 0; i < data.length; i++) {
         createAndShowSmellMarker(data[i], epochtime_milisec);
       }
-      // Update marker size when users zoom the map
-      map.addListener("zoom_changed", function () {
-        var current_markers = smell_reports_cache[current_epochtime_milisec]["markers"];
-        var current_zoom_level = map.getZoom();
-        for (var i = 0; i < current_markers.length; i++) {
-          current_markers[i].updateIconByZoomLevel(current_zoom_level);
-        }
-      });
     },
     "error": function (response) {
       console.log("server error:", response);
@@ -707,11 +636,9 @@ function handleTimelineButtonSelected(epochtime_milisec) {
   infowindow_smell.close();
   infowindow_sensor.close();
   hideSmellMarkers(current_epochtime_milisec);
-  hideSensorMarkers(current_epochtime_milisec); // Will be added
+  hideSensorMarkers(current_epochtime_milisec);
   showSmellMarkers(epochtime_milisec);
-  showSensorMarkers(epochtime_milisec); // Will be added
-  //deleteAllSensors(); // Will be deprecated
-  //loadAndDrawAllSensors(epochtime_milisec); // Will be deprecated
+  showSensorMarkers(epochtime_milisec);
   stopAnimation(epochtime_milisec, current_epochtime_milisec);
   current_epochtime_milisec = epochtime_milisec;
 }
@@ -917,266 +844,3 @@ function genSensorDataURL(epochtime_milisec, info) {
 $(function () {
   init();
 });
-
-////////////////////////////////////////////////////////////////////////
-// The below part of code will be deprecated
-
-function loadAndDrawAllSensors(epochtime_milisec) {
-  sensorLoadCount = 0;
-  loadAndDrawSingleSensor(epochtime_milisec);
-}
-
-function loadAndDrawSingleSensor(epochtime_milisec) {
-  var info = sensorList[sensorLoadCount];
-  var sensor = {};
-  var date_str_sensor = (new Date(epochtime_milisec)).toDateString();
-  var date_hour_now = (new Date()).getHours();
-  var date_str_now = (new Date()).toDateString();
-  var feed_url = esdr_root_url + "feeds/" + info.feed;
-  var data_url;
-  var data;
-  var val;
-  var use_PM25_now;
-
-  sensor["name"] = info.name;
-  sensor["doDraw"] = info.doDraw;
-  sensor["feed"] = info.feed;
-
-  // Channel max values are not calculated until 3am, so to be safe we wait until 4.
-  var epochtime = parseInt(epochtime_milisec / 1000);
-  if (date_str_sensor == date_str_now || date_hour_now < 4) {
-    data_url = feed_url + "/channels/" + info.channels.toString() + "/export?format=json&from=" + epochtime + "&to=" + (epochtime + 86399);
-    use_PM25_now = true;
-  } else if (info["channel_max"]) {
-    data_url = feed_url + "/channels/" + info["channel_max"] + "/export?format=json&from=" + epochtime + "&to=" + (epochtime + 86399);
-    use_PM25_now = false;
-  }
-
-  // Show current Pittsburgh AQI if on current day and user is in Pittsburgh
-  if (use_PM25_now && area == "PGH") {
-    if (sensorLoadCount == 0) {
-      $.getJSON(aqi_root_url + "Pittsburgh", function (response) {
-        if (response) {
-          $(".aqi-td").text(response);
-          $(".aqi-tr").show();
-        }
-      });
-    }
-  } else {
-    $(".aqi-tr").hide();
-  }
-
-  // Load sensor data simultaneously
-  (function () {
-    // If we do not need to draw or already have lat/lng then immediately return a resolved Promise
-    if (!sensor.doDraw || (sensors[sensor.name] && sensors[sensor.name].lat && sensors[sensor.name].lng))
-      return $().promise();
-
-    var xhr = $.getJSON(feed_url, function (response) {
-      data = response.data;
-      sensor.lat = data.latitude;
-      sensor.lng = data.longitude;
-    });
-    requests.push(xhr);
-    return xhr;
-  })().then(function () {
-    if (!use_PM25_now && !sensor.doDraw) return;
-    var xhr = $.getJSON(data_url, function (response) {
-      if (use_PM25_now) {
-        data = response.data;
-        var latest_data = data[data.length - 1];
-        var windStartIdx = 2;
-
-        if (data && latest_data) {
-          // Compute the difference between the timestamp and current time.
-          // If it is more than 4 hours, consider it no data.
-          var data_time = data[data.length - 1][0] * 1000;
-          // IMPORTANT: only report data time when latest data exist
-          // This is done intentionally for Google Analytics to know
-          // if the reported PM25 value is now or max
-          sensor["data_time"] = data_time;
-          var current_time = Date.now();
-          var diff_hour = (current_time - data_time) / 3600000;
-          if (diff_hour > 4) {
-            sensor["PM25_now"] = -1;
-          } else {
-            val = roundTo(latest_data[1], 2);
-            sensor["PM25_now"] = Math.max(-1, val);
-
-            if (!sensor.doDraw)
-              windStartIdx = 1;
-
-            if (!sensor["wind_speed"])
-              sensor["wind_speed"] = latest_data[windStartIdx];
-            if (!sensor["wind_direction"])
-              sensor["wind_direction"] = latest_data[windStartIdx + 1];
-          }
-        } else {
-          sensor["PM25_now"] = -1;
-        }
-      } else {
-        data = response.data[0];
-        // IMPORTANT: do not report data time here
-        // This is done intentionally for Google Analytics to know
-        // if the reported PM25 value is now or max
-        if (data) {
-          val = roundTo(data[1], 2);
-          sensor["PM25_max"] = Math.max(-1, val);
-        } else {
-          sensor["PM25_max"] = -1;
-        }
-      }
-      var tmp = $.extend(true, {}, sensors[sensor.name], sensor);
-      sensors[sensor.name] = tmp;
-    });
-    requests.push(xhr);
-    return xhr;
-  }).done(function () {
-    if (sensor.doDraw)
-      drawSingleSensor(sensors[sensor.name]);
-    sensorLoadCount++;
-    if (sensorLoadCount < totalSensors)
-      loadAndDrawSingleSensor(epochtime_milisec, info[sensorLoadCount]);
-  });
-}
-
-function drawSingleSensor(sensor) {
-  var latlng = {"lat": sensor.lat, "lng": sensor.lng};
-  var html = '';
-  var val;
-
-  html += "<b>Name:</b> " + sensor.name + "<br>";
-
-  if (typeof(sensor["PM25_now"]) !== "undefined") {
-    val = sensor["PM25_now"];
-    var txt = (isNaN(val) || val < 0) ? no_data_txt : val + " &mu;g/m<sup>3</sup>";
-    html += '<b>Latest PM<sub>2.5</sub>:</b> ' + txt + '<br>';
-  }
-  if (typeof(sensor["PM25_max"]) !== "undefined") {
-    val = sensor["PM25_max"];
-    var txt = (isNaN(val) || val < 0) ? no_data_txt : val + " &mu;g/m<sup>3</sup>";
-    html += '<b>Maximum PM<sub>2.5</sub>:</b> ' + txt + '<br>';
-  }
-
-  if (typeof(sensor["PM25_now"]) !== "undefined" && typeof(sensor["wind_speed"]) !== "undefined") {
-    var windVal = sensor["wind_speed"];
-    var txt = (isNaN(windVal) || windVal < 0) ? no_data_txt : windVal + " MPH";
-    html += '<b>Latest Wind Speed:</b> ' + txt + '<br>';
-  }
-
-  var icon_idx = sensorValToIconIndex(val);
-  var markerArray, rotation = 0;
-  if (typeof(sensor["wind_speed"]) !== "undefined" && typeof(sensor["wind_direction"]) !== "undefined") {
-    markerArray = sensor_and_wind_icons;
-    // The direction given by ACHD is the direction _from_ which the wind is coming.
-    // We reverse it to show where the wind is going to. (+180)
-    // Also, the arrow we start with is already rotated 90 degrees, so we need to account for this. (-90)
-    // This means we add 90 to the sensor wind direction value for the correct angle of the wind arrow.
-    rotation = sensor["wind_direction"] + 90;
-  } else {
-    markerArray = sensor_icons;
-  }
-
-  // Add marker
-  var image = new Image();
-  image.addEventListener("load", function () {
-    var marker = new google.maps.Marker({
-      position: latlng,
-      map: map,
-      content: html,
-      feed: sensor["feed"],
-      data_time: typeof sensor["data_time"] !== "undefined" ? sensor["data_time"] : -1,
-      PM25_now: typeof sensor["PM25_now"] !== "undefined" ? sensor["PM25_now"] : -1,
-      PM25_max: typeof sensor["PM25_max"] !== "undefined" ? sensor["PM25_max"] : -1,
-      icon: {
-        url: getRotatedMarker(image, rotation),
-        scaledSize: new google.maps.Size(100, 100),
-        origin: new google.maps.Point(0, 0),
-        anchor: new google.maps.Point(50, 50)
-      },
-      shape: {coords: [50, 50, 12.5], type: "circle"}, /* Modify click region */
-      zIndex: icon_idx,
-      opacity: 1
-    });
-
-    // Add marker event
-    marker.addListener("click", function () {
-      infowindow_smell.close();
-      infowindow_sensor.setContent(this.content);
-      infowindow_sensor.open(map, this);
-      // Add google analytics
-      var label = {
-        "dimension5": this.data_time.toString(),
-        "dimension6": this.feed.toString(),
-        "metric2": this.PM25_now != -1 ? this.PM25_now : this.PM25_max
-      };
-      addGoogleAnalyticEvent("sensor", "click", label);
-    });
-
-    // Save markers
-    sensor_markers.push(marker);
-  });
-
-  image.src = "/img/" + markerArray[icon_idx];
-}
-
-function sensorValToIconIndex(val) {
-  var scale = [12, 35.4, 55.4, 150.4];
-  if (val == no_data_txt) {
-    return 0;
-  } else {
-    val = parseFloat(val);
-    if (isNaN(val) || val < 0) {
-      return 0;
-    } else if (val >= 0 && val <= scale[0]) {
-      return 1;
-    } else if (val > scale[0] && val <= scale[1]) {
-      return 2;
-    } else if (val > scale[1] && val <= scale[2]) {
-      return 3;
-    } else if (val > scale[2] && val <= scale[3]) {
-      return 4;
-    } else {
-      return 5;
-    }
-  }
-}
-
-function deleteAllSensors() {
-  // Abort all pending ajax requests
-  for (var ri = 0; ri < requests.length; ri++) {
-    requests[ri].abort();
-  }
-  requests = [];
-  // Delete all sensor properties except for name and location,
-  // which allows us to cache the first ESDR request.
-  for (var sensor in sensors) {
-    for (var prop in sensors[sensor]) {
-      if (prop !== "lat" && prop !== "lng" && prop !== "name") {
-        delete sensors[sensor][prop];
-      }
-    }
-  }
-  for (var mi = 0; mi < sensor_markers.length; mi++) {
-    sensor_markers[mi].setMap(null);
-  }
-  sensor_markers = [];
-}
-
-function getRotatedMarker(image, deg) {
-  var angle = deg * Math.PI / 180;
-  var canvas = document.createElement("canvas");
-  var ctx = canvas.getContext("2d");
-  canvas.width = image.width;
-  canvas.height = image.height;
-  var centerX = canvas.width / 2;
-  var centerY = canvas.height / 2;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.save();
-  ctx.translate(centerX, centerY);
-  ctx.rotate(angle);
-  ctx.translate(-centerX, -centerY);
-  ctx.drawImage(image, 0, 0);
-  ctx.restore();
-  return canvas.toDataURL('image/png');
-}
