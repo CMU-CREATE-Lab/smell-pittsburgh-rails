@@ -21,7 +21,7 @@ var infowindow_smell;
 // Animation variables
 var isPlaying = false;
 var isDwelling = false;
-var animate_smell_report_interval = null;
+var animate_interval = null;
 var $playback_button;
 var $playback_txt;
 var animation_labels;
@@ -39,6 +39,7 @@ var timeline_jump_index = [];
 // Sensor variables
 var sensors_cache = {};
 var infowindow_sensor;
+var sensors_requests = [];
 var sensors_list = [
   {
     name: "County AQ Monitor - Liberty",
@@ -312,8 +313,8 @@ function showSmellMarkers(epochtime_milisec) {
       markers[i].setMap(map);
     }
   } else {
-    smell_reports_cache[epochtime_milisec] = {"markers": []};
     // Load data from server and create all smell markers
+    smell_reports_cache[epochtime_milisec] = {"markers": []};
     loadAndCreateSmellMarkers(epochtime_milisec);
   }
 }
@@ -365,6 +366,8 @@ function handleSmellMarkerClicked(marker) {
 }
 
 function hideSmellMarkers(epochtime_milisec) {
+  // TODO: need to cancel unfinished ajax request
+  // TODO: if there are unfinished requests, clean the cache
   var r = smell_reports_cache[epochtime_milisec];
   if (typeof r == "undefined") return;
   var current_markers = r["markers"];
@@ -425,130 +428,6 @@ function histSmellReport(r) {
     histogram[idx]["data"].push(r[i]);
   }
   return histogram;
-}
-
-function startAnimation(epochtime_milisec) {
-  if (isPlaying == true) return;
-  isPlaying = true;
-  isDwelling = false;
-
-  var smell_markers = smell_reports_cache[epochtime_milisec]["markers"];
-  if (animate_smell_report_interval != null || smell_markers.length == 0) return;
-
-  // Handle UI
-  if ($playback_button.hasClass("ui-icon-custom-play")) {
-    $playback_button.removeClass("ui-icon-custom-play");
-    $playback_button.addClass("ui-icon-custom-pause");
-  }
-  $playback_txt.show();
-
-  // Animation variables
-  var frames_per_sec = 60;
-  var secs_to_animate_one_day = 20;
-  var increments_per_frame = Math.round(86400000 / (secs_to_animate_one_day * frames_per_sec));
-  var interval = 1000 / frames_per_sec;
-  var marker_fade_milisec = 1000;
-  var dwell_sec = 2;
-  var dwell_increments = dwell_sec * frames_per_sec * increments_per_frame;
-  var label = getAnimationLabels();
-
-  // Initialize animation
-  var r_idx = 0;
-  var elapsed_milisec = 0;
-  hideSmellMarkers(epochtime_milisec);
-  var label_idx = 0;
-  $playback_txt.text(label[label_idx]["text"]);
-
-  // Start animation
-  animate_smell_report_interval = setInterval(function () {
-    if (elapsed_milisec < 86400000) {
-      // This condition means that we need to animate smell reports
-      // Check all smell reports that are not on the map
-      // Draw a smell report only if it has time less than the current elapsed time
-      if (r_idx < smell_markers.length) {
-        for (var i = r_idx; i < smell_markers.length; i++) {
-          var marker = smell_markers[i];
-          var marker_data = marker.getData();
-          var smell_epochtime_milisec = marker_data["created_at"] * 1000;
-          if (smell_epochtime_milisec <= (current_epochtime_milisec + elapsed_milisec)) {
-            marker.setMap(map);
-            fadeMarker(marker, marker_fade_milisec);
-            r_idx += 1;
-          } else {
-            break;
-          }
-        }
-      }
-      // Display label
-      if (elapsed_milisec >= label[label_idx]["milisec"]) {
-        label_idx += 1;
-        $playback_txt.text(label[label_idx]["text"]);
-      }
-    } else {
-      isDwelling = true;
-    }
-    if (elapsed_milisec > 86400000 + dwell_increments) {
-      isDwelling = false;
-      // This condition means that we already animated all smell reports in one day
-      r_idx = 0;
-      elapsed_milisec = 0;
-      hideSmellMarkers(epochtime_milisec);
-      label_idx = 0;
-      $playback_txt.text(label[label_idx]["text"]);
-    }
-    elapsed_milisec += increments_per_frame;
-  }, interval);
-}
-
-function stopAnimation(epochtime_milisec, previous_epochtime_milisec) {
-  if (isPlaying == false) return;
-  isPlaying = false;
-  isDwelling = false;
-
-  // Handle UI
-  if ($playback_button.hasClass("ui-icon-custom-pause")) {
-    $playback_button.removeClass("ui-icon-custom-pause");
-    $playback_button.addClass("ui-icon-custom-play");
-  }
-  $playback_txt.text("");
-  $playback_txt.hide();
-
-  // Stop animation
-  if (animate_smell_report_interval != null) {
-    clearInterval(animate_smell_report_interval);
-    animate_smell_report_interval = null;
-  }
-
-  // Draw all smell reports to the map
-  hideSmellMarkers(previous_epochtime_milisec);
-  showSmellMarkers(epochtime_milisec);
-}
-
-function getAnimationLabels() {
-  if (typeof animation_labels != "undefined") return animation_labels;
-  animation_labels = [];
-  // One bin is equal to 30 minutes
-  var increments = 86400000 / 48;
-  var milisec = increments;
-  for (var i = 0; i < 48; i++) {
-    var hour = Math.floor(i / 2);
-    var minute = (i % 2) * 30;
-    animation_labels.push({
-      text: ("0" + hour).slice(-2) + ":" + ("0" + minute).slice(-2),
-      milisec: milisec
-    });
-    milisec += increments;
-  }
-  return animation_labels;
-}
-
-function fadeMarker(marker, time) {
-  setTimeout(function () {
-    if (isPlaying == true && isDwelling == false) {
-      marker.setZIndex(0);
-      marker.setOpacity(0.5);
-    }
-  }, time);
 }
 
 function drawCalendar(data) {
@@ -636,8 +515,8 @@ function handleTimelineButtonSelected(epochtime_milisec) {
   infowindow_smell.close();
   infowindow_sensor.close();
   hideSmellMarkers(current_epochtime_milisec);
-  hideSensorMarkers(current_epochtime_milisec);
   showSmellMarkers(epochtime_milisec);
+  hideSensorMarkers(current_epochtime_milisec);
   showSensorMarkers(epochtime_milisec);
   stopAnimation(epochtime_milisec, current_epochtime_milisec);
   current_epochtime_milisec = epochtime_milisec;
@@ -654,10 +533,10 @@ function showSensorMarkers(epochtime_milisec) {
     for (var i = 0; i < markers.length; i++) {
       markers[i].setMap(map);
     }
-    showOrHideAQI(r["data"]["is_current_day"]);
+    showOrHideAQI(r["is_current_day"]);
   } else {
-    sensors_cache[epochtime_milisec] = {"markers": []};
     // For each sensor, load data from server and create a marker
+    sensors_cache[epochtime_milisec] = {"markers": [], "marker_table": []};
     for (var i = 0; i < sensors_list.length; i++) {
       loadAndCreateSensorMarkers(epochtime_milisec, sensors_list[i], i);
     }
@@ -667,38 +546,31 @@ function showSensorMarkers(epochtime_milisec) {
 function loadAndCreateSensorMarkers(epochtime_milisec, info, i) {
   var urls = genSensorDataURL(epochtime_milisec, info);
   var data = {"info": info, "is_current_day": urls["is_current_day"]};
-  $.when(
-    $.getJSON(urls["PM25_channels"], function (json) {
-      data["PM25_channels"] = json["data"];
-    }), $.getJSON(urls["PM25_channel_max"], function (json) {
-      data["PM25_channel_max"] = json["data"];
-    })
-  ).then(function () {
+  (function () {
+    // TODO: compute max from channels and return and track xhr
+    var promise = $.when(
+      $.getJSON(urls["PM25_channels"], function (json) {
+        data["PM25_channels"] = json["data"];
+      }), $.getJSON(urls["PM25_channel_max"], function (json) {
+        data["PM25_channel_max"] = json["data"];
+      })
+    );
+    return promise;
+  }()).then(function () {
     if (typeof urls["wind_channels"] != "undefined") {
-      $.getJSON(urls["wind_channels"], function (json) {
+      var xhr = $.getJSON(urls["wind_channels"], function (json) {
         data["wind_channels"] = json["data"];
         createAndShowSensorMarker(data, epochtime_milisec, i);
+        createMarkerTableFromSensorData(data, epochtime_milisec, i);
         showOrHideAQI(data["is_current_day"]);
       });
+      sensors_requests.push(xhr);
     } else {
       createAndShowSensorMarker(data, epochtime_milisec, i);
+      createMarkerTableFromSensorData(data, epochtime_milisec, i);
       showOrHideAQI(data["is_current_day"]);
     }
   });
-}
-
-function showOrHideAQI(is_current_day) {
-  // Show current Pittsburgh AQI if on current day and user is in Pittsburgh
-  if (is_current_day && area == "PGH") {
-    $.getJSON(aqi_root_url + "Pittsburgh", function (response) {
-      if (response) {
-        $(".aqi-td").text(response);
-        $(".aqi-tr").show();
-      }
-    });
-  } else {
-    $(".aqi-tr").hide();
-  }
 }
 
 function createAndShowSensorMarker(data, epochtime_milisec, i) {
@@ -711,9 +583,9 @@ function createAndShowSensorMarker(data, epochtime_milisec, i) {
     "complete": function (marker) {
       // Make the maker visible on the map when the maker is created
       marker.setMap(map);
-      // Cache data and markers
+      // Cache markers
+      sensors_cache[epochtime_milisec]["is_current_day"] = data["is_current_day"];
       sensors_cache[epochtime_milisec]["markers"][i] = marker;
-      sensors_cache[epochtime_milisec]["data"] = data;
     }
   });
 }
@@ -794,13 +666,135 @@ function handleSensorMarkerClicked(marker) {
   addGoogleAnalyticEvent("sensor", "click", label);
 }
 
+function createMarkerTableFromSensorData(data, epochtime_milisec, i) {
+  // When animating, we are actually hiding and showing all pre-created markers
+  // Create a table of sensor markers that correspond to different timestamps for animation
+  // One dimension is the marker itself
+  // One dimension is the timestamp
+  sensors_cache[epochtime_milisec]["marker_table"][i] = [];
+  if (typeof data["wind_channels"] == "undefined") {
+    /////////////////////////////////////////////////////////////////////////////////
+    // If no wind channels, just create the markers from the data
+    var PM25_data = data["PM25_channels"];
+    for (var j = 0; j < PM25_data.length; j++) {
+      var marker_data = {
+        "is_current_day": true,
+        "name": data["info"]["name"],
+        "latitude": data["info"]["latitude"],
+        "longitude": data["info"]["longitude"],
+        "PM25_feed_id": data["info"]["PM25"]["feed"],
+        "PM25_data_time": data["PM25_channels"][j][0] * 1000,
+        "PM25_value": Math.max(-1, roundTo(parseFloat(PM25_data[j][1]), 2))
+      };
+      createSensorMarkerForAnimation(marker_data, epochtime_milisec, i, j);
+    }
+  } else {
+    /////////////////////////////////////////////////////////////////////////////////
+    // If we have wind channel,
+    // we need to sync and merge the time series in both wind and PM25 channels
+    // (the timestamps in wind and PM25 may not match with each other)
+    var idx_PM25 = 0;
+    var idx_wind = 0;
+    var PM25_data = data["PM25_channels"];
+    var wind_data = data["wind_channels"];
+    var j = 0;
+    while (true) {
+      var marker_data = {
+        "is_current_day": true,
+        "name": data["info"]["name"],
+        "latitude": data["info"]["latitude"],
+        "longitude": data["info"]["longitude"],
+        "PM25_feed_id": data["info"]["PM25"]["feed"]
+      };
+      var PM25_data_i = PM25_data[idx_PM25];
+      var wind_data_i = wind_data[idx_wind];
+      var PM25_defined = !(typeof PM25_data_i == "undefined");
+      var wind_defined = !(typeof wind_data_i == "undefined");
+      if (PM25_defined && wind_defined && PM25_data_i[0] == wind_data_i[0]) {
+        marker_data["PM25_data_time"] = PM25_data_i[0] * 1000;
+        marker_data["PM25_value"] = Math.max(-1, roundTo(parseFloat(PM25_data_i[1]), 2));
+        marker_data["wind_data_time"] = wind_data_i[0] * 1000;
+        marker_data["wind_speed"] = roundTo(parseFloat(wind_data_i[1]), 2);
+        marker_data["wind_direction"] = roundTo(parseFloat(wind_data_i[2]), 2);
+        idx_PM25 += 1;
+        idx_wind += 1;
+      } else if ((PM25_defined && wind_defined && PM25_data_i[0] > wind_data_i[0]) || (!PM25_defined && wind_defined)) {
+        marker_data["wind_data_time"] = wind_data_i[0] * 1000;
+        marker_data["wind_speed"] = roundTo(parseFloat(wind_data_i[1]), 2);
+        marker_data["wind_direction"] = roundTo(parseFloat(wind_data_i[2]), 2);
+        idx_wind += 1;
+      } else if ((PM25_defined && wind_defined && PM25_data_i[0] < wind_data_i[0]) || (!wind_defined && PM25_defined)) {
+        marker_data["PM25_data_time"] = PM25_data_i[0] * 1000;
+        marker_data["PM25_value"] = Math.max(-1, roundTo(parseFloat(PM25_data_i[1]), 2));
+        idx_PM25 += 1;
+      } else {
+        break;
+      }
+      createSensorMarkerForAnimation(marker_data, epochtime_milisec, i, j);
+      j += 1;
+    }
+  }
+}
+
+function createSensorMarkerForAnimation(marker_data, epochtime_milisec, i, j) {
+  return new CustomMapMarker({
+    "type": "sensor",
+    "data": marker_data,
+    "complete": function (marker) {
+      // Cache markers
+      sensors_cache[epochtime_milisec]["marker_table"][i][j] = marker;
+    }
+  });
+}
+
+function showOrHideAQI(is_current_day) {
+  // Show current Pittsburgh AQI if on current day and user is in Pittsburgh
+  if (is_current_day && area == "PGH") {
+    $.getJSON(aqi_root_url + "Pittsburgh", function (response) {
+      if (response) {
+        $(".aqi-td").text(response);
+        $(".aqi-tr").show();
+      }
+    });
+  } else {
+    $(".aqi-tr").hide();
+  }
+}
+
+function hideSensorMarkerTable(epochtime_milisec) {
+  var r = sensors_cache[epochtime_milisec];
+  if (typeof r == "undefined") return;
+  var current_marker_table = r["marker_table"];
+  for (var i = 0; i < current_marker_table.length; i++) {
+    var current_markers = current_marker_table[i];
+    for (var j = 0; j < current_markers.length; j++) {
+      current_markers[j].setMap(null);
+    }
+  }
+}
+
 function hideSensorMarkers(epochtime_milisec) {
+  // Abort all pending ajax requests
+  var need_to_clean_cache = false;
+  if (sensors_requests.length > 0) {
+    need_to_clean_cache = true;
+    for (var i = 0; i < sensors_requests.length; i++) {
+      sensors_requests[i].abort();
+    }
+    sensors_requests = [];
+  }
+
+  // Hide markers
   var r = sensors_cache[epochtime_milisec];
   if (typeof r == "undefined") return;
   var current_markers = r["markers"];
   for (var i = 0; i < current_markers.length; i++) {
     current_markers[i].setMap(null);
-    current_markers[i].reset();
+  }
+
+  // Clean the cache if there are unfinished requests
+  if (need_to_clean_cache) {
+    delete sensors_cache[epochtime_milisec];
   }
 }
 
@@ -839,6 +833,176 @@ function genSensorDataURL(epochtime_milisec, info) {
     "wind_channels": data_url_wind_channels,
     "is_current_day": is_current_day
   };
+}
+
+function startAnimation(epochtime_milisec) {
+  if (isPlaying == true) return;
+  isPlaying = true;
+  isDwelling = false;
+
+  var smell_markers = smell_reports_cache[epochtime_milisec]["markers"];
+  var marker_table = sensors_cache[epochtime_milisec]["marker_table"];
+  if (animate_interval != null || (smell_markers.length == 0 && marker_table[0].length == 0)) return;
+
+  // Handle UI
+  if ($playback_button.hasClass("ui-icon-custom-play")) {
+    $playback_button.removeClass("ui-icon-custom-play");
+    $playback_button.addClass("ui-icon-custom-pause");
+  }
+  $playback_txt.show();
+
+  // Animation variables
+  var frames_per_sec = 60;
+  var secs_to_animate_one_day = 20;
+  var increments_per_frame = Math.round(86400000 / (secs_to_animate_one_day * frames_per_sec));
+  var interval = 1000 / frames_per_sec;
+  var marker_fade_milisec = 1000;
+  var dwell_sec = 2;
+  var dwell_increments = dwell_sec * frames_per_sec * increments_per_frame;
+  var label = getAnimationLabels();
+
+  // Initialize animation
+  var smell_idx = 0;
+  var sensor_idx_array = [];
+  for (var i = 0; i < marker_table.length; i++) {
+    sensor_idx_array[i] = 0;
+  }
+  var sensor_idx_array_on_map = [];
+  var elapsed_milisec = 0;
+  hideSmellMarkers(epochtime_milisec);
+  hideSensorMarkers(epochtime_milisec);
+  var label_idx = 0;
+  $playback_txt.text(label[label_idx]["text"]);
+
+  // Start animation
+  animate_interval = setInterval(function () {
+    if (elapsed_milisec < 86400000) {
+      ///////////////////////////////////////////////////////////////////////////////
+      // This condition means we need to animate smell reports and sensors
+      // Check all smell reports that are not on the map
+      // Draw a smell report only if it has time less than the current elapsed time
+      if (smell_idx < smell_markers.length) {
+        for (var i = smell_idx; i < smell_markers.length; i++) {
+          var smell_m = smell_markers[i];
+          var smell_m_data = smell_m.getData();
+          var smell_epochtime_milisec = smell_m_data["created_at"] * 1000;
+          if (smell_epochtime_milisec <= (current_epochtime_milisec + elapsed_milisec)) {
+            smell_m.setMap(map);
+            fadeMarker(smell_m, marker_fade_milisec);
+            smell_idx += 1;
+          } else {
+            break;
+          }
+        }
+      }
+      // Draw sensors
+      for (var j = 0; j < marker_table.length; j++) {
+        var sensor_idx = sensor_idx_array[j];
+        var sensor_markers = marker_table[j];
+        if (sensor_idx < sensor_markers.length) {
+          var sensor_m = sensor_markers[sensor_idx];
+          var sensor_m_data = sensor_m.getData();
+          var sensor_epochtime_milisec;
+          if (typeof sensor_m_data["PM25_data_time"] != "undefined") {
+            sensor_epochtime_milisec = sensor_m_data["PM25_data_time"];
+          } else {
+            sensor_epochtime_milisec = sensor_m_data["wind_data_time"];
+          }
+          if (sensor_epochtime_milisec <= (current_epochtime_milisec + elapsed_milisec)) {
+            // Show current sensor marker
+            sensor_m.setMap(map);
+            // Hide previous sensor marker
+            if (typeof sensor_idx_array_on_map[j] != "undefined") {
+              sensor_markers[sensor_idx_array_on_map[j]].setMap(null);
+            }
+            // Save index
+            sensor_idx_array_on_map[j] = sensor_idx_array[j];
+            sensor_idx_array[j] += 1;
+          }
+        }
+      }
+      // Display label
+      if (elapsed_milisec >= label[label_idx]["milisec"]) {
+        label_idx += 1;
+        $playback_txt.text(label[label_idx]["text"]);
+      }
+    } else {
+      ///////////////////////////////////////////////////////////////////////////////
+      // This condition means we are pausing the animation and do nothing
+      isDwelling = true;
+    }
+    if (elapsed_milisec > 86400000 + dwell_increments) {
+      ///////////////////////////////////////////////////////////////////////////////
+      // This condition means we animated all smell reports and sensors in one day
+      isDwelling = false;
+      smell_idx = 0;
+      for (var i = 0; i < marker_table.length; i++) {
+        sensor_idx_array[i] = 0;
+      }
+      sensor_idx_array_on_map = [];
+      elapsed_milisec = 0;
+      hideSmellMarkers(epochtime_milisec);
+      hideSensorMarkerTable(epochtime_milisec);
+      label_idx = 0;
+      $playback_txt.text(label[label_idx]["text"]);
+    }
+    elapsed_milisec += increments_per_frame;
+  }, interval);
+}
+
+function stopAnimation(epochtime_milisec, previous_epochtime_milisec) {
+  if (isPlaying == false) return;
+  isPlaying = false;
+  isDwelling = false;
+
+  // Handle UI
+  if ($playback_button.hasClass("ui-icon-custom-pause")) {
+    $playback_button.removeClass("ui-icon-custom-pause");
+    $playback_button.addClass("ui-icon-custom-play");
+  }
+  $playback_txt.text("");
+  $playback_txt.hide();
+
+  // Stop animation
+  if (animate_interval != null) {
+    clearInterval(animate_interval);
+    animate_interval = null;
+  }
+
+  // Draw all smell reports to the map
+  hideSmellMarkers(previous_epochtime_milisec);
+  showSmellMarkers(epochtime_milisec);
+
+  // Draw all sensors to the map
+  hideSensorMarkerTable(previous_epochtime_milisec);
+  showSensorMarkers(epochtime_milisec);
+}
+
+function getAnimationLabels() {
+  if (typeof animation_labels != "undefined") return animation_labels;
+  animation_labels = [];
+  // One bin is equal to 30 minutes
+  var increments = 86400000 / 48;
+  var milisec = increments;
+  for (var i = 0; i < 48; i++) {
+    var hour = Math.floor(i / 2);
+    var minute = (i % 2) * 30;
+    animation_labels.push({
+      text: ("0" + hour).slice(-2) + ":" + ("0" + minute).slice(-2),
+      milisec: milisec
+    });
+    milisec += increments;
+  }
+  return animation_labels;
+}
+
+function fadeMarker(marker, time) {
+  setTimeout(function () {
+    if (isPlaying == true && isDwelling == false) {
+      marker.setZIndex(0);
+      marker.setOpacity(0.5);
+    }
+  }, time);
 }
 
 $(function () {
