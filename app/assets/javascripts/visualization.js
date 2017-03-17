@@ -39,7 +39,6 @@ var timeline_jump_index = [];
 // Sensor variables
 var sensors_cache = {};
 var infowindow_sensor;
-var sensors_requests = [];
 var sensors_list = [
   {
     name: "County AQ Monitor - Liberty",
@@ -344,7 +343,11 @@ function createAndShowSmellMarker(data, epochtime_milisec) {
     },
     "complete": function (marker) {
       // Make the maker visible on the map when the maker is created
-      marker.setMap(map);
+      // Make sure that the desired time matches the current time
+      // (if user selects the time block too fast, they will be different)
+      if (epochtime_milisec == current_epochtime_milisec) {
+        marker.setMap(map);
+      }
       // Cache markers
       smell_reports_cache[epochtime_milisec]["markers"].push(marker);
     }
@@ -366,8 +369,6 @@ function handleSmellMarkerClicked(marker) {
 }
 
 function hideSmellMarkers(epochtime_milisec) {
-  // TODO: need to cancel unfinished ajax request
-  // TODO: if there are unfinished requests, clean the cache
   var r = smell_reports_cache[epochtime_milisec];
   if (typeof r == "undefined") return;
   var current_markers = r["markers"];
@@ -546,25 +547,24 @@ function showSensorMarkers(epochtime_milisec) {
 function loadAndCreateSensorMarkers(epochtime_milisec, info, i) {
   var urls = genSensorDataURL(epochtime_milisec, info);
   var data = {"info": info, "is_current_day": urls["is_current_day"]};
-  (function () {
-    // TODO: compute max from channels and return and track xhr
-    var promise = $.when(
-      $.getJSON(urls["PM25_channels"], function (json) {
-        data["PM25_channels"] = json["data"];
-      }), $.getJSON(urls["PM25_channel_max"], function (json) {
-        data["PM25_channel_max"] = json["data"];
-      })
-    );
-    return promise;
-  }()).then(function () {
+  $.getJSON(urls["PM25_channels"], function (json) {
+    data["PM25_channels"] = json["data"];
+    // Compute the maximum
+    var PM25_channel_max = data["PM25_channels"][0];
+    for (var j = 1; j < data["PM25_channels"].length; j++) {
+      if (data["PM25_channels"][j][1] > PM25_channel_max[1]) {
+        PM25_channel_max = data["PM25_channels"][j];
+      }
+    }
+    data["PM25_channel_max"] = PM25_channel_max;
+  }).then(function () {
     if (typeof urls["wind_channels"] != "undefined") {
-      var xhr = $.getJSON(urls["wind_channels"], function (json) {
+      $.getJSON(urls["wind_channels"], function (json) {
         data["wind_channels"] = json["data"];
         createAndShowSensorMarker(data, epochtime_milisec, i);
         createMarkerTableFromSensorData(data, epochtime_milisec, i);
         showOrHideAQI(data["is_current_day"]);
       });
-      sensors_requests.push(xhr);
     } else {
       createAndShowSensorMarker(data, epochtime_milisec, i);
       createMarkerTableFromSensorData(data, epochtime_milisec, i);
@@ -582,7 +582,11 @@ function createAndShowSensorMarker(data, epochtime_milisec, i) {
     },
     "complete": function (marker) {
       // Make the maker visible on the map when the maker is created
-      marker.setMap(map);
+      // Make sure that the desired time matches the current time
+      // (if user selects the time block too fast, they will be different)
+      if (epochtime_milisec == current_epochtime_milisec) {
+        marker.setMap(map);
+      }
       // Cache markers
       sensors_cache[epochtime_milisec]["is_current_day"] = data["is_current_day"];
       sensors_cache[epochtime_milisec]["markers"][i] = marker;
@@ -613,8 +617,8 @@ function parseSensorMarkerData(data) {
       marker_data["PM25_value"] = -1;
     } else {
       marker_data["PM25_value"] = Math.max(-1, roundTo(parseFloat(PM25_latest[1]), 2));
+      marker_data["PM25_data_time"] = PM25_data_time;
     }
-    marker_data["PM25_data_time"] = PM25_data_time;
     // For wind data
     var wind_all = data["wind_channels"];
     if (typeof wind_all != "undefined") {
@@ -624,18 +628,19 @@ function parseSensorMarkerData(data) {
       if (typeof wind_latest != "undefined" && wind_diff_hour <= 4 && !isNaN(wind_latest[1]) && !isNaN(wind_latest[2])) {
         marker_data["wind_speed"] = roundTo(parseFloat(wind_latest[1]), 2);
         marker_data["wind_direction"] = roundTo(parseFloat(wind_latest[2]), 2);
+        marker_data["wind_data_time"] = wind_data_time;
       }
-      marker_data["wind_data_time"] = wind_data_time;
     }
   } else {
     ///////////////////////////////////////////////////////////////////////////////
     // If the selected day is not the current day, just use the max
     // For PM25 data
-    var PM25_max = data["PM25_channel_max"][0];
+    var PM25_max = data["PM25_channel_max"];
     if (typeof PM25_max == "undefined" || isNaN(PM25_max[1])) {
       marker_data["PM25_value"] = -1;
     } else {
       marker_data["PM25_value"] = Math.max(-1, roundTo(parseFloat(PM25_max[1]), 2));
+      marker_data["PM25_data_time"] = PM25_max[0] * 1000;
     }
   }
 
@@ -774,27 +779,14 @@ function hideSensorMarkerTable(epochtime_milisec) {
 }
 
 function hideSensorMarkers(epochtime_milisec) {
-  // Abort all pending ajax requests
-  var need_to_clean_cache = false;
-  if (sensors_requests.length > 0) {
-    need_to_clean_cache = true;
-    for (var i = 0; i < sensors_requests.length; i++) {
-      sensors_requests[i].abort();
-    }
-    sensors_requests = [];
-  }
-
   // Hide markers
   var r = sensors_cache[epochtime_milisec];
   if (typeof r == "undefined") return;
   var current_markers = r["markers"];
   for (var i = 0; i < current_markers.length; i++) {
-    current_markers[i].setMap(null);
-  }
-
-  // Clean the cache if there are unfinished requests
-  if (need_to_clean_cache) {
-    delete sensors_cache[epochtime_milisec];
+    if (typeof current_markers[i] != "undefined") {
+      current_markers[i].setMap(null);
+    }
   }
 }
 
@@ -829,7 +821,6 @@ function genSensorDataURL(epochtime_milisec, info) {
 
   return {
     "PM25_channels": data_url_PM25_channels,
-    "PM25_channel_max": data_url_PM25_channel_max,
     "wind_channels": data_url_wind_channels,
     "is_current_day": is_current_day
   };
