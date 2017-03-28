@@ -195,6 +195,7 @@ function initGoogleMapAndHomeButton() {
     styles: styleArray,
     zoom: isMobile() ? init_zoom_mobile : init_zoom_desktop,
     disableDefaultUI: true,
+    clickableIcons: false,
     mapTypeId: google.maps.MapTypeId.ROADMAP
   });
 
@@ -207,18 +208,36 @@ function initGoogleMapAndHomeButton() {
     }
   });
 
-  // Set smell report information window
+  // Set information window
   infowindow_smell = new google.maps.InfoWindow({
-    pixelOffset: new google.maps.Size(-1, 0)
+    pixelOffset: new google.maps.Size(-1, 0),
+    maxWidth: 250
   });
   infowindow_sensor = new google.maps.InfoWindow({
-    pixelOffset: new google.maps.Size(0, 37)
+    pixelOffset: new google.maps.Size(0, 37),
+    maxWidth: 250
+  });
+
+  // Change the style of the info window
+  infowindow_smell.addListener("domready", function() {
+    styleInfoWindowCloseButton();
+  });
+  infowindow_sensor.addListener("domready", function() {
+    styleInfoWindowCloseButton();
   });
 
   // Add event to the home button
   $("#home-btn").on("click", function () {
     map.setCenter(init_latlng);
     map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
+  });
+}
+
+function styleInfoWindowCloseButton() {
+  $(".gm-style-iw").next().css({
+    "-ms-transform": "scale(1.3, 1.3)",
+    "-webkit-transform": "scale(1.3, 1.3)",
+    "transform": "scale(1.3, 1.3)"
   });
 }
 
