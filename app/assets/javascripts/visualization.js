@@ -477,11 +477,13 @@ function drawCalendar(data) {
 
 function drawTimeline(data) {
   // Collect the data for drawing the timeline
+  var batches = [];
   var pts = [];
   var td_count = 0;
   var last_month;
   var day = data["day"];
   var count = data["count"];
+
   for (var i = 0; i < day.length; i++) {
     var date_i = dateStringToObject(day[i]);
     var date_array = [date_i];
@@ -509,13 +511,21 @@ function drawTimeline(data) {
       pts.push([label, count_array[k], date.getTime()]);
       // Save the index if necessary (the calendar will use this)
       var month = date.getMonth();
+      if (typeof last_month == "undefined") {
+        last_month = month;
+        timeline_jump_index.push(td_count);
+      }
       if (last_month != month) {
+        batches.push(pts);
+        pts = [];
         timeline_jump_index.push(td_count);
         last_month = month;
       }
       td_count++;
     }
   }
+  batches.push(pts);
+  timeline_jump_index.push(td_count);
 
   // Use the charting library to draw the timeline
   var chart_settings = {
@@ -525,7 +535,7 @@ function drawTimeline(data) {
     select: function ($e) {
       handleTimelineButtonSelected(parseInt($e.data("epochtime_milisec")));
     },
-    data: pts,
+    data: batches,
     format: ["label", "value", "epochtime_milisec"],
     dataIndexForLabels: 0,
     dataIndexForValues: 1
@@ -565,7 +575,9 @@ function showSensorMarkers(epochtime_milisec) {
     // Make sensors markers visible on the map
     var markers = r["markers"];
     for (var i = 0; i < markers.length; i++) {
-      markers[i].setMap(map);
+      if (typeof  markers[i] != "undefined") {
+        markers[i].setMap(map);
+      }
     }
     showOrHideAQI(r["is_current_day"]);
   } else {
@@ -644,13 +656,17 @@ function parseSensorMarkerData(data) {
     // For PM25 data
     var PM25_all = data["PM25_channels"];
     var PM25_latest = PM25_all[PM25_all.length - 1];
-    var PM25_data_time = PM25_latest[0] * 1000;
-    var PM25_diff_hour = (current_time - PM25_data_time) / 3600000;
-    if (typeof PM25_latest == "undefined" || PM25_diff_hour > 4 || isNaN(PM25_latest[1])) {
+    if (typeof PM25_latest == "undefined") {
       marker_data["PM25_value"] = -1;
     } else {
-      marker_data["PM25_value"] = Math.max(-1, roundTo(parseFloat(PM25_latest[1]), 2));
-      marker_data["PM25_data_time"] = PM25_data_time;
+      var PM25_data_time = PM25_latest[0] * 1000;
+      var PM25_diff_hour = (current_time - PM25_data_time) / 3600000;
+      if (typeof PM25_latest == "undefined" || PM25_diff_hour > 4 || isNaN(PM25_latest[1])) {
+        marker_data["PM25_value"] = -1;
+      } else {
+        marker_data["PM25_value"] = Math.max(-1, roundTo(parseFloat(PM25_latest[1]), 2));
+        marker_data["PM25_data_time"] = PM25_data_time;
+      }
     }
     // For wind data
     var wind_all = data["wind_channels"];
