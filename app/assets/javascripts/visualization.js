@@ -21,8 +21,10 @@ var infowindow_smell;
 // Animation variables
 var isPlaying = false;
 var isDwelling = false;
+var isPaused = false;
 var animate_interval = null;
 var $playback_button;
+var $stop_button;
 var $playback_txt;
 var animation_labels;
 
@@ -219,10 +221,10 @@ function initGoogleMapAndHomeButton() {
   });
 
   // Change the style of the info window
-  infowindow_smell.addListener("domready", function() {
+  infowindow_smell.addListener("domready", function () {
     styleInfoWindowCloseButton();
   });
-  infowindow_sensor.addListener("domready", function() {
+  infowindow_sensor.addListener("domready", function () {
     styleInfoWindowCloseButton();
   });
 
@@ -283,15 +285,27 @@ function initCalendarButtonAndDialog() {
 }
 
 function initAnimationUI() {
+  $playback_txt = $("#playback-txt");
   $playback_button = $("#playback-btn");
+  $stop_button = $("#stop-btn");
+
   $playback_button.on("click", function () {
     if (isPlaying) {
-      stopAnimation(current_epochtime_milisec, current_epochtime_milisec);
+      if (isPaused) {
+        resumeAnimation();
+      } else {
+        pauseAnimation();
+      }
     } else {
       startAnimation(current_epochtime_milisec);
     }
   });
-  $playback_txt = $("#playback-txt");
+
+  $stop_button.on("click", function () {
+    if (isPlaying) {
+      stopAnimation(current_epochtime_milisec, current_epochtime_milisec);
+    }
+  });
 }
 
 function loadAndDrawCalendar() {
@@ -815,11 +829,9 @@ function genSensorDataURL(epochtime_milisec, info) {
 
   // For PM25
   var data_url_PM25_channels;
-  var data_url_PM25_channel_max;
   if (typeof info["PM25"] != "undefined") {
     var data_url_PM25 = esdr_root_url + "feeds/" + info["PM25"]["feed"] + "/channels/";
     data_url_PM25_channels = data_url_PM25 + info["PM25"]["channels"].toString() + time_range_url_part;
-    data_url_PM25_channel_max = data_url_PM25 + info["PM25"]["channel_max"] + time_range_url_part;
   }
 
   // For wind
@@ -846,9 +858,10 @@ function genSensorDataURL(epochtime_milisec, info) {
 }
 
 function startAnimation(epochtime_milisec) {
-  if (isPlaying == true) return;
+  if (isPlaying) return;
   isPlaying = true;
   isDwelling = false;
+  isPaused = false;
 
   var smell_markers = smell_reports_cache[epochtime_milisec]["markers"];
   var marker_table = sensors_cache[epochtime_milisec]["marker_table"];
@@ -860,10 +873,11 @@ function startAnimation(epochtime_milisec) {
     $playback_button.addClass("ui-icon-custom-pause");
   }
   $playback_txt.show();
+  $stop_button.show();
 
   // Animation variables
   var frames_per_sec = 60;
-  var secs_to_animate_one_day = 20;
+  var secs_to_animate_one_day = 30;
   var increments_per_frame = Math.round(86400000 / (secs_to_animate_one_day * frames_per_sec));
   var interval = 1000 / frames_per_sec;
   var marker_fade_milisec = 1000;
@@ -886,6 +900,7 @@ function startAnimation(epochtime_milisec) {
 
   // Start animation
   animate_interval = setInterval(function () {
+    if (isPaused) return;
     if (elapsed_milisec < 86400000) {
       ///////////////////////////////////////////////////////////////////////////////
       // This condition means we need to animate smell reports and sensors
@@ -898,6 +913,9 @@ function startAnimation(epochtime_milisec) {
           var smell_epochtime_milisec = smell_m_data["created_at"] * 1000;
           if (smell_epochtime_milisec <= (current_epochtime_milisec + elapsed_milisec)) {
             smell_m.setMap(map);
+            // TODO: need to use a queue that contains the markers that need to be faded
+            // TODO: store the remaining time in the queue and check the time at the beginning
+            // TODO: if the remaining time is less than zero, fade the marker
             fadeMarker(smell_m, marker_fade_milisec);
             smell_idx += 1;
           } else {
@@ -960,10 +978,33 @@ function startAnimation(epochtime_milisec) {
   }, interval);
 }
 
+function pauseAnimation() {
+  if (!isPlaying || isPaused) return;
+  isPaused = true;
+
+  // Handle UI
+  if ($playback_button.hasClass("ui-icon-custom-pause")) {
+    $playback_button.removeClass("ui-icon-custom-pause");
+    $playback_button.addClass("ui-icon-custom-play");
+  }
+}
+
+function resumeAnimation() {
+  if (!isPlaying || !isPaused) return;
+  isPaused = false;
+
+  // Handle UI
+  if ($playback_button.hasClass("ui-icon-custom-play")) {
+    $playback_button.removeClass("ui-icon-custom-play");
+    $playback_button.addClass("ui-icon-custom-pause");
+  }
+}
+
 function stopAnimation(epochtime_milisec, previous_epochtime_milisec) {
-  if (isPlaying == false) return;
+  if (!isPlaying) return;
   isPlaying = false;
   isDwelling = false;
+  isPaused = false;
 
   // Handle UI
   if ($playback_button.hasClass("ui-icon-custom-pause")) {
@@ -972,6 +1013,7 @@ function stopAnimation(epochtime_milisec, previous_epochtime_milisec) {
   }
   $playback_txt.text("");
   $playback_txt.hide();
+  $stop_button.hide();
 
   // Stop animation
   if (animate_interval != null) {
@@ -1008,7 +1050,11 @@ function getAnimationLabels() {
 
 function fadeMarker(marker, time) {
   setTimeout(function () {
-    if (isPlaying == true && isDwelling == false) {
+    if (isPlaying && isPaused) {
+      fadeMarker(marker, time);
+      return;
+    }
+    if (isPlaying && !isDwelling) {
       marker.setZIndex(0);
       marker.setOpacity(0.5);
     }

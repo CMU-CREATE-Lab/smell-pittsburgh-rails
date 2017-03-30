@@ -64,6 +64,18 @@
   opacity: 0.75;
 }
 
+#stop-btn {
+  position: absolute;
+  font-size: 11px;
+  left: 9px;
+  bottom: 81px;
+  width: 45px;
+  height: 45px;
+  display: none;
+  border-radius: 23px;
+  opacity: 0.75;
+}
+
 #playback-txt {
   position: absolute;
   font-size: 39px;
@@ -242,6 +254,13 @@
 
 .ui-icon-custom-pause {
   background-image: url(/img/pause.png);
+  background-size: 20px 20px;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
+
+.ui-icon-custom-stop {
+  background-image: url(/img/stop.png);
   background-size: 20px 20px;
   background-repeat: no-repeat;
   background-position: center center;
