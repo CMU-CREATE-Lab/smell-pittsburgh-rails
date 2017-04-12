@@ -9,6 +9,15 @@ Rails.application.config.assets.version = '1.0'
 # Precompile additional assets.
 # application.js, application.css, and all non-JS/CSS in app/assets folder are already added.
 # Rails.application.config.assets.precompile += %w( search.js )
+Rails.application.config.assets.precompile += %w( CustomMapMarker.js )
+Rails.application.config.assets.precompile += %w( FlatBlockChart.js )
+Rails.application.config.assets.precompile += %w( FlatBlockChart.css )
+Rails.application.config.assets.precompile += %w( googleAnalytics.js )
+Rails.application.config.assets.precompile += %w( summary.js )
+Rails.application.config.assets.precompile += %w( visualization.js )
+Rails.application.config.assets.precompile += %w( visualization.css )
+Rails.application.config.assets.precompile += %w( summary.js )
+Rails.application.config.assets.precompile += %w( summary.css )
 
 # Now any manifest with *-bundle will be loaded and we never have to worry about precompiling under production
 Rails.application.config.assets.precompile += %w(*-bundle.* *.jpg *.png *.jpeg *.gif)

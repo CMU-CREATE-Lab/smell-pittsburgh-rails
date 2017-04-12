@@ -3,12 +3,18 @@
   <%= stylesheet_link_tag "http://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" %>
   <%= stylesheet_link_tag "https://fonts.googleapis.com/css?family=Open+Sans:400,700" %>
   <%= stylesheet_link_tag "https://fonts.googleapis.com/css?family=Raleway:400,700" %>
+  <%= stylesheet_link_tag "visualization" %>
+  <%= stylesheet_link_tag "FlatBlockChart" %>
 <% end %>
 
 <% content_for :js do %>
   <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js" %>
   <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js" %>
   <%= javascript_include_tag "https://maps.googleapis.com/maps/api/js?v=3.25&key=AIzaSyD2nqIondaBl-YWGlaD_mo1L0w3j2yvehQ" %>
+  <%= javascript_include_tag "googleAnalytics" %>
+  <%= javascript_include_tag "visualization" %>
+  <%= javascript_include_tag "FlatBlockChart" %>
+  <%= javascript_include_tag "CustomMapMarker" %>
 <% end %>
 
 <% content_for :body do %>
