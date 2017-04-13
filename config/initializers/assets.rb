@@ -18,6 +18,10 @@ Rails.application.config.assets.precompile += %w( visualization.js )
 Rails.application.config.assets.precompile += %w( visualization.css )
 Rails.application.config.assets.precompile += %w( summary.js )
 Rails.application.config.assets.precompile += %w( summary.css )
+Rails.application.config.assets.precompile += %w( calendar-heatmap.js )
+Rails.application.config.assets.precompile += %w( calendar-heatmap.css )
+Rails.application.config.assets.precompile += %w( moment.min.js )
+Rails.application.config.assets.precompile += %w( d3.v3.min.js )
 
 # Now any manifest with *-bundle will be loaded and we never have to worry about precompiling under production
 Rails.application.config.assets.precompile += %w(*-bundle.* *.jpg *.png *.jpeg *.gif)
