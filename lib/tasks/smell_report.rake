@@ -1,6 +1,23 @@
 namespace :smell_report do
 
 
+  task :add_zip_codes => :environment do
+    SmellReport.all.each do |report|
+      # request reverse geocode object
+      if report.real_latitude and report.real_longitude and !report.zip_code_id
+        geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{report.real_latitude}, #{report.real_longitude}" )
+        # associate smell report with zip code
+        unless geo.zip.blank?
+          zip_code = ZipCode.find_or_create_by(zip: geo.zip)
+          report.zip_code_id = zip_code.id
+          report.save!
+        end
+        sleep(1)
+      end
+    end
+  end
+
+
   task :perturb_coordinates => :environment do
     SmellReport.all.each do |report|
       report.generate_perturbed_coordinates

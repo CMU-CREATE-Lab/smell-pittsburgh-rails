@@ -42,6 +42,13 @@ class ApiController < ApplicationController
     # do not send to ACHD if the smell report is outside the pgh bounding box
     # TODO we should also check against a list of valid zipcodes for ACHD submission
     smell_report.submit_achd_form = false unless SmellReport.is_within_pittsburgh?(smell_report.latitude,smell_report.longitude)
+    # request reverse geocode object
+    geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{smell_report.latitude}, #{smell_report.longitude}" )
+    # associate smell report with zip code
+    unless geo.zip.blank?
+      zip_code = ZipCode.find_or_create_by(zip: geo.zip)
+      smell_report.zip_code_id = zip_code.id
+    end
 
     if BannedUserHash.where(:user_hash => smell_report.user_hash).size > 0
       Rails.logger.info("(ApiController::smell_report_create) ignoring smell report with banned user_hash=#{smell_report.user_hash}")
@@ -85,7 +92,8 @@ class ApiController < ApplicationController
           "reply_email": params["email"],
           "name": params["name"],
           "phone_number": params["phone_number"],
-          "address": params["address"]
+          "address": params["address"],
+          "geo": geo
         }
         AchdForm.submit_form(smell_report,options)
       end

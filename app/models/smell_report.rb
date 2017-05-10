@@ -9,6 +9,8 @@ class SmellReport < ActiveRecord::Base
   # submit_achd_form :boolean
   # additional_comments :text
 
+  belongs_to :zip_code
+
   validates :user_hash, :latitude, :longitude, :smell_value, :presence => true
   validates :smell_value, :inclusion => { in: (1..5) }
 

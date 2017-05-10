@@ -28,9 +28,7 @@ class AchdForm < ActiveRecord::Base
     name = options[:name].blank? ? "" : options[:name]
     phone_number = options[:phone_number].blank? ? "" : options[:phone_number]
     user_address = options[:address].blank? ? "" : options[:address]
-
-    # request reverse geocode object
-    geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{smell_report.real_latitude}, #{smell_report.real_longitude}" )
+    geo = options[:geo].blank? ? {} : options[:geo]
 
     # if reverse geocoding fails, we want to avoid submitting a form (since the location may either be invalid, or failed for another reason and we don't want to expose the precise location)
     if geo.full_address.blank?
