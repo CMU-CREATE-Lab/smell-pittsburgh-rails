@@ -193,7 +193,7 @@ class ApiController < ApplicationController
               results[:count].push(0)
             end
             index = results[:month].index(month)
-            results[:count] += value[:count][i]
+            results[:count][index] += value[:count][i]
           end
         end
       elsif aggregate == "day"
@@ -207,7 +207,7 @@ class ApiController < ApplicationController
               results[:count].push(0)
             end
             index = results[:day].index(day)
-            results[:count] += value[:count][i]
+            results[:count][index] += value[:count][i]
           end
         end
       elsif aggregate == "total"
