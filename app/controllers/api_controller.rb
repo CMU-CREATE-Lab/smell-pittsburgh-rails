@@ -1,3 +1,5 @@
+require 'csv'
+
 class ApiController < ApplicationController
 
   # protect_from_forgery with: :null_session
@@ -110,7 +112,23 @@ class ApiController < ApplicationController
 
   # GET /api/v1/smell_reports
   #
-  # PARAMS: none
+  # PARAMS
+  # start_time: Integer (default: time of first smell report)
+  # end_time: Integer (default: now)
+  # aggregate: {month|day|total}
+  #   - If specified, aggregates the results by month/day/total
+  # timezone_offset: Integer (default: 0)
+  #   - JavaScript timezone offset, in minutes (see Date.getTimezoneOffset() for more info)
+  # area: String (default: PGH)
+  #   - The smell area code for smell reports
+  # min_smell_value: Integer (default: 0)
+  #   - The minimum smell value to include in the result
+  # group_by_zipcode: {true|false}
+  #   - If set to true, group your results by zipcode; this grouping is outside of the "aggregate" grouping
+  # zipcodes: String
+  #   - A comma-separated list of zipcodes to select the smell reports from. Includes all zipcodes If not specified.
+  # format:  {json|csv} (default: json)
+  #   - What format the output should be in, either JSON or CSV.
   #
   def smell_report_index
     start_time = params["start_time"]
@@ -119,6 +137,9 @@ class ApiController < ApplicationController
     timezone_offset = params["timezone_offset"]
     area = params["area"] == nil ? "PGH" : params["area"]
     min_smell_value = params["min_smell_value"] == nil ? 0 : params["min_smell_value"]
+    group_by_zipcode = params["group_by_zipcode"] == "true" ? true : false
+    zipcodes = params["zipcodes"]
+    format_as = params["format"] == "csv" ? "csv" : "json"
 
     if start_time
       start_datetime = Time.at(start_time.to_i).to_datetime if start_time
@@ -132,37 +153,137 @@ class ApiController < ApplicationController
       end_datetime = Time.now.to_datetime
     end
 
-    if aggregate == "month"
-      # If aggregated by month
-      reports = SmellReport.from_app(area).where(:created_at => start_datetime...end_datetime).where("smell_value>=" + min_smell_value.to_s).order('created_at ASC').group("year(created_at)").group("month(created_at)").count
-      reports = {month: reports.keys}
-    elsif aggregate == "day"
-      offset_str = "+00:00"
-      if timezone_offset
-        a = timezone_offset.to_i
-        # Convert the timezone offset returned from JavaScript
-        # to a string for ruby's localtime method
-        timezone_sign = ((a <=> 0) ? "-" : "+").to_s # reverse the sign
-        timezone_hr = (a.abs/60).to_s.rjust(2, "0") # get the hour part
-        timezone_min = (a.abs%60).to_s.rjust(2, "0") # get the minute part
-        offset_str = timezone_sign + timezone_hr + ":" + timezone_min
-      end
-      reports = SmellReport.from_app(area).where(:created_at => start_datetime...end_datetime).where("smell_value>=" + min_smell_value.to_s).order('created_at ASC').group("date(convert_tz(created_at,'+00:00','" + offset_str+ "'))").count
-      reports = {day: reports.keys, count: reports.values}
-      #Rails.logger.info(date.to_s)
+    if zipcodes.blank?
+      zipcodes = ZipCode.all.map(&:zip)
     else
-      # If not aggregated
-      reports = SmellReport.where(:created_at => start_datetime...end_datetime).from_app(area).order('created_at ASC')
-      # Select only some fields
-      reports = reports.as_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
-      # Convert created_at to epoch time
-      for i in 0..reports.size()-1
-        reports[i]["created_at"] = reports[i]["created_at"].to_i
+      zipcodes = zipcodes.split ","
+    end
+
+    # grab all smell reports
+    results = {}
+    zipcodes.each { |z| results[z] = ZipCode.exists?(zip: z) ? ZipCode.find_by_zip(z).smell_reports.from_app(area).where(:created_at => start_datetime...end_datetime).where("smell_value>=" + min_smell_value.to_s).order('created_at ASC') : [] }
+
+    # bucket results
+    results.each do |key,value|
+      if aggregate == "month"
+        results[key] = SmellReport.aggregate_by_month(value)
+      elsif aggregate == "day"
+        results[key] = SmellReport.aggregate_by_day(value, timezone_offset)
+      elsif aggregate == "total"
+        results[key] = value.size
+      else
+        results[key] = value.as_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
+        # Convert created_at to epoch time
+        for i in 0..results[key].size()-1
+          results[key][i]["created_at"] = results[key][i]["created_at"].to_i
+        end
       end
     end
 
-    render :json => reports
+    # if we group by zipcode, then we're already done. Otherwise, flatten the results.
+    unless group_by_zipcode
+      if aggregate == "month"
+        tmp = results
+        results = {:month => [], :count => []}
+        tmp.each do |k,value|
+          for i in 0..value[:month].size-1 do
+            month = value[:month][i]
+            if results[:month].index(month).nil?
+              results[:month].push(month)
+              results[:count].push(0)
+            end
+            index = results[:month].index(month)
+            results[:count] += value[:count][i]
+          end
+        end
+      elsif aggregate == "day"
+        tmp = results
+        results = {:day => [], :count => []}
+        tmp.each do |k,value|
+          for i in 0..value[:day].size-1 do
+            day = value[:day][i]
+            if results[:day].index(day).nil?
+              results[:day].push(day)
+              results[:count].push(0)
+            end
+            index = results[:day].index(day)
+            results[:count] += value[:count][i]
+          end
+        end
+      elsif aggregate == "total"
+        results = {:total => results.values.sum}
+      else
+        results.keys.each{ |key| results[key].each{|row| row["zipcode"] = key} }
+        # WARNING: this could get slow in the future
+        results = results.values.flatten.sort_by{|u| u["created_at"]}
+      end
+    end
+
+    # format output as CSV or JSON
+    if format_as == "csv"
+      csv_rows = []
+
+      if group_by_zipcode
+        if aggregate == "month"
+          csv_rows.push ["date","zipcode","count"].to_csv
+          results.each do |key,value|
+            for i in 0..value[:month].size-1 do
+              date = value[:month][i].join "-"
+              csv_rows.push [date,key,value[:count][i]].to_csv
+            end
+          end
+        elsif aggregate == "day"
+          csv_rows.push ["date","zipcode","count"].to_csv
+          results.each do |key,value|
+            for i in 0..value[:day].size-1 do
+              date = value[:day][i].strftime
+              csv_rows.push [date,key,value[:count][i]].to_csv
+            end
+          end
+        elsif aggregate == "total"
+          csv_rows.push ["zipcode","count"].to_csv
+          results.each do |key,value|
+            csv_rows.push [key,value].to_csv
+          end
+        else
+          csv_rows.push ["created_at","smell_value","zipcode","smell_decription"].to_csv
+          results.each do |key,values|
+            values.each do |value|
+              csv_rows.push [value["created_at"],value["smell_value"],key,value["smell_description"]].to_csv
+            end
+          end
+        end
+      else
+        if aggregate == "month"
+          csv_rows.push ["date","count"].to_csv
+          for i in 0..value[:month].size-1 do
+            date = value[:month][i].join "-"
+            csv_rows.push [date,value[:count][i]].to_csv
+          end
+        elsif aggregate == "day"
+          csv_rows.push ["date","count"].to_csv
+          for i in 0..value[:day].size-1 do
+            date = value[:day][i].strftime
+            csv_rows.push [date,value[:count][i]].to_csv
+          end
+        elsif aggregate == "total"
+          csv_rows.push ["count"].to_csv
+          csv_rows.push [results[:total]].to_csv
+        else
+          csv_rows.push ["created_at","smell_value","zipcode","smell_decription"].to_csv
+          results.each do |value|
+            csv_rows.push [value["created_at"],value["smell_value"],value["zipcode"],value["smell_description"]].to_csv
+          end
+        end
+      end
+
+      results = csv_rows.join "\n"
+      render :plain => results
+    else
+      render :json => results
+    end
   end
+
 
   # GET /api/v1/get_aqi
   #
@@ -179,4 +300,5 @@ class ApiController < ApplicationController
     end
     render :json => @aqi.to_json
   end
+
 end
