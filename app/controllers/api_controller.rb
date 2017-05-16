@@ -256,15 +256,15 @@ class ApiController < ApplicationController
       else
         if aggregate == "month"
           csv_rows.push ["date","count"].to_csv
-          for i in 0..value[:month].size-1 do
-            date = value[:month][i].join "-"
-            csv_rows.push [date,value[:count][i]].to_csv
+          for i in 0..results[:month].size-1 do
+            date = results[:month][i].join "-"
+            csv_rows.push [date,results[:count][i]].to_csv
           end
         elsif aggregate == "day"
           csv_rows.push ["date","count"].to_csv
-          for i in 0..value[:day].size-1 do
-            date = value[:day][i].strftime
-            csv_rows.push [date,value[:count][i]].to_csv
+          for i in 0..results[:day].size-1 do
+            date = results[:day][i].strftime
+            csv_rows.push [date,results[:count][i]].to_csv
           end
         elsif aggregate == "total"
           csv_rows.push ["count"].to_csv
