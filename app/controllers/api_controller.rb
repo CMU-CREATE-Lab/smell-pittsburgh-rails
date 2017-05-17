@@ -152,7 +152,7 @@ class ApiController < ApplicationController
       #Rails.logger.info(date.to_s)
     else
       # If not aggregated
-      reports = SmellReport.where(:created_at => start_datetime...end_datetime).from_app(area).order('created_at ASC')
+      reports = SmellReport.from_app(area).where(:created_at => start_datetime...end_datetime).where("smell_value>=" + min_smell_value.to_s).order('created_at ASC')
       # Select only some fields
       reports = reports.as_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
       # Convert created_at to epoch time
