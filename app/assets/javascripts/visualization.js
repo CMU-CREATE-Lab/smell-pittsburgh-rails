@@ -188,7 +188,8 @@ function initGoogleMapAndHomeButton() {
     styles: styleArray,
     zoom: isMobile() ? init_zoom_mobile : init_zoom_desktop,
     disableDefaultUI: true,
-    mapTypeId: google.maps.MapTypeId.ROADMAP
+    mapTypeId: google.maps.MapTypeId.ROADMAP,
+    gestureHandling: "greedy"
   });
 
   // Add events
