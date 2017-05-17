@@ -185,29 +185,29 @@ class ApiController < ApplicationController
       if aggregate == "month"
         tmp = results
         results = {:month => [], :count => []}
+        months = tmp.values.map{|u| u[:month]}.flatten(1).uniq.sort
+        for i in 0..months.size-1 do
+          results[:month].push(months[i])
+          results[:count].push(0)
+        end
         tmp.each do |k,value|
           for i in 0..value[:month].size-1 do
-            month = value[:month][i]
-            if results[:month].index(month).nil?
-              results[:month].push(month)
-              results[:count].push(0)
-            end
-            index = results[:month].index(month)
-            results[:count][index] += value[:count][i]
+            index = results[:month].index(value[:month][i])
+            results[:count][index] += value[:count][i] unless index.nil?
           end
         end
       elsif aggregate == "day"
         tmp = results
         results = {:day => [], :count => []}
+        days = tmp.values.map{|u| u[:day]}.flatten(1).uniq.sort
+        for i in 0..days.size-1 do
+          results[:day].push(days[i])
+          results[:count].push(0)
+        end
         tmp.each do |k,value|
           for i in 0..value[:day].size-1 do
-            day = value[:day][i]
-            if results[:day].index(day).nil?
-              results[:day].push(day)
-              results[:count].push(0)
-            end
-            index = results[:day].index(day)
-            results[:count][index] += value[:count][i]
+            index = results[:day].index(value[:day][i])
+            results[:count][index] += value[:count][i] unless index.nil?
           end
         end
       elsif aggregate == "total"
