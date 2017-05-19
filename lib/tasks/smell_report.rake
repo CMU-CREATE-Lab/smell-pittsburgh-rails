@@ -18,6 +18,16 @@ namespace :smell_report do
   end
 
 
+  task :populate_observed_at_fields => :environment do
+    SmellReport.all.each do |report|
+      unless report.custom_time
+        report.observed_at = report.created_at
+        report.save!
+      end
+    end
+  end
+
+
   task :perturb_coordinates => :environment do
     SmellReport.all.each do |report|
       report.generate_perturbed_coordinates

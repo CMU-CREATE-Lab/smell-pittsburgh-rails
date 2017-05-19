@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170509153302) do
+ActiveRecord::Schema.define(version: 20170519161849) do
 
   create_table "achd_forms", force: :cascade do |t|
     t.string   "email",           limit: 255
@@ -47,6 +47,10 @@ ActiveRecord::Schema.define(version: 20170509153302) do
     t.boolean  "submit_achd_form",                  default: false
     t.text     "additional_comments", limit: 65535
     t.integer  "zip_code_id",         limit: 4
+    t.datetime "observed_at"
+    t.boolean  "custom_time",                       default: false
+    t.boolean  "custom_location",                   default: false
+    t.string   "street_name",         limit: 32
   end
 
   add_index "smell_reports", ["zip_code_id"], name: "index_smell_reports_on_zip_code_id", using: :btree

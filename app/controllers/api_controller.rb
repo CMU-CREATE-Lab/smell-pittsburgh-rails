@@ -19,6 +19,11 @@ class ApiController < ApplicationController
   # "vertical_accuracy" : Double
   # "additional_comments" : String
   #   (specific to ACHD form submission)
+  # "custom_location" : Boolean
+  #   - Specify that the location for the report was manually entered and is not from GPS
+  # "custom_time" : Boolean
+  #   - Specify that the time for the report was manually entered (observed_at) and is not the current time
+  # "observed_at" : DateTime (RFC3339)
   # "submit_achd_form" : Boolean
   # "email" : String
   # "name" : String
@@ -37,6 +42,25 @@ class ApiController < ApplicationController
     smell_report.vertical_accuracy = params["vertical_accuracy"] unless params["vertical_accuracy"].blank?
     smell_report.additional_comments = params["additional_comments"] unless params["additional_comments"].blank?
 
+    # mark custom fields when included
+    smell_report.custom_location = params["custom_location"] == "true" ? true : false
+    smell_report.custom_time = params["custom_time"] == "true" ? true : false
+
+    # determine smell report observed at time
+    unless params["observed_at"].blank?
+      begin
+        # string format: %Y-%m-%dT%H:%M:%S%:z
+        smell_report.observed_at = DateTime.rfc3339(params["observed_at"])
+      rescue
+        Rails.logger.info("could not parse DateTime="+params["observed_at"])
+        smell_report.observed_at = nil
+      end
+    end
+    if smell_report.custom_time == false or smell_report.observed_at.blank?
+      smell_report.observed_at = Time.now
+      smell_report.custom_time = false
+    end
+
     # by default, send to achd
     smell_report.submit_achd_form = true
     # override default when flag is present in API request
@@ -50,6 +74,10 @@ class ApiController < ApplicationController
     unless geo.zip.blank?
       zip_code = ZipCode.find_or_create_by(zip: geo.zip)
       smell_report.zip_code_id = zip_code.id
+    end
+    # get the street name from reverse geocoding
+    unless geo.street_name.blank?
+      smell_report.street_name = geo.street_name
     end
 
     if BannedUserHash.where(:user_hash => smell_report.user_hash).size > 0
