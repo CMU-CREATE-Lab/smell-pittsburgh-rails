@@ -9,6 +9,8 @@ class SmellReport < ActiveRecord::Base
   # submit_achd_form :boolean
   # additional_comments :text
 
+  belongs_to :zip_code
+
   validates :user_hash, :latitude, :longitude, :smell_value, :presence => true
   validates :smell_value, :inclusion => { in: (1..5) }
 
@@ -59,6 +61,36 @@ class SmellReport < ActiveRecord::Base
       return true
     end
     return false
+  end
+
+
+  def self.aggregate_by_month(active_record)
+    if active_record.empty?
+      return {:month => [], :count => []}
+    end
+    tmp = active_record.group("year(created_at)")
+    tmp = tmp.group("month(created_at)")
+    tmp = tmp.count
+    return {:month => tmp.keys, :count => tmp.values}
+  end
+
+
+  def self.aggregate_by_day(active_record, timezone_offset=nil)
+    if active_record.empty?
+      return {:day => [], :count => []}
+    end
+    offset_str = "+00:00"
+    if timezone_offset
+      a = timezone_offset.to_i
+      # Convert the timezone offset returned from JavaScript
+      # to a string for ruby's localtime method
+      timezone_sign = ((a <=> 0) ? "-" : "+").to_s # reverse the sign
+      timezone_hr = (a.abs/60).to_s.rjust(2, "0") # get the hour part
+      timezone_min = (a.abs%60).to_s.rjust(2, "0") # get the minute part
+      offset_str = timezone_sign + timezone_hr + ":" + timezone_min
+    end
+    reports = active_record.group("date(convert_tz(created_at,'+00:00','" + offset_str+ "'))").count
+    return {:day => reports.keys, :count => reports.values}
   end
 
 

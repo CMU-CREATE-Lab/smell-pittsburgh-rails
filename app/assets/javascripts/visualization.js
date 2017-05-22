@@ -198,7 +198,8 @@ function initGoogleMapAndHomeButton() {
     zoom: isMobile() ? init_zoom_mobile : init_zoom_desktop,
     disableDefaultUI: true,
     clickableIcons: false,
-    mapTypeId: google.maps.MapTypeId.ROADMAP
+    mapTypeId: google.maps.MapTypeId.ROADMAP,
+    gestureHandling: "greedy"
   });
 
   // Update marker size when users zoom the map

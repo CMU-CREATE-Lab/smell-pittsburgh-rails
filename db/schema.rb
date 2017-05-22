@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160812202536) do
+ActiveRecord::Schema.define(version: 20170509153302) do
 
   create_table "achd_forms", force: :cascade do |t|
     t.string   "email",           limit: 255
@@ -20,9 +20,16 @@ ActiveRecord::Schema.define(version: 20160812202536) do
     t.integer  "smell_report_id", limit: 4
     t.datetime "created_at",                  null: false
     t.datetime "updated_at",                  null: false
+    t.string   "address",         limit: 255
   end
 
   add_index "achd_forms", ["smell_report_id"], name: "index_achd_forms_on_smell_report_id", using: :btree
+
+  create_table "banned_user_hashes", force: :cascade do |t|
+    t.string   "user_hash",  limit: 255
+    t.datetime "created_at",             null: false
+    t.datetime "updated_at",             null: false
+  end
 
   create_table "smell_reports", force: :cascade do |t|
     t.string   "user_hash",           limit: 255
@@ -35,8 +42,22 @@ ActiveRecord::Schema.define(version: 20160812202536) do
     t.datetime "updated_at",                                        null: false
     t.float    "horizontal_accuracy", limit: 24
     t.float    "vertical_accuracy",   limit: 24
+    t.float    "real_latitude",       limit: 24
+    t.float    "real_longitude",      limit: 24
     t.boolean  "submit_achd_form",                  default: false
+    t.text     "additional_comments", limit: 65535
+    t.integer  "zip_code_id",         limit: 4
   end
+
+  add_index "smell_reports", ["zip_code_id"], name: "index_smell_reports_on_zip_code_id", using: :btree
+
+  create_table "zip_codes", force: :cascade do |t|
+    t.string   "zip",        limit: 10
+    t.datetime "created_at",            null: false
+    t.datetime "updated_at",            null: false
+  end
+
+  add_index "zip_codes", ["zip"], name: "index_zip_codes_on_zip", using: :btree
 
   add_foreign_key "achd_forms", "smell_reports"
 end
