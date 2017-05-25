@@ -197,6 +197,8 @@ class ApiController < ApplicationController
         results[key] = SmellReport.aggregate_by_month(value)
       elsif aggregate == "day"
         results[key] = SmellReport.aggregate_by_day(value, timezone_offset)
+      elsif aggregate == "day_and_smell_value"
+        results[key] = SmellReport.aggregate_by_day_and_smell_value(value, timezone_offset)
       elsif aggregate == "total"
         results[key] = value.size
       else
@@ -235,6 +237,20 @@ class ApiController < ApplicationController
         tmp.each do |k,value|
           for i in 0..value[:day].size-1 do
             index = results[:day].index(value[:day][i])
+            results[:count][index] += value[:count][i] unless index.nil?
+          end
+        end
+      elsif aggregate == "day_and_smell_value"
+        tmp = results
+        results = {:day_and_smell_value => [], :count => []}
+        days = tmp.values.map{|u| u[:day_and_smell_value]}.flatten(1).uniq.sort
+        for i in 0..days.size-1 do
+          results[:day_and_smell_value].push(days[i])
+          results[:count].push(0)
+        end
+        tmp.each do |k,value|
+          for i in 0..value[:day_and_smell_value].size-1 do
+            index = results[:day_and_smell_value].index(value[:day_and_smell_value][i])
             results[:count][index] += value[:count][i] unless index.nil?
           end
         end

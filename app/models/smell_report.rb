@@ -101,6 +101,25 @@ class SmellReport < ActiveRecord::Base
   end
 
 
+  def self.aggregate_by_day_and_smell_value(active_record, timezone_offset=nil)
+    if active_record.empty?
+      return {:day_and_smell_value => [], :count => []}
+    end
+    offset_str = "+00:00"
+    if timezone_offset
+      a = timezone_offset.to_i
+      # Convert the timezone offset returned from JavaScript
+      # to a string for ruby's localtime method
+      timezone_sign = ((a <=> 0) ? "-" : "+").to_s # reverse the sign
+      timezone_hr = (a.abs/60).to_s.rjust(2, "0") # get the hour part
+      timezone_min = (a.abs%60).to_s.rjust(2, "0") # get the minute part
+      offset_str = timezone_sign + timezone_hr + ":" + timezone_min
+    end
+    reports = active_record.group("date(convert_tz(created_at,'+00:00','" + offset_str+ "'))", "smell_value").count
+    return {:day_and_smell_value => reports.keys, :count => reports.values}
+  end
+
+
   def handle_destroy
     AchdForm.where(:smell_report_id => self.id).each do |form|
       form.destroy
