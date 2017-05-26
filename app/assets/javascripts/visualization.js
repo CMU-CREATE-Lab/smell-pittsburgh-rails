@@ -323,9 +323,11 @@ function loadAndDrawCalendar() {
 
 function loadAndDrawTimeline() {
   $.ajax({
-    "url": genSmellURL({"aggregate": "day_and_smell_value"}),
+    "url": genSmellURL({"aggregate": "day"}),
+    //"url": genSmellURL({"aggregate": "day_and_smell_value"}), // this is used for colored timeline
     "success": function (data) {
       drawTimeline(data);
+      //drawTimelineWithColor(data); // this is used for colored timeline
       timeline.selectLastBlock();
     },
     "error": function (response) {
@@ -479,7 +481,7 @@ function drawCalendar(data) {
   }
 }
 
-function drawTimeline(data) {
+function drawTimelineWithColor(data) {
   // Compute the weighted mean of smell reports
   var day_and_smell_value = data["day_and_smell_value"];
   var count = data["count"];
@@ -556,7 +558,11 @@ function drawTimeline(data) {
     dataIndexForLabels: 0, // format[0] is for the label of the block
     dataIndexForColors: 1, // format[1] is for the color of the block
     dataIndexForHeights: 2, // format[2] is for the height of the block
-    useColorQuantiles: true // use quantile color scale instead of the default linear one
+    useColorQuantiles: true, // use quantile color scale instead of the default linear one
+    colorBin: [1, 2, 2.5, 3, 3.5],
+    colorRange: ["#dcdcdc", "#52b947", "#f3ec19", "#f57e20", "#ed1f24", "#991b4f"],
+    heightBin: [30],
+    heightRange: ["50%", "100%"]
   };
   timeline = new EdaVizJS.FlatBlockChart("timeline-container", chart_settings);
 
@@ -565,7 +571,7 @@ function drawTimeline(data) {
   addTouchHorizontalScroll($("#timeline-container"));
 }
 
-function drawTimeline_old(data) {
+function drawTimeline(data) {
   // Collect the data for drawing the timeline
   var batches = [];
   var pts = [];
@@ -628,8 +634,7 @@ function drawTimeline_old(data) {
     data: batches,
     format: ["label", "value", "epochtime_milisec"],
     dataIndexForLabels: 0,
-    dataIndexForValues: 1,
-    useColorQuantiles: true
+    dataIndexForValues: 1
   };
   timeline = new EdaVizJS.FlatBlockChart("timeline-container", chart_settings);
 

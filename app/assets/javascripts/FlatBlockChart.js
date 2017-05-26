@@ -64,13 +64,13 @@
     // Cache DOM elements
     var $chart_container = $("#" + chart_container_id);
     var $flat_block_chart_value;
-    var $flat_block_chart_click;
     var $flat_block_chart_label;
     var $flat_blocks_click_region;
 
     // Parameters
     var flat_block_chart_touched = false;
     var flat_block_chart_touched_position = {};
+    var selected_block_class = use_color_quantiles ? "selected-block-no-color" : "selected-block";
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
@@ -119,7 +119,7 @@
         for (var i = 0; i < batch.length; i++) {
           color_vals.push(batch[i][data_index_for_colors])
         }
-        //var color_vals = powerTransform(color_vals);
+        var color_vals = powerTransform(color_vals);
         var max_color_val = Math.max.apply(null, color_vals);
         var min_color_val = Math.min.apply(null, color_vals);
       }
@@ -203,9 +203,9 @@
     }
 
     function selectBlock($ele, auto_scroll) {
-      if ($ele && !$ele.hasClass("selected-block")) {
+      if ($ele && !$ele.hasClass(selected_block_class)) {
         clearBlockSelection();
-        $ele.addClass("selected-block");
+        $ele.addClass(selected_block_class);
         if (auto_scroll) {
           $chart_container.scrollLeft(Math.round($ele.parent().position().left - $chart_container.width() / 5));
         }
@@ -216,8 +216,8 @@
     }
 
     function clearBlockSelection() {
-      if ($flat_blocks_click_region.hasClass("selected-block")) {
-        $flat_blocks_click_region.removeClass("selected-block");
+      if ($flat_blocks_click_region.hasClass(selected_block_class)) {
+        $flat_blocks_click_region.removeClass(selected_block_class);
       }
     }
 
