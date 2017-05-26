@@ -766,7 +766,7 @@ function parseSensorMarkerData(data) {
     }
     // For wind data
     var wind_all = data["wind_channels"];
-    if (typeof wind_all != "undefined") {
+    if (typeof wind_all != "undefined" && wind_all.length > 0) {
       var wind_latest = wind_all[wind_all.length - 1];
       var wind_data_time = wind_latest[0] * 1000;
       var wind_diff_hour = (current_time - wind_data_time) / 3600000;
