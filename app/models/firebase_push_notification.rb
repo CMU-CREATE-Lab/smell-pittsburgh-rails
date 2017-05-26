@@ -122,15 +122,18 @@ class FirebasePushNotification < ActiveRecord::Base
 		json["to"] = to
 		json["notification"] = {
 			"sound" => "default",
-			"click_action" => "FCM_PLUGIN_ACTIVITY",
+			# # This was used for the old cordova plugin, which sends the click action to a specific intent (defined in AndroidManifest) instead of the default action
+			# "click_action" => "FCM_PLUGIN_ACTIVITY",
 			"icon" => "fcm_push_icon"
 		}
 		json["time_to_live"] = 3600
 		json["notification"]["title"] = title
 		json["notification"]["body"] = body
 
-		# TODO add data
+		# TODO add more data
 		json["data"] = {}
+		# used by cordova app to navigate user after clicking on notification
+		json["data"]["open_with_page"] = "map"
 
 		# this is important so that devices get message in notification tray from background
 		json["priority"] = "high"
