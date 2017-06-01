@@ -196,10 +196,6 @@ class ApiController < ApplicationController
         results[key] = value.size
       else
         results[key] = value.as_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
-        # Convert created_at to epoch time
-        for i in 0..results[key].size()-1
-          results[key][i]["created_at"] = results[key][i]["created_at"].to_i
-        end
       end
     end
 
@@ -283,10 +279,11 @@ class ApiController < ApplicationController
             csv_rows.push [key,value].to_csv
           end
         else
-          csv_rows.push ["created_at","smell_value","zipcode","smell_decription"].to_csv
+          csv_rows.push ["year","month","day","hour","minute","second","timezone","smell_value","zipcode","smell_decription"].to_csv
           results.each do |key,values|
             values.each do |value|
-              csv_rows.push [value["created_at"],value["smell_value"],key,value["smell_description"]].to_csv
+              date = value["created_at"]
+              csv_rows.push [date.year,date.month,date.day,date.hour,date.min,date.sec,date.zone,value["smell_value"],key,value["smell_description"]].to_csv
             end
           end
         end
@@ -307,9 +304,10 @@ class ApiController < ApplicationController
           csv_rows.push ["count"].to_csv
           csv_rows.push [results[:total]].to_csv
         else
-          csv_rows.push ["created_at","smell_value","zipcode","smell_decription"].to_csv
+          csv_rows.push ["year","month","day","hour","minute","second","timezone","smell_value","zipcode","smell_decription"].to_csv
           results.each do |value|
-            csv_rows.push [value["created_at"],value["smell_value"],value["zipcode"],value["smell_description"]].to_csv
+            date = value["created_at"]
+            csv_rows.push [date.year,date.month,date.day,date.hour,date.min,date.sec,date.zone,value["smell_value"],value["zipcode"],value["smell_description"]].to_csv
           end
         end
       end
