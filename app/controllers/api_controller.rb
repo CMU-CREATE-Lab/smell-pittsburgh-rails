@@ -47,15 +47,8 @@ class ApiController < ApplicationController
     smell_report.custom_time = params["custom_time"] == "true" ? true : false
 
     # determine smell report observed at time
-    unless params["observed_at"].blank?
-      begin
-        # string format: %Y-%m-%dT%H:%M:%S%:z
-        smell_report.observed_at = DateTime.rfc3339(params["observed_at"])
-      rescue
-        Rails.logger.info("could not parse DateTime="+params["observed_at"])
-        smell_report.observed_at = nil
-      end
-    end
+    # string format: %Y-%m-%dT%H:%M:%S%:z
+    smell_report.observed_at = DateTime.rfc3339(params["observed_at"]) unless params["observed_at"].blank?
     if smell_report.custom_time == false or smell_report.observed_at.blank?
       smell_report.observed_at = Time.now
       smell_report.custom_time = false
@@ -321,7 +314,7 @@ class ApiController < ApplicationController
         end
       end
 
-      results = csv_rows.join "\n"
+      results = csv_rows.join ""
       render :plain => results
     else
       render :json => results
