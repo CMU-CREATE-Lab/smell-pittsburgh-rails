@@ -234,6 +234,18 @@ function initGoogleMapAndHomeButton() {
     map.setCenter(init_latlng);
     map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
   });
+
+  // Add event to the terrain button
+  $("#terrain-btn").on("click", function () {
+    var $this = $(this);
+    if ($this.hasClass("button-pressed")) {
+      map.setMapTypeId("roadmap");
+      $this.removeClass("button-pressed");
+    } else {
+      map.setMapTypeId("terrain");
+      $this.addClass("button-pressed");
+    }
+  });
 }
 
 function styleInfoWindowCloseButton() {
