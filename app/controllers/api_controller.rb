@@ -279,7 +279,7 @@ class ApiController < ApplicationController
             csv_rows.push [key,value].to_csv
           end
         else
-          csv_rows.push ["year","month","day","hour","minute","second","timezone","smell_value","zipcode","smell_decription"].to_csv
+          csv_rows.push ["year","month","day","hour","minute","second","timezone","smell value","zipcode","smell decription"].to_csv
           results.each do |key,values|
             values.each do |value|
               date = value["created_at"]
@@ -304,7 +304,7 @@ class ApiController < ApplicationController
           csv_rows.push ["count"].to_csv
           csv_rows.push [results[:total]].to_csv
         else
-          csv_rows.push ["year","month","day","hour","minute","second","timezone","smell_value","zipcode","smell_decription"].to_csv
+          csv_rows.push ["year","month","day","hour","minute","second","timezone","smell value","zipcode","smell decription"].to_csv
           results.each do |value|
             date = value["created_at"]
             csv_rows.push [date.year,date.month,date.day,date.hour,date.min,date.sec,date.zone,value["smell_value"],value["zipcode"],value["smell_description"]].to_csv
