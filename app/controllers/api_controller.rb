@@ -196,6 +196,12 @@ class ApiController < ApplicationController
         results[key] = value.size
       else
         results[key] = value.as_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
+        unless format_as == "csv"
+          # Convert created_at to epoch time
+          for i in 0..results[key].size()-1
+            results[key][i]["created_at"] = results[key][i]["created_at"].to_i
+          end
+        end
       end
     end
 
