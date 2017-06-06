@@ -1,3 +1,5 @@
+require 'csv'
+
 namespace :smell_report do
 
 
@@ -85,6 +87,32 @@ namespace :smell_report do
         end
       end
     end
+  end
+
+
+  task :generate_achd_summary_csv => :environment do
+    # reports from the last 7 days
+    time_begin = 7.months.ago.midnight
+    time_end = Time.now.midnight
+    zipcodes = AchdForm.allegheny_county_zipcodes.map{ |z| ZipCode.find_or_create_by(zip: z) }
+    rows = []
+
+    row = [ "observed at", "smell value", "smell description", "street name", "zipcode", "additional comments" ]
+    rows.push(row.to_csv)
+
+    tmp = []
+    zipcodes.each do |zipcode|
+      zipcode.smell_reports.where(:observed_at => time_begin..time_end, :submit_achd_form => true).each do |report|
+        row = [ report.observed_at, report.smell_value, report.smell_description, report.street_name, zipcode.zip, report.additional_comments ]
+        tmp.push(row)
+      end
+    end
+    tmp.sort_by!{|x| x[0]}
+    tmp.each do |row|
+      rows.push(row.to_csv)
+    end
+
+    puts rows
   end
 
 end
