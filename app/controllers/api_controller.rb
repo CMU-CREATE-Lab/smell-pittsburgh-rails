@@ -319,6 +319,9 @@ class ApiController < ApplicationController
       end
 
       results = csv_rows.join ""
+
+      headers["Content-Type"] = "text/csv; charset=utf-8"
+      headers["Content-Disposition"] = "attachment; filename=\"smell_reports.csv\""
       render :plain => results
     else
       render :json => results
