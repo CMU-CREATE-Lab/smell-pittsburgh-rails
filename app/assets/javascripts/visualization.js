@@ -234,6 +234,18 @@ function initGoogleMapAndHomeButton() {
     map.setCenter(init_latlng);
     map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
   });
+
+  // Add event to the terrain button
+  $("#terrain-btn").on("click", function () {
+    var $this = $(this);
+    if ($this.hasClass("button-pressed")) {
+      map.setMapTypeId("roadmap");
+      $this.removeClass("button-pressed");
+    } else {
+      map.setMapTypeId("terrain");
+      $this.addClass("button-pressed");
+    }
+  });
 }
 
 function styleInfoWindowCloseButton() {
@@ -324,8 +336,10 @@ function loadAndDrawCalendar() {
 function loadAndDrawTimeline() {
   $.ajax({
     "url": genSmellURL({"aggregate": "day"}),
+    //"url": genSmellURL({"aggregate": "day_and_smell_value"}), // this is used for colored timeline
     "success": function (data) {
       drawTimeline(data);
+      //drawTimelineWithColor(data); // this is used for colored timeline
       timeline.selectLastBlock();
     },
     "error": function (response) {
@@ -420,6 +434,9 @@ function genSmellURL(method) {
     var min_smell_value = 3;
     var timezone_offset = new Date().getTimezoneOffset();
     api_paras = "aggregate=day&min_smell_value=" + min_smell_value + "&timezone_offset=" + timezone_offset;
+  } else if (typeof method != "undefined" && method["aggregate"] == "day_and_smell_value") {
+    var timezone_offset = new Date().getTimezoneOffset();
+    api_paras = "aggregate=day_and_smell_value&timezone_offset=" + timezone_offset;
   } else {
     var date_obj = typeof method == "undefined" ? new Date() : new Date(method["epochtime_milisec"]);
     // Get only the smell reports for one day
@@ -474,6 +491,96 @@ function drawCalendar(data) {
     var month = month_arr[i][1];
     $calendar.append($('<option value="' + i + '" data-year="' + year + '" data-month="' + month + '">' + month_names[month - 1] + ' ' + year + '</option>'));
   }
+}
+
+function drawTimelineWithColor(data) {
+  // Compute the weighted mean of smell reports
+  var day_and_smell_value = data["day_and_smell_value"];
+  var count = data["count"];
+  var sum = {};
+  var n = {};
+  for (var i = 0; i < day_and_smell_value.length; i++) {
+    var d_i = day_and_smell_value[i];
+    if (typeof sum[d_i[0]] == "undefined") {
+      sum[d_i[0]] = d_i[1] * count[i];
+    } else {
+      sum[d_i[0]] += d_i[1] * count[i];
+    }
+    if (typeof n[d_i[0]] == "undefined") {
+      n[d_i[0]] = count[i];
+    } else {
+      n[d_i[0]] += count[i];
+    }
+  }
+  var weighted_mean = {};
+  var num_reports = {};
+  for (var key in sum) {
+    // Convert all keys to epochtime
+    weighted_mean[dateStringToObject(key).getTime()] = roundTo(sum[key] / n[key], 2);
+    num_reports[dateStringToObject(key).getTime()] = n[key]
+  }
+
+  // Pad missing dates
+  var t_all = Object.keys(weighted_mean).map(Number);
+  var min_dt = new Date(Math.min.apply(null, t_all));
+  var max_dt = new Date(Math.max.apply(null, t_all));
+  var current_dt = min_dt;
+  while (current_dt <= max_dt) {
+    var t_str = current_dt.getTime().toString();
+    if (typeof weighted_mean[t_str] == "undefined") {
+      weighted_mean[t_str] = 0;
+      num_reports[t_str] = 0;
+    }
+    current_dt.setDate(current_dt.getDate() + 1);
+  }
+
+  // Construct data points
+  var t_all = Object.keys(weighted_mean).map(Number).sort(function (a, b) {
+    return a - b
+  });
+  var pts = [];
+  var td_count = 0;
+  var last_month;
+  for (var i = 0; i < t_all.length; i++) {
+    var t = t_all[i];
+    var dt = new Date(t);
+    var dt_str = dt.toDateString().split(" ");
+    var label = dt_str[1] + " " + dt_str[2];
+    pts.push([label, weighted_mean[t.toString()], num_reports[t.toString()], t]);
+    // Save the index if necessary (the calendar will use this)
+    var month = dt.getMonth();
+    if (typeof last_month == "undefined" || last_month != month) {
+      timeline_jump_index.push(td_count);
+      last_month = month;
+    }
+    td_count++;
+  }
+  timeline_jump_index.push(td_count);
+
+  // Use the charting library to draw the timeline
+  var chart_settings = {
+    click: function ($e) {
+      handleTimelineButtonClicked(parseInt($e.data("epochtime_milisec")));
+    },
+    select: function ($e) {
+      handleTimelineButtonSelected(parseInt($e.data("epochtime_milisec")));
+    },
+    data: pts,
+    format: ["label", "color", "height", "epochtime_milisec"],
+    dataIndexForLabels: 0, // format[0] is for the label of the block
+    dataIndexForColors: 1, // format[1] is for the color of the block
+    dataIndexForHeights: 2, // format[2] is for the height of the block
+    useColorQuantiles: true, // use quantile color scale instead of the default linear one
+    colorBin: [1, 2, 2.5, 3, 3.5],
+    colorRange: ["#dcdcdc", "#52b947", "#f3ec19", "#f57e20", "#ed1f24", "#991b4f"],
+    heightBin: [30],
+    heightRange: ["50%", "100%"]
+  };
+  timeline = new EdaVizJS.FlatBlockChart("timeline-container", chart_settings);
+
+  // Add horizontal scrolling to the timeline
+  // Needed because Android <= 4.4 won't scroll without this
+  addTouchHorizontalScroll($("#timeline-container"));
 }
 
 function drawTimeline(data) {
@@ -671,7 +778,7 @@ function parseSensorMarkerData(data) {
     }
     // For wind data
     var wind_all = data["wind_channels"];
-    if (typeof wind_all != "undefined") {
+    if (typeof wind_all != "undefined" && wind_all.length > 0) {
       var wind_latest = wind_all[wind_all.length - 1];
       var wind_data_time = wind_latest[0] * 1000;
       var wind_diff_hour = (current_time - wind_data_time) / 3600000;

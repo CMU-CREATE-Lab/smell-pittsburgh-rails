@@ -47,15 +47,8 @@ class ApiController < ApplicationController
     smell_report.custom_time = params["custom_time"] == "true" ? true : false
 
     # determine smell report observed at time
-    unless params["observed_at"].blank?
-      begin
-        # string format: %Y-%m-%dT%H:%M:%S%:z
-        smell_report.observed_at = DateTime.rfc3339(params["observed_at"])
-      rescue
-        Rails.logger.info("could not parse DateTime="+params["observed_at"])
-        smell_report.observed_at = nil
-      end
-    end
+    # string format: %Y-%m-%dT%H:%M:%S%:z
+    smell_report.observed_at = DateTime.rfc3339(params["observed_at"]) unless params["observed_at"].blank?
     if smell_report.custom_time == false or smell_report.observed_at.blank?
       smell_report.observed_at = Time.now
       smell_report.custom_time = false
@@ -197,13 +190,17 @@ class ApiController < ApplicationController
         results[key] = SmellReport.aggregate_by_month(value)
       elsif aggregate == "day"
         results[key] = SmellReport.aggregate_by_day(value, timezone_offset)
+      elsif aggregate == "day_and_smell_value"
+        results[key] = SmellReport.aggregate_by_day_and_smell_value(value, timezone_offset)
       elsif aggregate == "total"
         results[key] = value.size
       else
         results[key] = value.as_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
-        # Convert created_at to epoch time
-        for i in 0..results[key].size()-1
-          results[key][i]["created_at"] = results[key][i]["created_at"].to_i
+        unless format_as == "csv"
+          # Convert created_at to epoch time
+          for i in 0..results[key].size()-1
+            results[key][i]["created_at"] = results[key][i]["created_at"].to_i
+          end
         end
       end
     end
@@ -235,6 +232,20 @@ class ApiController < ApplicationController
         tmp.each do |k,value|
           for i in 0..value[:day].size-1 do
             index = results[:day].index(value[:day][i])
+            results[:count][index] += value[:count][i] unless index.nil?
+          end
+        end
+      elsif aggregate == "day_and_smell_value"
+        tmp = results
+        results = {:day_and_smell_value => [], :count => []}
+        days = tmp.values.map{|u| u[:day_and_smell_value]}.flatten(1).uniq.sort
+        for i in 0..days.size-1 do
+          results[:day_and_smell_value].push(days[i])
+          results[:count].push(0)
+        end
+        tmp.each do |k,value|
+          for i in 0..value[:day_and_smell_value].size-1 do
+            index = results[:day_and_smell_value].index(value[:day_and_smell_value][i])
             results[:count][index] += value[:count][i] unless index.nil?
           end
         end
@@ -274,10 +285,11 @@ class ApiController < ApplicationController
             csv_rows.push [key,value].to_csv
           end
         else
-          csv_rows.push ["created_at","smell_value","zipcode","smell_decription"].to_csv
+          csv_rows.push ["year","month","day","hour","minute","second","timezone","smell value","zipcode","smell decription"].to_csv
           results.each do |key,values|
             values.each do |value|
-              csv_rows.push [value["created_at"],value["smell_value"],key,value["smell_description"]].to_csv
+              date = value["created_at"]
+              csv_rows.push [date.year,date.month,date.day,date.hour,date.min,date.sec,date.zone,value["smell_value"],key,value["smell_description"]].to_csv
             end
           end
         end
@@ -298,14 +310,15 @@ class ApiController < ApplicationController
           csv_rows.push ["count"].to_csv
           csv_rows.push [results[:total]].to_csv
         else
-          csv_rows.push ["created_at","smell_value","zipcode","smell_decription"].to_csv
+          csv_rows.push ["year","month","day","hour","minute","second","timezone","smell value","zipcode","smell decription"].to_csv
           results.each do |value|
-            csv_rows.push [value["created_at"],value["smell_value"],value["zipcode"],value["smell_description"]].to_csv
+            date = value["created_at"]
+            csv_rows.push [date.year,date.month,date.day,date.hour,date.min,date.sec,date.zone,value["smell_value"],value["zipcode"],value["smell_description"]].to_csv
           end
         end
       end
 
-      results = csv_rows.join "\n"
+      results = csv_rows.join ""
       render :plain => results
     else
       render :json => results

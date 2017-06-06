@@ -31,6 +31,17 @@
   background-color: white;
 }
 
+#terrain-btn {
+  position: absolute;
+  font-size: 11px;
+  left: 9px;
+  top: 121px;
+  width: 45px;
+  height: 45px;
+  border-radius: 23px;
+  opacity: 0.75;
+}
+
 #calendar-btn {
   position: absolute;
   font-size: 11px;
@@ -246,6 +257,13 @@
 .ui-icon-custom-calendar {
   background-image: url(/img/calendar.png);
   background-size: 20px 20px;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
+
+.ui-icon-custom-terrain {
+  background-image: url(/img/terrain.png);
+  background-size: 23px 23px;
   background-repeat: no-repeat;
   background-position: center center;
 }
