@@ -25,10 +25,10 @@ class ApiController < ApplicationController
   #   - Specify that the time for the report was manually entered (observed_at) and is not the current time
   # "observed_at" : DateTime (RFC3339)
   # "submit_achd_form" : Boolean
-  # "email" : String
-  # "name" : String
-  # "phone_number" : String
-  # "address" : String
+  # "email" : String [FILTERED]
+  # "name" : String [FILTERED]
+  # "phone_number" : String [FILTERED]
+  # "address" : String [FILTERED]
   #
   def smell_report_create
     smell_report = SmellReport.new
