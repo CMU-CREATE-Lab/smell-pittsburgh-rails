@@ -42,7 +42,7 @@ function init() {
 
 function createCalendarHeatmap(data, container, color_bin, unit, unit_plural_enabled) {
   // Choose color by using http://colorbrewer2.org/
-  var heatmap = new calendarHeatmap()
+  var heatmap = new CalendarHeatmap()
     .data(data)
     .startDate(new Date(start_time * 1000))
     .selector(container)

@@ -1,4 +1,4 @@
-function calendarHeatmap() {
+function CalendarHeatmap() {
   // defaults
   var width = 300;
   var height = 1800;
