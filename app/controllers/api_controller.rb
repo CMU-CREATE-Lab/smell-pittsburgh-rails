@@ -140,12 +140,15 @@ class ApiController < ApplicationController
   #   - If specified, aggregates the results by month/day/total
   # timezone_offset: Integer (default: 0)
   #   - JavaScript timezone offset, in minutes (see Date.getTimezoneOffset() for more info)
+  # TODO this is misleading; this grabs from specific apps, NOT from specific areas (lat/long)
   # area: String (default: PGH)
   #   - The smell area code for smell reports
   # min_smell_value: Integer (default: 0)
   #   - The minimum smell value to include in the result
   # group_by_zipcode: {true|false}
   #   - If set to true, group your results by zipcode; this grouping is outside of the "aggregate" grouping
+  # allegheny_county_only: {true|false} (default: false)
+  #   - If set to true, only grab from zipcodes in Allegheny County.
   # zipcodes: String
   #   - A comma-separated list of zipcodes to select the smell reports from. Includes all zipcodes If not specified.
   # format:  {json|csv} (default: json)
@@ -161,6 +164,7 @@ class ApiController < ApplicationController
     group_by_zipcode = params["group_by_zipcode"] == "true" ? true : false
     zipcodes = params["zipcodes"]
     format_as = params["format"] == "csv" ? "csv" : "json"
+    allegheny_county_only = params["allegheny_county_only"] == "true" ? true : false
 
     if start_time
       start_datetime = Time.at(start_time.to_i).to_datetime if start_time
@@ -178,6 +182,10 @@ class ApiController < ApplicationController
       zipcodes = ZipCode.all.map(&:zip)
     else
       zipcodes = zipcodes.split ","
+    end
+
+    if allegheny_county_only
+      zipcodes = zipcodes & AchdForm.allegheny_county_zipcodes
     end
 
     # grab all smell reports
