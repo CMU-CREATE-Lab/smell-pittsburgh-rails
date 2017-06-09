@@ -43,8 +43,8 @@ class ApiController < ApplicationController
     smell_report.additional_comments = params["additional_comments"] unless params["additional_comments"].blank?
 
     # mark custom fields when included
-    smell_report.custom_location = params["custom_location"] == "true" ? true : false
-    smell_report.custom_time = params["custom_time"] == "true" ? true : false
+    smell_report.custom_location = (not params["custom_location"].blank? and params["custom_location"] == "true") ? true : false
+    smell_report.custom_time = (not params["custom_time"].blank? and params["custom_time"] == "true") ? true : false
 
     # determine smell report observed at time
     # string format: %Y-%m-%dT%H:%M:%S%:z
