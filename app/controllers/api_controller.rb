@@ -160,7 +160,8 @@ class ApiController < ApplicationController
     aggregate = params["aggregate"]
     timezone_offset = params["timezone_offset"]
     area = params["area"] == nil ? "PGH" : params["area"]
-    min_smell_value = params["min_smell_value"] == nil ? 0 : params["min_smell_value"]
+    min_smell_value = params["min_smell_value"] == nil ? 1 : params["min_smell_value"]
+    max_smell_value = params["max_smell_value"] == nil ? 5 : params["max_smell_value"]
     group_by_zipcode = params["group_by_zipcode"] == "true" ? true : false
     zipcodes = params["zipcodes"]
     format_as = params["format"] == "csv" ? "csv" : "json"
@@ -190,7 +191,7 @@ class ApiController < ApplicationController
 
     # grab all smell reports
     results = {}
-    zipcodes.each { |z| results[z] = ZipCode.exists?(zip: z) ? ZipCode.find_by_zip(z).smell_reports.from_app(area).where(:created_at => start_datetime...end_datetime).where("smell_value>=" + min_smell_value.to_s).order('created_at ASC') : [] }
+    zipcodes.each { |z| results[z] = ZipCode.exists?(zip: z) ? ZipCode.find_by_zip(z).smell_reports.from_app(area).where(:created_at => start_datetime...end_datetime).where("smell_value>=" + min_smell_value.to_s).where("smell_value<=" + max_smell_value.to_s).order('created_at ASC') : [] }
 
     # bucket results
     results.each do |key,value|
