@@ -31,6 +31,17 @@
   background-color: white;
 }
 
+#terrain-btn {
+  position: absolute;
+  font-size: 11px;
+  left: 9px;
+  top: 121px;
+  width: 45px;
+  height: 45px;
+  border-radius: 23px;
+  opacity: 0.75;
+}
+
 #calendar-btn {
   position: absolute;
   font-size: 11px;
@@ -62,7 +73,18 @@
   height: 45px;
   border-radius: 23px;
   opacity: 0.75;
+}
+
+#stop-btn {
+  position: absolute;
+  font-size: 11px;
+  left: 9px;
+  bottom: 81px;
+  width: 45px;
+  height: 45px;
   display: none;
+  border-radius: 23px;
+  opacity: 0.75;
 }
 
 #playback-txt {
@@ -144,8 +166,10 @@
   padding-left: 0px;
   width: 227px;
   height: 35px;
-  border-radius: 3px;
+  border-radius: 2px;
   border: 0px;
+  outline: none;
+  cursor: pointer;
 }
 
 #calendar {
@@ -154,6 +178,9 @@
   width: 227px;
   margin-top: 5px;
   height: 35px;
+  outline: none;
+  border-radius: 2px;
+  cursor: pointer;
 }
 
 .smell-color-1 {
@@ -234,6 +261,13 @@
   background-position: center center;
 }
 
+.ui-icon-custom-terrain {
+  background-image: url(/img/terrain.png);
+  background-size: 23px 23px;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
+
 .ui-icon-custom-play {
   background-image: url(/img/play.png);
   background-size: 20px 20px;
@@ -243,6 +277,13 @@
 
 .ui-icon-custom-pause {
   background-image: url(/img/pause.png);
+  background-size: 20px 20px;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
+
+.ui-icon-custom-stop {
+  background-image: url(/img/stop.png);
   background-size: 20px 20px;
   background-repeat: no-repeat;
   background-position: center center;
@@ -335,13 +376,4 @@
 
 .selected-td-btn {
   box-shadow: 0px 0px 0px 6px #4d90fe inset;
-}
-
-.noselect {
-  -webkit-touch-callout: none; /* iOS Safari */
-  -webkit-user-select: none; /* Chrome/Safari/Opera */
-  -khtml-user-select: none; /* Konqueror */
-  -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */
-  user-select: none; /* Non-prefixed version, currently not supported by any browser */
 }

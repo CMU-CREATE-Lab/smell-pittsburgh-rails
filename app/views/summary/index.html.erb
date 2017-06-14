@@ -1,0 +1,24 @@
+<% content_for :css do %>
+  <%= stylesheet_link_tag "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css" %>
+  <%= stylesheet_link_tag "http://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" %>
+  <%= stylesheet_link_tag "https://fonts.googleapis.com/css?family=Open+Sans:400,700" %>
+  <%= stylesheet_link_tag "https://fonts.googleapis.com/css?family=Raleway:400,700" %>
+  <%= stylesheet_link_tag "CalendarHeatmap" %>
+  <%= stylesheet_link_tag "summary" %>
+<% end %>
+
+<% content_for :js do %>
+  <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js" %>
+  <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js" %>
+  <%= javascript_include_tag "moment.min" %>
+  <%= javascript_include_tag "d3.v3.min" %>
+  <%= javascript_include_tag "CalendarHeatmap" %>
+  <%= javascript_include_tag "summary" %>
+<% end %>
+
+<% content_for :body do %>
+  <div id="page" data-role="page" class="noselect">
+     <div class="smell"></div>
+     <div class="PM"></div>
+  </div>
+<% end %>
