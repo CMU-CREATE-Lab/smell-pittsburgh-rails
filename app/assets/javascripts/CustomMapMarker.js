@@ -121,23 +121,24 @@
     }
 
     function createSensorMarker() {
-      var no_data_txt = "No data in last four hours.";
+      var no_data_txt = "No data in last two hours";
       var PM25_value = data["PM25_value"];
       var PM25_data_time = data["PM25_data_time"];
       var PM25_time_txt = "";
       var wind_speed = data["wind_speed"];
-      var PM25_txt = (isNaN(PM25_value) || PM25_value < 0) ? no_data_txt : PM25_value + " &mu;g/m<sup>3</sup>";
+      var has_PM25 = !(isNaN(PM25_value) || PM25_value < 0);
+      var PM25_txt = has_PM25 ? PM25_value + " &mu;g/m<sup>3</sup>" : no_data_txt;
+      if (typeof PM25_data_time !== "undefined" && has_PM25) {
+        var PM25_time = new Date(PM25_data_time);
+        PM25_time_txt = " at time " + padTimeString(PM25_time.getHours() + 1) + ":" + padTimeString(PM25_time.getMinutes() + 1);
+      }
 
       // Create HTML content for the info window
       html_content = "";
       html_content += "<b>Name:</b> " + data["name"] + "<br>";
-      if (typeof PM25_data_time != "undefined") {
-        var PM25_time = new Date(PM25_data_time);
-        PM25_time_txt = " at time " + padTimeString(PM25_time.getHours() + 1) + ":" + padTimeString(PM25_time.getMinutes() + 1);
-      }
       if (data["is_current_day"]) {
         html_content += "<b>Latest PM<sub>2.5</sub>:</b> " + PM25_txt + PM25_time_txt + "<br>";
-        if (typeof wind_speed != "undefined") {
+        if (typeof wind_speed !== "undefined") {
           var wind_txt = (isNaN(wind_speed) || wind_speed < 0) ? no_data_txt : wind_speed + " MPH";
           var wind_time = new Date(data["wind_data_time"]);
           var wind_time_txt = " at time " + padTimeString(wind_time.getHours() + 1) + ":" + padTimeString(wind_time.getMinutes() + 1);

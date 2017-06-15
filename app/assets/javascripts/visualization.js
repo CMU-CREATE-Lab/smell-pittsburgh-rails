@@ -2,7 +2,6 @@
 
 // URL variables
 var api_url = "/api/v1/smell_reports?";
-var esdr_root_url = "https://esdr.cmucreatelab.org/api/v1/";
 var aqi_root_url = "http://api.smellpittsburgh.org/api/v1/get_aqi?city=";
 
 // Google map variables
@@ -44,84 +43,112 @@ var infowindow_sensor;
 var sensors_list = [
   {
     name: "County AQ Monitor - Liberty",
-    wind: {
-      feed: 28,
-      channels: [
-        "SONICWS_MPH",
-        "SONICWD_DEG"
-      ]
-    },
-    PM25: {
-      feed: 29,
-      channel_max: "PM25_UG_M3_daily_max",
-      channels: [
-        "PM25_UG_M3"
-      ]
+    sensors: {
+      wind_speed: {
+        sources: [{
+          feed: 28,
+          channel: "SONICWS_MPH"
+        }]
+      },
+      wind_direction: {
+        sources: [{
+          feed: 28,
+          channel: "SONICWD_DEG"
+        }]
+      },
+      PM25: {
+        sources: [{
+          feed: 29,
+          channel: "PM25_UG_M3"
+        }]
+      }
     },
     latitude: 40.32377,
     longitude: -79.86806
   }, {
     name: "County AQ Monitor - Lawrenceville",
-    wind: {
-      feed: 26,
-      channels: [
-        "SONICWS_MPH",
-        "SONICWD_DEG"
-      ]
-    },
-    PM25: {
-      feed: 26,
-      channel_max: "PM25B_UG_M3_daily_max",
-      channels: [
-        "PM25B_UG_M3"
-      ]
+    sensors: {
+      wind_speed: {
+        sources: [{
+          feed: 26,
+          channel: "SONICWS_MPH"
+        }]
+      },
+      wind_direction: {
+        sources: [{
+          feed: 26,
+          channel: "SONICWD_DEG"
+        }]
+      },
+      PM25: {
+        sources: [{
+          feed: 26,
+          channel: "PM25B_UG_M3"
+        }]
+      }
     },
     latitude: 40.46542,
     longitude: -79.960757
   }, {
     name: "County AQ Monitor - Parkway East",
-    wind: {
-      feed: 43,
-      channels: [
-        "SONICWS_MPH",
-        "SONICWD_DEG"
-      ]
-    },
-    PM25: {
-      feed: 5975,
-      channel_max: "PM2_5_daily_max",
-      channels: [
-        "PM2_5"
-      ]
+    sensors: {
+      wind_speed: {
+        sources: [{
+          feed: 43,
+          channel: "SONICWS_MPH"
+        }]
+      },
+      wind_direction: {
+        sources: [{
+          feed: 43,
+          channel: "SONICWD_DEG"
+        }]
+      },
+      PM25: {
+        sources: [{
+          feed: 5975,
+          channel: "PM2_5"
+        }]
+      }
     },
     latitude: 40.43743,
     longitude: -79.86357
   }, {
     name: "County AQ Monitor - Avalon",
-    wind: {
-      feed: 1,
-      channels: [
-        "SONICWS_MPH",
-        "SONICWD_DEG"
-      ]
-    },
-    PM25: {
-      feed: 1,
-      channel_max: "PM25B_UG_M3_daily_max",
-      channels: [
-        "PM25B_UG_M3"
-      ]
+    sensors: {
+      wind_speed: {
+        sources: [{
+          feed: 1,
+          channel: "SONICWS_MPH"
+        }]
+      },
+      wind_direction: {
+        sources: [{
+          feed: 1,
+          channel: "SONICWD_DEG"
+        }]
+      },
+      PM25: {
+        sources: [{
+          feed: 1,
+          channel: "PM25B_UG_M3"
+        }, {
+          feed: 1,
+          channel: "PM25T_UG_M3"
+        }]
+      }
     },
     latitude: 40.49977,
     longitude: -80.07134
   }, {
     name: "County AQ Monitor - Lincoln",
-    PM25: {
-      feed: 30,
-      channel_max: "PM25_UG_M3_daily_max",
-      channels: [
-        "PM25_UG_M3"
-      ]
+    sensors: {
+      PM25: {
+        sources: [{
+          feed: 30,
+          channel: "PM25_UG_M3"
+        }]
+      }
     },
     latitude: 40.30822,
     longitude: -79.86913
@@ -680,56 +707,50 @@ function showSensorMarkers(epochtime_milisec) {
   // Check if data exists in the cache
   var r = sensors_cache[epochtime_milisec];
   if (typeof r != "undefined") {
+    // Show the AQI if needed
+    showOrHideAQI(r["is_current_day"]);
     // Make sensors markers visible on the map
     var markers = r["markers"];
     for (var i = 0; i < markers.length; i++) {
-      if (typeof  markers[i] != "undefined") {
+      if (typeof markers[i] != "undefined") {
         markers[i].setMap(map);
       }
     }
-    showOrHideAQI(r["is_current_day"]);
   } else {
+    // Check if current day
+    var date_str_sensor = (new Date(epochtime_milisec)).toDateString();
+    var date_str_now = (new Date()).toDateString();
+    var is_current_day = date_str_sensor === date_str_now;
+    // Show the AQI if needed
+    showOrHideAQI(is_current_day);
     // For each sensor, load data from server and create a marker
     sensors_cache[epochtime_milisec] = {"markers": [], "marker_table": []};
     for (var i = 0; i < sensors_list.length; i++) {
-      loadAndCreateSensorMarkers(epochtime_milisec, sensors_list[i], i);
+      loadAndCreateSensorMarkers(epochtime_milisec, sensors_list[i], is_current_day, i);
     }
   }
 }
 
-function loadAndCreateSensorMarkers(epochtime_milisec, info, i) {
-  var urls = genSensorDataURL(epochtime_milisec, info);
-  var data = {"info": info, "is_current_day": urls["is_current_day"]};
-  $.getJSON(urls["PM25_channels"], function (json) {
-    data["PM25_channels"] = json["data"];
-    // Compute the maximum
-    var PM25_channel_max = data["PM25_channels"][0];
-    for (var j = 1; j < data["PM25_channels"].length; j++) {
-      if (data["PM25_channels"][j][1] > PM25_channel_max[1]) {
-        PM25_channel_max = data["PM25_channels"][j];
-      }
-    }
-    data["PM25_channel_max"] = PM25_channel_max;
-  }).then(function () {
-    if (typeof urls["wind_channels"] != "undefined") {
-      $.getJSON(urls["wind_channels"], function (json) {
-        data["wind_channels"] = json["data"];
-        createAndShowSensorMarker(data, epochtime_milisec, i);
-        createMarkerTableFromSensorData(data, epochtime_milisec, i);
-        showOrHideAQI(data["is_current_day"]);
-      });
-    } else {
-      createAndShowSensorMarker(data, epochtime_milisec, i);
-      createMarkerTableFromSensorData(data, epochtime_milisec, i);
-      showOrHideAQI(data["is_current_day"]);
-    }
+function loadAndCreateSensorMarkers(epochtime_milisec, info, is_current_day, i) {
+  // Generate a list of urls that we need to request
+  var urls = generateSensorDataUrlList(epochtime_milisec, info);
+
+  // Request urls and load all sensor data
+  loadSensorData(urls, function (responses) {
+    // Merge all sensor data
+    var data = formatAndMergeSensorData(responses, info)
+    // Roll the sensor data to fill in some missing values
+    var data_rolled = rollSensorData(data, info);
+    // Create markers
+    createAndShowSensorMarker(data_rolled, epochtime_milisec, is_current_day, info, i);
+    createMarkerTableFromSensorData(data_rolled, epochtime_milisec, info, i);
   });
 }
 
-function createAndShowSensorMarker(data, epochtime_milisec, i) {
+function createAndShowSensorMarker(data, epochtime_milisec, is_current_day, info, i) {
   return new CustomMapMarker({
     "type": "sensor",
-    "data": parseSensorMarkerData(data),
+    "data": parseSensorMarkerData(data, is_current_day, info),
     "click": function (marker) {
       handleSensorMarkerClicked(marker);
     },
@@ -741,63 +762,64 @@ function createAndShowSensorMarker(data, epochtime_milisec, i) {
         marker.setMap(map);
       }
       // Cache markers
-      sensors_cache[epochtime_milisec]["is_current_day"] = data["is_current_day"];
+      sensors_cache[epochtime_milisec]["is_current_day"] = is_current_day;
       sensors_cache[epochtime_milisec]["markers"][i] = marker;
     }
   });
 }
 
-function parseSensorMarkerData(data) {
-  var is_current_day = data["is_current_day"];
+function parseSensorMarkerData(data, is_current_day, info, i) {
+  // TODO: if we add voc data, need to fix the PM25_feed_id
   var marker_data = {
     "is_current_day": is_current_day,
-    "name": data["info"]["name"],
-    "latitude": data["info"]["latitude"],
-    "longitude": data["info"]["longitude"],
-    "PM25_feed_id": data["info"]["PM25"]["feed"]
+    "name": info["name"],
+    "latitude": info["latitude"],
+    "longitude": info["longitude"],
+    "PM25_feed_id": info["sensors"]["PM25"]["sources"][0]["feed"]
   };
 
   if (is_current_day) {
     ///////////////////////////////////////////////////////////////////////////////
-    // If the selected day is the current day, check if the latest data is too old
-    var current_time = Date.now();
-    // For PM25 data
-    var PM25_all = data["PM25_channels"];
-    var PM25_latest = PM25_all[PM25_all.length - 1];
-    if (typeof PM25_latest == "undefined") {
-      marker_data["PM25_value"] = -1;
-    } else {
-      var PM25_data_time = PM25_latest[0] * 1000;
-      var PM25_diff_hour = (current_time - PM25_data_time) / 3600000;
-      if (typeof PM25_latest == "undefined" || PM25_diff_hour > 4 || isNaN(PM25_latest[1])) {
-        marker_data["PM25_value"] = -1;
+    // If the selected day is the current day
+    if (typeof i === "undefined") {
+      i = data["data"].length - 1;
+    }
+    var d = data["data"][i];
+    // For PM25
+    if (typeof d["PM25"] !== "undefined") {
+      if (typeof d["PM25"] === "object") {
+        marker_data["PM25_value"] = roundTo(d["PM25"]["value"], 2);
+        marker_data["PM25_data_time"] = d["PM25"]["time"] * 1000;
       } else {
-        marker_data["PM25_value"] = Math.max(-1, roundTo(parseFloat(PM25_latest[1]), 2));
-        marker_data["PM25_data_time"] = PM25_data_time;
+        marker_data["PM25_value"] = roundTo(d["PM25"], 2);
+        marker_data["PM25_data_time"] = d["time"] * 1000;
       }
     }
-    // For wind data
-    var wind_all = data["wind_channels"];
-    if (typeof wind_all != "undefined" && wind_all.length > 0) {
-      var wind_latest = wind_all[wind_all.length - 1];
-      var wind_data_time = wind_latest[0] * 1000;
-      var wind_diff_hour = (current_time - wind_data_time) / 3600000;
-      if (typeof wind_latest != "undefined" && wind_diff_hour <= 4 && !isNaN(wind_latest[1]) && !isNaN(wind_latest[2])) {
-        marker_data["wind_speed"] = roundTo(parseFloat(wind_latest[1]), 2);
-        marker_data["wind_direction"] = roundTo(parseFloat(wind_latest[2]), 2);
-        marker_data["wind_data_time"] = wind_data_time;
+    // For wind direction
+    if (typeof d["wind_direction"] !== "undefined") {
+      if (typeof d["wind_direction"] === "object") {
+        marker_data["wind_direction"] = roundTo(d["wind_direction"]["value"], 2);
+        marker_data["wind_data_time"] = d["wind_direction"]["time"] * 1000;
+      } else {
+        marker_data["wind_direction"] = roundTo(d["wind_direction"], 2);
+        marker_data["wind_data_time"] = d["time"] * 1000;
+      }
+    }
+    // For wind speed
+    if (typeof d["wind_speed"] !== "undefined") {
+      if (typeof d["wind_speed"] === "object") {
+        marker_data["wind_speed"] = roundTo(d["wind_speed"]["value"], 2);
+      } else {
+        marker_data["wind_speed"] = roundTo(d["wind_speed"], 2);
       }
     }
   } else {
     ///////////////////////////////////////////////////////////////////////////////
-    // If the selected day is not the current day, just use the max
-    // For PM25 data
-    var PM25_max = data["PM25_channel_max"];
-    if (typeof PM25_max == "undefined" || isNaN(PM25_max[1])) {
-      marker_data["PM25_value"] = -1;
-    } else {
-      marker_data["PM25_value"] = Math.max(-1, roundTo(parseFloat(PM25_max[1]), 2));
-      marker_data["PM25_data_time"] = PM25_max[0] * 1000;
+    // If the selected day is not the current day, use the max
+    var data_max = data["summary"]["max"];
+    if (typeof data_max["PM25"] !== "undefined") {
+      marker_data["PM25_value"] = roundTo(data_max["PM25"]["value"], 2);
+      marker_data["PM25_data_time"] = data_max["PM25"]["time"] * 1000;
     }
   }
 
@@ -828,73 +850,15 @@ function handleSensorMarkerClicked(marker) {
   addGoogleAnalyticEvent("sensor", "click", label);
 }
 
-function createMarkerTableFromSensorData(data, epochtime_milisec, i) {
+function createMarkerTableFromSensorData(data, epochtime_milisec, info, i) {
   // When animating, we are actually hiding and showing all pre-created markers
   // Create a table of sensor markers that correspond to different timestamps for animation
   // One dimension is the marker itself
   // One dimension is the timestamp
   sensors_cache[epochtime_milisec]["marker_table"][i] = [];
-  if (typeof data["wind_channels"] == "undefined") {
-    /////////////////////////////////////////////////////////////////////////////////
-    // If no wind channels, just create the markers from the data
-    var PM25_data = data["PM25_channels"];
-    for (var j = 0; j < PM25_data.length; j++) {
-      var marker_data = {
-        "is_current_day": true,
-        "name": data["info"]["name"],
-        "latitude": data["info"]["latitude"],
-        "longitude": data["info"]["longitude"],
-        "PM25_feed_id": data["info"]["PM25"]["feed"],
-        "PM25_data_time": data["PM25_channels"][j][0] * 1000,
-        "PM25_value": Math.max(-1, roundTo(parseFloat(PM25_data[j][1]), 2))
-      };
-      createSensorMarkerForAnimation(marker_data, epochtime_milisec, i, j);
-    }
-  } else {
-    /////////////////////////////////////////////////////////////////////////////////
-    // If we have wind channel,
-    // we need to sync and merge the time series in both wind and PM25 channels
-    // (the timestamps in wind and PM25 may not match with each other)
-    var idx_PM25 = 0;
-    var idx_wind = 0;
-    var PM25_data = data["PM25_channels"];
-    var wind_data = data["wind_channels"];
-    var j = 0;
-    while (true) {
-      var marker_data = {
-        "is_current_day": true,
-        "name": data["info"]["name"],
-        "latitude": data["info"]["latitude"],
-        "longitude": data["info"]["longitude"],
-        "PM25_feed_id": data["info"]["PM25"]["feed"]
-      };
-      var PM25_data_i = PM25_data[idx_PM25];
-      var wind_data_i = wind_data[idx_wind];
-      var PM25_defined = !(typeof PM25_data_i == "undefined");
-      var wind_defined = !(typeof wind_data_i == "undefined");
-      if (PM25_defined && wind_defined && PM25_data_i[0] == wind_data_i[0]) {
-        marker_data["PM25_data_time"] = PM25_data_i[0] * 1000;
-        marker_data["PM25_value"] = Math.max(-1, roundTo(parseFloat(PM25_data_i[1]), 2));
-        marker_data["wind_data_time"] = wind_data_i[0] * 1000;
-        marker_data["wind_speed"] = roundTo(parseFloat(wind_data_i[1]), 2);
-        marker_data["wind_direction"] = roundTo(parseFloat(wind_data_i[2]), 2);
-        idx_PM25 += 1;
-        idx_wind += 1;
-      } else if ((PM25_defined && wind_defined && PM25_data_i[0] > wind_data_i[0]) || (!PM25_defined && wind_defined)) {
-        marker_data["wind_data_time"] = wind_data_i[0] * 1000;
-        marker_data["wind_speed"] = roundTo(parseFloat(wind_data_i[1]), 2);
-        marker_data["wind_direction"] = roundTo(parseFloat(wind_data_i[2]), 2);
-        idx_wind += 1;
-      } else if ((PM25_defined && wind_defined && PM25_data_i[0] < wind_data_i[0]) || (!wind_defined && PM25_defined)) {
-        marker_data["PM25_data_time"] = PM25_data_i[0] * 1000;
-        marker_data["PM25_value"] = Math.max(-1, roundTo(parseFloat(PM25_data_i[1]), 2));
-        idx_PM25 += 1;
-      } else {
-        break;
-      }
-      createSensorMarkerForAnimation(marker_data, epochtime_milisec, i, j);
-      j += 1;
-    }
+  for (var j = 0; j < data["data"].length; j++) {
+    var marker_data = parseSensorMarkerData(data, true, info, j);
+    createSensorMarkerForAnimation(marker_data, epochtime_milisec, i, j);
   }
 }
 
@@ -947,38 +911,174 @@ function hideSensorMarkers(epochtime_milisec) {
   }
 }
 
-function genSensorDataURL(epochtime_milisec, info) {
+function generateSensorDataUrlList(epochtime_milisec, info) {
+  var esdr_root_url = "https://esdr.cmucreatelab.org/api/v1/";
   var epochtime = parseInt(epochtime_milisec / 1000);
   var time_range_url_part = "/export?format=json&from=" + epochtime + "&to=" + (epochtime + 86399);
 
-  // For PM25
-  var data_url_PM25_channels;
-  if (typeof info["PM25"] != "undefined") {
-    var data_url_PM25 = esdr_root_url + "feeds/" + info["PM25"]["feed"] + "/channels/";
-    data_url_PM25_channels = data_url_PM25 + info["PM25"]["channels"].toString() + time_range_url_part;
+  // Parse sensor info into several urls (data may come from different feeds and channels)
+  var sensors = info["sensors"];
+  var feeds_to_channels = {};
+  for (var k in sensors) {
+    var sources = sensors[k]["sources"];
+    for (var i = 0; i < sources.length; i++) {
+      var s = sources[i];
+      var feed = s["feed"];
+      var channel = s["channel"];
+      if (feed in feeds_to_channels) {
+        feeds_to_channels[feed].push(channel);
+      } else {
+        feeds_to_channels[feed] = [channel];
+      }
+    }
   }
 
-  // For wind
-  var data_url_wind_channels;
-  if (typeof info["wind"] != "undefined") {
-    var data_url_wind = esdr_root_url + "feeds/" + info["wind"]["feed"] + "/channels/";
-    data_url_wind_channels = data_url_wind + info["wind"]["channels"].toString() + time_range_url_part;
+  // Assemble urls
+  var urls = [];
+  for (var f in feeds_to_channels) {
+    urls.push(esdr_root_url + "feeds/" + f + "/channels/" + feeds_to_channels[f].toString() + time_range_url_part);
   }
 
-  // Channel max values are not calculated until 3am, so to be safe we wait until 4.
-  var date_str_sensor = (new Date(epochtime_milisec)).toDateString();
-  var date_str_now = (new Date()).toDateString();
-  var date_hour_now = (new Date()).getHours();
-  var is_current_day = false;
-  if (date_str_sensor == date_str_now && date_hour_now >= 4) {
-    is_current_day = true;
+  return urls;
+}
+
+function loadSensorData(urls, callback) {
+  var deferreds = [];
+  var responses = [];
+  for (var i = 0; i < urls.length; i++) {
+    deferreds.push($.getJSON(urls[i], function (json) {
+      responses.push(json);
+    }));
+  }
+  $.when.apply($, deferreds).then(function () {
+    if (typeof callback === "function") {
+      callback(responses);
+    }
+  });
+}
+
+function formatAndMergeSensorData(responses, info, method) {
+  // TODO: implement more methods for merging, e.g. average
+  //method = typeof method === "undefined" ? "last" : method;
+
+  ////////////////////////////////////////////////////////////////
+  // First pass: loop through all responses and merge data points
+  ////////////////////////////////////////////////////////////////
+  var data = {};
+  for (var i = 0; i < responses.length; i++) {
+    var r = responses[i];
+    // Get the channel names
+    var channel_names = [];
+    for (var j = 0; j < r["channel_names"].length; j++) {
+      var c = r["channel_names"][j];
+      var c_split = c.split(".");
+      channel_names.push(c_split[c_split.length - 1]);
+    }
+    // Loop through all data points in each response
+    for (var k = 0; k < r["data"].length; k++) {
+      var d = r["data"][k];
+      var key = d[0]; // Use epochtime as the key
+      if (typeof data[key] === "undefined") {
+        data[key] = {};
+      }
+      for (var m = 1; m < d.length; m++) {
+        // This assume that the last data source overrides the previous ones.
+        // If the later source has the channel name that appears before,
+        // it will override the data in that channel.
+        if (d[m] !== null) {
+          data[key][channel_names[m - 1]] = d[m];
+        }
+      }
+    }
+  }
+
+  ////////////////////////////////////////////////////////////////
+  // Second pass: merge channels and rename them
+  // Also find the latest one and the max
+  // (one sensor can have data from different channels)
+  ////////////////////////////////////////////////////////////////
+  var sensors_to_channels = {}
+  for (var sensor_name in info["sensors"]) {
+    var s = info["sensors"][sensor_name];
+    // Get the unique set of channel names
+    var channel_names = [];
+    for (var i = 0; i < s["sources"].length; i++) {
+      channel_names.push(s["sources"][i]["channel"])
+    }
+    if (channel_names.length > 1) {
+      channel_names = Array.from(new Set(channel_names));
+    }
+    sensors_to_channels[sensor_name] = channel_names;
+  }
+  // Sort the epoch times
+  var t_all = Object.keys(data).map(Number).sort(function (a, b) {
+    return a - b;
+  });
+  // Loop through all data points and merge channels
+  var data_merged = [];
+  var data_max = {};
+  for (var i = 0; i < t_all.length; i++) {
+    var t = t_all[i];
+    var tmp = {time: t};
+    // Loop through channels
+    for (var sensor_name in sensors_to_channels) {
+      var channel_names = sensors_to_channels[sensor_name];
+      for (var j = 0; j < channel_names.length; j++) {
+        var d = data[t][channel_names[j]];
+        // The new data will override the old ones
+        if (typeof d !== "undefined") {
+          tmp[sensor_name] = d;
+          if (typeof data_max[sensor_name] === "undefined" || d > data_max[sensor_name]["value"]) {
+            data_max[sensor_name] = {
+              time: t,
+              value: d
+            };
+          }
+        }
+      }
+    }
+    data_merged.push(tmp);
   }
 
   return {
-    "PM25_channels": data_url_PM25_channels,
-    "wind_channels": data_url_wind_channels,
-    "is_current_day": is_current_day
+    data: data_merged,
+    summary: {
+      max: data_max
+    }
   };
+}
+
+// Fill in missing values based on previous observed ones
+function rollSensorData(data, info) {
+  var data = $.extend({}, data); // copy object
+
+  // Fill in missing values
+  var cache = {}; // cache previous observations
+  var threshold = 7200; // two hours to look back
+  for (var i = 0; i < data["data"].length; i++) {
+    var d = data["data"][i];
+    for (var name in info["sensors"]) {
+      if (typeof d[name] === "undefined") {
+        // We need to back fill data according to the threshold
+        if (typeof cache[name] !== "undefined") {
+          if (d["time"] - cache[name]["time"] <= threshold) {
+            d[name] = {};
+            d[name]["time"] = cache[name]["time"];
+            d[name]["value"] = cache[name]["value"];
+          }
+        }
+      } else {
+        // No need for back filling, we only need to store data
+        if (typeof cache[name] === "undefined") {
+          cache[name] = {};
+        }
+        cache[name]["time"] = d["time"];
+        cache[name]["value"] = d[name];
+      }
+    }
+  }
+
+  return data;
 }
 
 function startAnimation(epochtime_milisec) {
