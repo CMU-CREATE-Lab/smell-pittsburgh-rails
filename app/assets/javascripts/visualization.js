@@ -265,12 +265,17 @@ function initGoogleMapAndHomeButton() {
   // Add event to the terrain button
   $("#terrain-btn").on("click", function () {
     var $this = $(this);
+    var label = {
+      "dimension5": current_epochtime_milisec.toString()
+    };
     if ($this.hasClass("button-pressed")) {
       map.setMapTypeId("roadmap");
       $this.removeClass("button-pressed");
+      addGoogleAnalyticEvent("set-to-roadmap-view", "click", label);
     } else {
       map.setMapTypeId("terrain");
       $this.addClass("button-pressed");
+      addGoogleAnalyticEvent("set-to-terrain-view", "click", label);
     }
   });
 }
@@ -330,14 +335,20 @@ function initAnimationUI() {
   $stop_button = $("#stop-btn");
 
   $playback_button.on("click", function () {
+    var label = {
+      "dimension5": current_epochtime_milisec.toString()
+    };
     if (isPlaying) {
       if (isPaused) {
         resumeAnimation();
+        addGoogleAnalyticEvent("resume-animation", "click", label);
       } else {
         pauseAnimation();
+        addGoogleAnalyticEvent("pause-animation", "click", label);
       }
     } else {
       startAnimation(current_epochtime_milisec);
+      addGoogleAnalyticEvent("start-animation", "click", label);
     }
   });
 
