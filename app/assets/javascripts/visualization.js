@@ -353,8 +353,12 @@ function initAnimationUI() {
   });
 
   $stop_button.on("click", function () {
+    var label = {
+      "dimension5": current_epochtime_milisec.toString()
+    };
     if (isPlaying) {
       stopAnimation(current_epochtime_milisec, current_epochtime_milisec);
+      addGoogleAnalyticEvent("stop-animation", "click", label);
     }
   });
 }
