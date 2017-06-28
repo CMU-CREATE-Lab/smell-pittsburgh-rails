@@ -800,6 +800,7 @@ function parseSensorMarkerData(data, is_current_day, info, i) {
       i = data["data"].length - 1;
     }
     var d = data["data"][i];
+    if (typeof d === "undefined") return marker_data;
     // For PM25
     if (typeof d["PM25"] !== "undefined") {
       if (typeof d["PM25"] === "object") {
