@@ -45,7 +45,7 @@ class FirebasePushNotification < ActiveRecord::Base
 
 	def self.push_aqi_pittsburgh_notgood
 		topic = self.TOPIC_PREFIX+"pghaqi"
-		title = "Air quality change for PGH"
+		title = "PGH Air Quality Notification"
 		body = "AQI has been over 50 for last 2 hrs"
 		self.send_push_notification(topic,title,body)
 	end
@@ -156,6 +156,9 @@ class FirebasePushNotification < ActiveRecord::Base
 					json_response = JSON.parse(response)
 					unless json_response["message_id"].blank?
 						Rails.logger.info("Successfully sent push with id=#{json_response["message_id"]}")
+						# only record in database if we have a log_tag
+						tag = not options.nil? and not options["log_tag"].blank? ? options["log_tag"] : ""
+						Rails.logger.info("send_push_notification: tag=#{},time=#{DateTime.now.to_i},topic=#{to},title=#{title},body=#{body}") unless tag.blank?
 						return
 					end
 				end
