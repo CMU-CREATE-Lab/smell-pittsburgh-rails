@@ -158,7 +158,7 @@ class ApiController < ApplicationController
     start_time = params["start_time"]
     end_time = params["end_time"]
     aggregate = params["aggregate"]
-    timezone_offset = params["timezone_offset"]
+    timezone_offset = params["timezone_offset"].blank? ? 0 : params["timezone_offset"].to_i
     area = params["area"] == nil ? "PGH" : params["area"]
     min_smell_value = params["min_smell_value"] == nil ? 1 : params["min_smell_value"]
     max_smell_value = params["max_smell_value"] == nil ? 5 : params["max_smell_value"]
