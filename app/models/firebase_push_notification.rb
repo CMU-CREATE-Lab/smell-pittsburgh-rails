@@ -117,8 +117,12 @@ class FirebasePushNotification < ActiveRecord::Base
 	# TODO add options
 	def self.send_push_notification(to, title, body, options=nil)
 		# prepend to topics if we are on staging
-		if self.TOPIC_PREFIX < to and Rails.env == "staging"
-			to = self.TOPIC_PREFIX + "STAGING-" + to.split(self.TOPIC_PREFIX).last
+		if Rails.env == "staging"
+			to = self.TOPIC_PREFIX + "STAGING-" + to.split(self.TOPIC_PREFIX).last if self.TOPIC_PREFIX < to
+			if not ["pghaqi","SmellRepots","GlobalTopic"].index(to).nil?
+				Rails.logger.info("ERROR: send_push_notification refusing to send notification to=#{to} since this is a topic on production.")
+				return;
+			end
 		end
 
 		if not options.nil? and options["area"] == "BA"
