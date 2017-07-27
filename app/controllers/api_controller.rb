@@ -73,7 +73,15 @@ class ApiController < ApplicationController
       smell_report.street_name = geo.street_name
     end
 
-    if BannedUserHash.where(:user_hash => smell_report.user_hash).size > 0
+    last_smell_report_from_user = SmellReport.where(user_hash: smell_report.user_hash).order("created_at").last
+    # 5 seconds
+    if (last_smell_report_from_user and (Time.now.to_i - last_smell_report_from_user.created_at.to_i) <= 5)
+      Rails.logger.info("(ApiController::smell_report_create) ignoring smell report from user_hash=#{smell_report.user_hash} because time from last report is too soon")
+      # sending reports too fast
+      response = {
+        :error => "failed to create smell report from submitted form."
+      }
+    elsif BannedUserHash.where(:user_hash => smell_report.user_hash).size > 0
       Rails.logger.info("(ApiController::smell_report_create) ignoring smell report with banned user_hash=#{smell_report.user_hash}")
       # banned users
       response = {
