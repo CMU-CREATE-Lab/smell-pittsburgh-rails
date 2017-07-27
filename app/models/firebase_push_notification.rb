@@ -157,7 +157,7 @@ class FirebasePushNotification < ActiveRecord::Base
 					unless json_response["message_id"].blank?
 						Rails.logger.info("Successfully sent push with id=#{json_response["message_id"]}")
 						# only record in database if we have a log_tag
-						tag = not options.nil? and not options["log_tag"].blank? ? options["log_tag"] : ""
+						tag = (not options.nil? and not options["log_tag"].blank?) ? options["log_tag"] : ""
 						Rails.logger.info("send_push_notification: tag=#{},time=#{DateTime.now.to_i},topic=#{to},title=#{title},body=#{body}") unless tag.blank?
 						return
 					end
