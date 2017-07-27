@@ -10,7 +10,7 @@ namespace :firebase_push_notification do
     else
       log_tag = args.log_tag.blank? ? "default_raketask" : args.log_tag
       # puts "CALL TO: send_push_notification(#{args.to}, #{args.title}, #{args.body}, {\"log_tag\": #{log_tag}})"
-      FirebasePushNotification.send_push_notification(args.to, args.title, args.body, {"log_tag": log_tag})
+      FirebasePushNotification.send_push_notification(args.to, args.title, args.body, {"log_tag" => log_tag})
     end
   end
 
