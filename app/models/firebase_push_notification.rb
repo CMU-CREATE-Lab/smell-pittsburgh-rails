@@ -96,7 +96,12 @@ class FirebasePushNotification < ActiveRecord::Base
 
 	# all Smell PGH clients should be subscribed to these messages
 	def self.push_global(title, body, area=nil)
-		topic = self.getTopicFromArea(area)+self.GLOBAL_TOPIC
+		if area.blank?
+			topic = self.TOPIC_PREFIX+self.GLOBAL_TOPIC
+		else
+			# this is likely not even being used by BA
+			topic = self.TOPIC_PREFIX+area+"-"+self.GLOBAL_TOPIC
+		end
 		self.send_push_notification(topic, title, body)
 	end
 
@@ -111,6 +116,11 @@ class FirebasePushNotification < ActiveRecord::Base
 
 	# TODO add options
 	def self.send_push_notification(to, title, body, options=nil)
+		# prepend to topics if we are on staging
+		if self.TOPIC_PREFIX < to and Rails.env == "staging"
+			to = self.TOPIC_PREFIX + "STAGING-" + to.split(self.TOPIC_PREFIX).last
+		end
+
 		if not options.nil? and options["area"] == "BA"
 			current_hour = (Time.now - 3 * 60 * 60).hour
 		else
@@ -145,7 +155,7 @@ class FirebasePushNotification < ActiveRecord::Base
 		data = json.to_json
 
 		# only push on production
-		if Rails.env == "production"
+		if Rails.env == "production" or Rails.env == "staging"
 			# do not send any notifications from 9 PM until 7 AM
 			if current_hour.between?(21,24) or current_hour.between?(0,6)
 				#TODO make this error message reflect when it's Pacific time
