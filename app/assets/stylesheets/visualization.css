@@ -223,6 +223,26 @@
   background-image: url("/img/PM25_5_legend.png");
 }
 
+.voc-color-1 {
+  background-image: url("/img/voc_1.png");
+}
+
+.voc-color-2 {
+  background-image: url("/img/voc_2.png");
+}
+
+.voc-color-3 {
+  background-image: url("/img/voc_3.png");
+}
+
+.voc-color-4 {
+  background-image: url("/img/voc_4.png");
+}
+
+.voc-color-5 {
+  background-image: url("/img/voc_5.png");
+}
+
 .wind-arrow {
   background-image: url("/img/wind_arrow.png");
 }
