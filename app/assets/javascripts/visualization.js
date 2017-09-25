@@ -97,18 +97,27 @@ var sensors_list = [
         sources: [{
           feed: 43,
           channel: "SONICWS_MPH"
+        }, {
+          feed: 11067,
+          channel: "SONICWD_DEG"
         }]
       },
       wind_direction: {
         sources: [{
           feed: 43,
           channel: "SONICWD_DEG"
+        }, {
+          feed: 11067,
+          channel: "SONICWD_DEG"
         }]
       },
       PM25: {
         sources: [{
-          feed: 5975,
-          channel: "PM2_5"
+          feed: 43,
+          channel: "PM25T_UG_M3"
+        }, {
+          feed: 11067,
+          channel: "PM25T_UG_M3"
         }]
       }
     },
