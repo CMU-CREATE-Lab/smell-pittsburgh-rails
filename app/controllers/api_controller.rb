@@ -369,9 +369,12 @@ class ApiController < ApplicationController
 
 
   def regions_show
-    # TODO handle bad id?
-    @region = Region.find params[:id]
-    render :json => @region.to_json
+    if Region.exists? params[:id]
+      @region = Region.find params[:id]
+      render :json => @region.to_json
+    else
+      render :json => { :error => "Region does not exist." }, :status => 404
+    end
   end
 
 
@@ -381,15 +384,22 @@ class ApiController < ApplicationController
 
 
   def regions_map_markers
-    @region = Region.find params[:id]
-    render :json => @region.map_markers.to_json
+    if Region.exists? params[:id]
+      @region = Region.find params[:id]
+      render :json => @region.map_markers.to_json
+    else
+      render :json => { :error => "Region does not exist." }, :status => 404
+    end
   end
 
 
   def regions_zip_codes
-    @region = Region.find params[:id]
-    #render :json => @region.zip_codes.to_json(:only => [:zip])
-    render :json => @region.zip_codes.map(&:zip).to_json
+    if Region.exists? params[:id]
+      @region = Region.find params[:id]
+      render :json => @region.zip_codes.map(&:zip).to_json
+    else
+      render :json => { :error => "Region does not exist." }, :status => 404
+    end
   end
 
 end
