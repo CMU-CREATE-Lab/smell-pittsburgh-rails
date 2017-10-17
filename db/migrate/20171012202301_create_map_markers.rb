@@ -3,7 +3,7 @@ class CreateMapMarkers < ActiveRecord::Migration
     create_table :map_markers do |t|
       t.float :latitude
       t.float :longitude
-      t.string :type
+      t.string :marker_type
       t.text :data
       t.references :region
 

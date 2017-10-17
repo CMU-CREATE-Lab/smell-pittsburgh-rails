@@ -362,4 +362,34 @@ class ApiController < ApplicationController
     render :json => @aqi.to_json
   end
 
+
+  def regions_index
+    render :json => Region.all.to_json
+  end
+
+
+  def regions_show
+    # TODO handle bad id?
+    @region = Region.find params[:id]
+    render :json => @region.to_json
+  end
+
+
+  def clients_index
+    render :json => Client.all.to_json
+  end
+
+
+  def regions_map_markers
+    @region = Region.find params[:id]
+    render :json => @region.map_markers.to_json
+  end
+
+
+  def regions_zip_codes
+    @region = Region.find params[:id]
+    #render :json => @region.zip_codes.to_json(:only => [:zip])
+    render :json => @region.zip_codes.map(&:zip).to_json
+  end
+
 end
