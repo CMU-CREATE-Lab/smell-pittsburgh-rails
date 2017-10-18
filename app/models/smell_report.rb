@@ -14,6 +14,7 @@ class SmellReport < ActiveRecord::Base
   # street_name :string(20)
 
   belongs_to :zip_code
+  belongs_to :client
 
   validates :user_hash, :latitude, :longitude, :smell_value, :presence => true
   validates :smell_value, :inclusion => { in: (1..5) }
