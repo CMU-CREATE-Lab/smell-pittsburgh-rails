@@ -402,4 +402,20 @@ class ApiController < ApplicationController
     end
   end
 
+
+  # TODO change terrible function name
+  def smell_reports_index2
+    start_time = params["start_time"]
+    end_time = params["end_time"]
+    # client_ids
+    # region_ids
+    # smell_values = 1,2,3,4,5
+    # group_by = [zipcode|year|month|day]
+    # - timezone_offset = params["timezone_offset"] (for group_by time ONLY)
+    zipcodes = params["zipcodes"]
+    format_as = params["format"] == "csv" ? "csv" : "json"
+
+    render :json => { :error => "API not yet implemented." }, :status => 500
+  end
+
 end
