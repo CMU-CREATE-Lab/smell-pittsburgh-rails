@@ -407,13 +407,61 @@ class ApiController < ApplicationController
   def smell_reports_index2
     start_time = params["start_time"]
     end_time = params["end_time"]
-    # client_ids
-    # region_ids
-    # smell_values = 1,2,3,4,5
+
+    client_ids = params["client_id"].nil? ? [] : params["client_id"].split(",").map(&:to_i)
+    region_ids = params["region_ids"].nil? ? [] : params["region_ids"].split(",").map(&:to_i)
+    smell_values = params["smell_value"].blank? ? [1,2,3,4,5] : params["smell_value"].split(",").map(&:to_i)
+    latlng_bbox = params["latlng_bbox"].blank? ? [] : params["latlng_bbox"].split(",").map(&:to_f)
+    # latlng_bbox
     # group_by = [zipcode|year|month|day]
     # - timezone_offset = params["timezone_offset"] (for group_by time ONLY)
-    zipcodes = params["zipcodes"]
+    zipcodes = params["zipcodes"].blank? ? [] : params["zipcodes"].split(",")
     format_as = params["format"] == "csv" ? "csv" : "json"
+
+    time_range = [Time.at(SmellReport.first.created_at).to_datetime, Time.now.to_datetime]
+    time_range[0] = Time.at(start_time.to_i).to_datetime if start_time
+    time_range[1] = Time.at(end_time.to_i + 1).to_datetime if end_time
+
+    # ORDER OF OPERATIONS
+    # 1. zip_codes/regions
+    # 2. clients
+    # 3. smell_values
+    # 4. time_range
+    # 5. latlng_bbox
+    # 6. group_by
+
+    #
+    # 1. zip_codes/regions
+    zip_codes = zipcodes.map{|i| ZipCode.where(:zip => i).first}.delete_if(&:nil?).uniq
+    unless region_ids.empty?
+      zip_codes = (zip_codes + region_ids.map{ |i| Region.find(i) if Region.exists?(i) }.delete_if(&:nil?).map(&:zip_codes).flatten).uniq
+    end
+    results = zip_codes.empty? ? [SmellReport.all] : zip_codes.map(&:smell_reports)
+    #
+    # 2. clients
+    unless client_ids.empty?
+      results.map!{|i| i.where(:client_id => client_ids)}
+    end
+    #
+    # 3. smell_values
+    results.map!{|i| i.where(:smell_values => smell_values)}
+    #
+    # 4. time_range
+    results.map{|i| i.where(:created_at => time_range[0]..time_range[1])}
+    #
+    # 5. latlng_bbox
+    if latlng_bbox.size == 4
+      # TODO check that lat1<lat2 and lng1<lng2
+      lat1 = latlng_bbox[0]
+      lat2 = latlng_bbox[1]
+      lng1 = latlng_bbox[2]
+      lng2 = latlng_bbox[3]
+      # TODO are we bounding on perturbed or REAL lat/long?
+      results.map!{|i| i.where(:latitude => lat1..lat2).where(:longitude => lng1..lng2)}
+    end
+    #
+    # 6. group_by
+    # TODO
 
     render :json => { :error => "API not yet implemented." }, :status => 500
   end
