@@ -20,6 +20,7 @@ class SmellReport < ActiveRecord::Base
   validates :smell_value, :inclusion => { in: (1..5) }
 
   before_create :generate_perturbed_coordinates
+  before_create :determine_client_for_deprecated_apis
   after_destroy :handle_destroy
 
   scope :in_pittsburgh, -> { where("real_latitude < 40.916992 AND real_latitude > 40.102992 AND real_longitude < -79.428193 AND real_longitude > -80.471694") }
@@ -69,6 +70,19 @@ class SmellReport < ActiveRecord::Base
       return true
     end
     return false
+  end
+
+
+  # TODO this function is temporary to avoid breaking clients for api v2
+  def determine_client_for_deprecated_apis
+    if self.client.nil?
+      if self.user_hash.index("BA") == 0
+        self.client_id = CLIENT_ID_BA
+      else
+        self.client_id = CLIENT_ID_SMELLPGH
+      end
+    end
+    return true
   end
 
 

@@ -379,7 +379,7 @@ class ApiController < ApplicationController
 
 
   def clients_index
-    render :json => Client.all.to_json
+    render :json => Client.all.to_json(:only => [:id, :name, :created_at])
   end
 
 
