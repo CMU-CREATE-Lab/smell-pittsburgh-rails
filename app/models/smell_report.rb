@@ -6,7 +6,7 @@ class SmellReport < ActiveRecord::Base
   # smell_value :integer
   # smell_description :text
   # feelings_symptoms :text
-  # submit_achd_form :boolean
+  # send_form_to_agency :boolean
   # additional_comments :text
   # observed_at :datetime
   # custom_time :boolean

@@ -15,8 +15,6 @@ class ApiController < ApplicationController
   # "smell_value" : Integer *
   # "smell_description" : String
   # "feelings_symptoms" : String
-  # "horizontal_accuracy" : Double
-  # "vertical_accuracy" : Double
   # "additional_comments" : String
   #   (specific to ACHD form submission)
   # "custom_location" : Boolean
@@ -24,7 +22,7 @@ class ApiController < ApplicationController
   # "custom_time" : Boolean
   #   - Specify that the time for the report was manually entered (observed_at) and is not the current time
   # "observed_at" : DateTime (RFC3339)
-  # "submit_achd_form" : Boolean
+  # "send_form_to_agency" : Boolean
   # "email" : String [FILTERED]
   # "name" : String [FILTERED]
   # "phone_number" : String [FILTERED]
@@ -38,8 +36,6 @@ class ApiController < ApplicationController
     smell_report.smell_value = params["smell_value"].to_i unless params["smell_value"].blank?
     smell_report.smell_description = params["smell_description"] unless params["smell_description"].blank?
     smell_report.feelings_symptoms = params["feelings_symptoms"] unless params["feelings_symptoms"].blank?
-    smell_report.horizontal_accuracy = params["horizontal_accuracy"] unless params["horizontal_accuracy"].blank?
-    smell_report.vertical_accuracy = params["vertical_accuracy"] unless params["vertical_accuracy"].blank?
     smell_report.additional_comments = params["additional_comments"] unless params["additional_comments"].blank?
 
     # mark custom fields when included
@@ -55,12 +51,13 @@ class ApiController < ApplicationController
     end
 
     # by default, send to achd
-    smell_report.submit_achd_form = true
+    smell_report.send_form_to_agency = true
     # override default when flag is present in API request
-    smell_report.submit_achd_form = (params["submit_achd_form"].blank? ? false : true) unless params["submit_achd_form"].nil?
+    # TODO rename this param to match new column name (submit_achd_form => send_form_to_agency)
+    smell_report.send_form_to_agency = (params["submit_achd_form"].blank? ? false : true) unless params["submit_achd_form"].nil?
     # do not send to ACHD if the smell report is outside the pgh bounding box
     # TODO we should also check against a list of valid zipcodes for ACHD submission
-    smell_report.submit_achd_form = false unless SmellReport.is_within_pittsburgh?(smell_report.latitude,smell_report.longitude)
+    smell_report.send_form_to_agency = false unless SmellReport.is_within_pittsburgh?(smell_report.latitude,smell_report.longitude)
     # request reverse geocode object
     geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{smell_report.latitude}, #{smell_report.longitude}" )
     # associate smell report with zip code
@@ -96,9 +93,7 @@ class ApiController < ApplicationController
         :smell_value => smell_report.smell_value,
         :smell_description => smell_report.smell_description,
         :feelings_symptoms => smell_report.feelings_symptoms,
-        :additional_comments => smell_report.additional_comments,
-        :horizontal_accuracy => smell_report.horizontal_accuracy,
-        :vertical_accuracy => smell_report.vertical_accuracy
+        :additional_comments => smell_report.additional_comments
       }
 
       # send push notifications for smell values at or above 3
@@ -118,7 +113,7 @@ class ApiController < ApplicationController
       end
 
       # send email
-      if smell_report.submit_achd_form
+      if smell_report.send_form_to_agency
         options = {
           "reply_email": params["email"],
           "name": params["name"],
