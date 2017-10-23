@@ -359,14 +359,14 @@ class ApiController < ApplicationController
 
 
   def regions_index
-    render :json => Region.all.to_json
+    render :json => Region.all.to_json(:except => [:description])
   end
 
 
   def regions_show
     if Region.exists? params[:id]
       @region = Region.find params[:id]
-      render :json => @region.to_json
+      render :json => @region.to_json(:except => [:description])
     else
       render :json => { :error => "Region does not exist." }, :status => 404
     end
