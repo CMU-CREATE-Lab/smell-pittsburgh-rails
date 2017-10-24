@@ -121,7 +121,7 @@ class ApiController < ApplicationController
           "address": params["address"],
           "geo": geo
         }
-        AchdForm.submit_form(smell_report,options)
+        AgencyForm.submit_form(smell_report,options)
       end
     else
       # fail
@@ -189,7 +189,7 @@ class ApiController < ApplicationController
     end
 
     if allegheny_county_only
-      zipcodes = zipcodes & AchdForm.allegheny_county_zipcodes
+      zipcodes = zipcodes & AgencyForm.allegheny_county_zipcodes
     end
 
     # grab all smell reports
