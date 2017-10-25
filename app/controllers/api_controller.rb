@@ -207,7 +207,10 @@ class ApiController < ApplicationController
       elsif aggregate == "total"
         results[key] = value.size
       else
-        results[key] = value.as_json(:only => [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at])
+        fields = [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at]
+        # TODO: Specific to Bay Area
+        fields << :additional_comments if area == "BA"
+        results[key] = value.as_json(:only => fields)
         unless format_as == "csv"
           # Convert created_at to epoch time
           for i in 0..results[key].size()-1
