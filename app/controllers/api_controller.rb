@@ -403,27 +403,20 @@ class ApiController < ApplicationController
     start_time = params["start_time"]
     end_time = params["end_time"]
 
-    client_ids = params["client_id"].nil? ? [] : params["client_id"].split(",").map(&:to_i)
+    client_ids = params["client_ids"].nil? ? [] : params["client_ids"].split(",").map(&:to_i)
     region_ids = params["region_ids"].nil? ? [] : params["region_ids"].split(",").map(&:to_i)
     smell_values = params["smell_value"].blank? ? [1,2,3,4,5] : params["smell_value"].split(",").map(&:to_i)
     latlng_bbox = params["latlng_bbox"].blank? ? [] : params["latlng_bbox"].split(",").map(&:to_f)
-    # latlng_bbox
-    # group_by = [zipcode|year|month|day]
-    # - timezone_offset = params["timezone_offset"] (for group_by time ONLY)
+    # group_by = [zipcode|month|day]
+    group_by = params["group_by"].blank? ? "" : params["group_by"]
+    timezone_offset = params["timezone_offset"].blank? ? nil : params["timezone_offset"]
     zipcodes = params["zipcodes"].blank? ? [] : params["zipcodes"].split(",")
+    # TODO handle format
     format_as = params["format"] == "csv" ? "csv" : "json"
 
     time_range = [Time.at(SmellReport.first.created_at).to_datetime, Time.now.to_datetime]
     time_range[0] = Time.at(start_time.to_i).to_datetime if start_time
     time_range[1] = Time.at(end_time.to_i + 1).to_datetime if end_time
-
-    # ORDER OF OPERATIONS
-    # 1. zip_codes/regions
-    # 2. clients
-    # 3. smell_values
-    # 4. time_range
-    # 5. latlng_bbox
-    # 6. group_by
 
     #
     # 1. zip_codes/regions
@@ -439,26 +432,40 @@ class ApiController < ApplicationController
     end
     #
     # 3. smell_values
-    results.map!{|i| i.where(:smell_values => smell_values)}
+    results.map!{|i| i.where(:smell_value => smell_values)}
     #
     # 4. time_range
-    results.map{|i| i.where(:created_at => time_range[0]..time_range[1])}
+    results.map!{|i| i.where(:created_at => time_range[0]..time_range[1])}
     #
     # 5. latlng_bbox
     if latlng_bbox.size == 4
-      # TODO check that lat1<lat2 and lng1<lng2
-      lat1 = latlng_bbox[0]
-      lat2 = latlng_bbox[1]
-      lng1 = latlng_bbox[2]
-      lng2 = latlng_bbox[3]
-      # TODO are we bounding on perturbed or REAL lat/long?
+      # this checks that lat1<lat2 and lng1<lng2
+      lat1 = (latlng_bbox[0] < latlng_bbox[2]) ? latlng_bbox[0] : latlng_bbox[2]
+      lat2 = (latlng_bbox[0] < latlng_bbox[2]) ? latlng_bbox[2] : latlng_bbox[0]
+      lng1 = (latlng_bbox[1] < latlng_bbox[3]) ? latlng_bbox[1] : latlng_bbox[3]
+      lng2 = (latlng_bbox[1] < latlng_bbox[3]) ? latlng_bbox[3] : latlng_bbox[1]
+      # we are bounding on the perturbed lat/long
       results.map!{|i| i.where(:latitude => lat1..lat2).where(:longitude => lng1..lng2)}
     end
     #
     # 6. group_by
-    # TODO
+    # TODO make separate for grouping and aggregating (right now year/month/day are aggregate, not actually a group_by)
+    unless group_by.blank?
+      if group_by == "month"
+        results = SmellReport.aggregate_by_month(results)
+      elsif group_by == "day"
+        results = SmellReport.aggregate_by_day(results,timezone_offset)
+      elsif group_by == "zipcode"
+        tmp = results.flatten
+        results = {}
+        tmp_zips = tmp.map(&:zip_code_id).uniq.delete_if(&:nil?).map{|i| ZipCode.find(i)}.delete_if(&:nil?)
+        tmp_zips.each do |zip|
+          results[zip.zip] = zip.smell_reports & tmp
+        end
+      end
+    end
 
-    render :json => { :error => "API not yet implemented." }, :status => 500
+    render :json => results.to_json
   end
 
 end
