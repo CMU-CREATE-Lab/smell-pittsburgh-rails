@@ -468,7 +468,7 @@ class ApiController < ApplicationController
       end
     end
 
-    render :json => results.to_json
+    render :json => results.to_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :created_at, :zip_code_id])
   end
 
 end
