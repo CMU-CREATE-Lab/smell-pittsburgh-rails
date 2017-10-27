@@ -384,7 +384,7 @@ class ApiController < ApplicationController
   def regions_map_markers
     if Region.exists? params[:id]
       @region = Region.find params[:id]
-      render :json => @region.map_markers.to_json
+      render :json => @region.map_markers.map(&:to_api).to_json
     else
       render :json => { :error => "Region does not exist." }, :status => 404
     end
