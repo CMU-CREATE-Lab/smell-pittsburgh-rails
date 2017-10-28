@@ -537,25 +537,29 @@ function hideSmellMarkers(epochtime_milisec) {
 }
 
 function genSmellURL(method) {
-  var api_paras;
+  var api_paras = "";
   if (typeof method != "undefined" && method["aggregate"] == "month") {
-    api_paras = "aggregate=month";
+    api_paras += "aggregate=month";
   } else if (typeof method != "undefined" && method["aggregate"] == "day") {
     var min_smell_value = 3;
     var timezone_offset = new Date().getTimezoneOffset();
-    api_paras = "aggregate=day&min_smell_value=" + min_smell_value + "&timezone_offset=" + timezone_offset;
+    api_paras += "aggregate=day";
+    api_paras += "&min_smell_value=" + min_smell_value;
+    api_paras += "&timezone_offset=" + timezone_offset;
   } else if (typeof method != "undefined" && method["aggregate"] == "day_and_smell_value") {
     var timezone_offset = new Date().getTimezoneOffset();
-    api_paras = "aggregate=day_and_smell_value&timezone_offset=" + timezone_offset;
+    api_paras += "aggregate=day_and_smell_value";
+    api_paras += "&timezone_offset=" + timezone_offset;
   } else {
-    var date_obj = typeof method == "undefined" ? new Date() : new Date(method["epochtime_milisec"]);
     // Get only the smell reports for one day
+    var date_obj = typeof method == "undefined" ? new Date() : new Date(method["epochtime_milisec"]);
     var y = date_obj.getFullYear();
     var m = date_obj.getMonth();
     var d = date_obj.getDate();
-    var first_day_epochtime = parseInt((new Date(y, m, d).getTime()) / 1000);
-    var last_day_epochtime = first_day_epochtime + 86399;
-    api_paras = "start_time=" + first_day_epochtime + "&end_time=" + last_day_epochtime;
+    var start_time = parseInt((new Date(y, m, d).getTime()) / 1000);
+    var end_time = start_time + 86399;
+    api_paras += "start_time=" + start_time;
+    api_paras += "&end_time=" + end_time;
   }
   if (area != "PGH") {
     //specify default start time
