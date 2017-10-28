@@ -594,7 +594,7 @@ function drawCalendar(data) {
   var month_arr = data.month;
   var today = new Date();
   $calendar.append($('<option value="' + -1 + '" data-year="' + today.getFullYear() + '" data-month="' + today.getMonth() + '">Today</option>'));
-  for (var i = 0; i < month_arr.length; i++) {
+  for (var i = month_arr.length - 1; i >= 0; i--) {
     var year = month_arr[i][0];
     var month = month_arr[i][1];
     $calendar.append($('<option value="' + i + '" data-year="' + year + '" data-month="' + month + '">' + month_names[month - 1] + ' ' + year + '</option>'));
