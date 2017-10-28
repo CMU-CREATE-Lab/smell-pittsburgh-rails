@@ -510,6 +510,8 @@ function createAndShowSmellMarker(data, epochtime_milisec) {
 }
 
 function handleSmellMarkerClicked(marker) {
+  if (isPlaying) return;
+
   infowindow_PM25.close();
   infowindow_VOC.close();
   infowindow_smell.setContent(marker.getContent());
@@ -1235,6 +1237,9 @@ function startAnimation(epochtime_milisec) {
   if (animate_interval != null || (smell_markers.length == 0 && marker_table[0].length == 0)) return;
 
   // Handle UI
+  infowindow_smell.close();
+  infowindow_VOC.close();
+  infowindow_PM25.close();
   if ($playback_button.hasClass("ui-icon-custom-play")) {
     $playback_button.removeClass("ui-icon-custom-play");
     $playback_button.addClass("ui-icon-custom-pause");
