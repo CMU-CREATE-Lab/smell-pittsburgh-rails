@@ -44,9 +44,9 @@ class ApiController < ApplicationController
 
     # determine smell report observed at time
     # string format: %Y-%m-%dT%H:%M:%S%:z
-    smell_report.observed_at = DateTime.rfc3339(params["observed_at"]) unless params["observed_at"].blank?
+    smell_report.observed_at = DateTime.rfc3339(params["observed_at"]).to_i unless params["observed_at"].blank?
     if smell_report.custom_time == false or smell_report.observed_at.blank?
-      smell_report.observed_at = Time.now
+      smell_report.observed_at = Time.now.to_i
       smell_report.custom_time = false
     end
 
@@ -417,9 +417,9 @@ class ApiController < ApplicationController
     # TODO handle format
     format_as = params["format"] == "csv" ? "csv" : "json"
 
-    time_range = [Time.at(SmellReport.first.created_at).to_datetime, Time.now.to_datetime]
-    time_range[0] = Time.at(start_time.to_i).to_datetime if start_time
-    time_range[1] = Time.at(end_time.to_i + 1).to_datetime if end_time
+    time_range = [Time.at(SmellReport.first.created_at).to_i, Time.now.to_i]
+    time_range[0] = start_time.to_i if start_time
+    time_range[1] = end_time.to_i if end_time
 
     #
     # 1. zip_codes/regions
@@ -438,7 +438,7 @@ class ApiController < ApplicationController
     results.map!{|i| i.where(:smell_value => smell_values)}
     #
     # 4. time_range
-    results.map!{|i| i.where(:created_at => time_range[0]..time_range[1])}
+    results.map!{|i| i.where(:observed_at => time_range[0]..time_range[1])}
     #
     # 5. latlng_bbox
     if latlng_bbox.size == 4
@@ -468,7 +468,7 @@ class ApiController < ApplicationController
       end
     end
 
-    render :json => results.to_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :created_at, :zip_code_id])
+    render :json => results.to_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :observed_at, :zip_code_id])
   end
 
 end
