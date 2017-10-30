@@ -16,6 +16,7 @@
   <%= javascript_include_tag "visualization" %>
   <%= javascript_include_tag "FlatBlockChart" %>
   <%= javascript_include_tag "CustomMapMarker" %>
+  <%= javascript_include_tag "infobox" %>
 <% end %>
 
 <% content_for :body do %>
@@ -45,7 +46,7 @@
           <td class="smell-color-td PM25-color-4"></td>
           <td class="smell-color-td PM25-color-5"></td>
         </tr>
-        <tr>
+        <tr class="voc-legend-row">
           <td class="entry-title">VOC</td>
           <td class="smell-color-td voc-color-1"></td>
           <td class="smell-color-td voc-color-2"></td>

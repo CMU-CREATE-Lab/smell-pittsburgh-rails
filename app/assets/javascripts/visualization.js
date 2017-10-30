@@ -1,5 +1,9 @@
 "use strict";
 
+// Staging testing features
+var animate_smell_text = true; // This is for animating smell descriptions
+var show_voc_sensors = true; // This is for showing VOC sensors on the map
+
 // URL variables
 var api_url = "/api/v1/smell_reports?";
 var aqi_root_url = "http://api.smellpittsburgh.org/api/v1/get_aqi?city=";
@@ -162,58 +166,67 @@ var sensors_list = [
     },
     latitude: 40.30822,
     longitude: -79.86913
-  }, {
-    name: "Lloyd Ave at Chestnut St Outdoors AWAIR",
-    sensors: {
-      VOC: {
-        sources: [{
-          feed: 11079,
-          channel: "voc"
-        }]
-      }
-    },
-    latitude: 40.427418,
-    longitude: -79.882734
-  }, {
-    name: "Dawson St at Frazier St AWAIR",
-    sensors: {
-      VOC: {
-        sources: [{
-          feed: 7715,
-          channel: "voc"
-        }]
-      }
-    },
-    latitude: 40.429782,
-    longitude: -79.954246
-  }, {
-    name: "Ludwick St at Landview Rd AWAIR",
-    sensors: {
-      VOC: {
-        sources: [{
-          feed: 7713,
-          channel: "voc"
-        }]
-      }
-    },
-    latitude: 40.421608,
-    longitude: -79.925038
-  }, {
-    name: "Monroe Ave at Upston St AWAIR",
-    sensors: {
-      VOC: {
-        sources: [{
-          feed: 7768,
-          channel: "voc"
-        }]
-      }
-    },
-    latitude: 40.344799,
-    longitude: -79.875582
   }
 ];
 
 function init() {
+  // Check if enabling staging features or not
+  if (show_voc_sensors) {
+    $(".voc-legend-row").show();
+    sensors_list.push({
+      name: "Lloyd Ave at Chestnut St Outdoors AWAIR",
+      sensors: {
+        VOC: {
+          sources: [{
+            feed: 11079,
+            channel: "voc"
+          }]
+        }
+      },
+      latitude: 40.427418,
+      longitude: -79.882734
+    });
+    sensors_list.push({
+      name: "Dawson St at Frazier St AWAIR",
+      sensors: {
+        VOC: {
+          sources: [{
+            feed: 7715,
+            channel: "voc"
+          }]
+        }
+      },
+      latitude: 40.429782,
+      longitude: -79.954246
+    });
+    sensors_list.push({
+      name: "Ludwick St at Landview Rd AWAIR",
+      sensors: {
+        VOC: {
+          sources: [{
+            feed: 7713,
+            channel: "voc"
+          }]
+        }
+      },
+      latitude: 40.421608,
+      longitude: -79.925038
+    });
+    sensors_list.push({
+      name: "Monroe Ave at Upston St AWAIR",
+      sensors: {
+        VOC: {
+          sources: [{
+            feed: 7768,
+            channel: "voc"
+          }]
+        }
+      },
+      latitude: 40.344799,
+      longitude: -79.875582
+    });
+  }
+
   // Create the page
   initGoogleMapAndHomeButton();
   initCalendarButtonAndDialog();
@@ -1288,7 +1301,38 @@ function startAnimation(epochtime_milisec) {
           var smell_m_data = smell_m.getData();
           var smell_epochtime_milisec = smell_m_data["created_at"] * 1000;
           if (smell_epochtime_milisec <= (current_epochtime_milisec + elapsed_milisec)) {
+            // Animate smell reports
             smell_m.setMap(map);
+            // Animate info window of smell descriptions
+            if (animate_smell_text) {
+              if (smell_m_data["smell_value"] >= 3) {
+                var msg = "";
+                if (smell_m_data["smell_description"] != null) {
+                  msg += smell_m_data["smell_description"];
+                }
+                if (smell_m_data["feelings_symptoms"] != null) {
+                  if (msg != "") msg += " / ";
+                  msg += smell_m_data["feelings_symptoms"];
+                }
+                if (msg != "" && msg.length > 60) {
+                  var infobox = new InfoBox({
+                    pixelOffset: new google.maps.Size(-131, -13),
+                    disableAutoPan: true,
+                    alignBottom: true,
+                    closeBoxURL: "",
+                    pane: "floatPane",
+                    zIndex: 10,
+                    boxClass: "animation-infobox",
+                    boxStyle: {
+                      opacity: 3.2
+                    }
+                  });
+                  infobox.setContent(msg);
+                  infobox.open(map, smell_m.getGoogleMapMarker());
+                  fadeInfoBox(infobox);
+                }
+              }
+            }
             // TODO: need to use a queue that contains the markers that need to be faded
             // TODO: store the remaining time in the queue and check the time at the beginning
             // TODO: if the remaining time is less than zero, fade the marker
@@ -1435,6 +1479,25 @@ function fadeMarker(marker, time) {
       marker.setOpacity(0.5);
     }
   }, time);
+}
+
+function fadeInfoBox(infobox) {
+  setTimeout(function () {
+    if (!isPlaying) {
+      infobox.setVisible(false);
+      infobox.close();
+      return;
+    }
+    var opacity = infobox["boxStyle_"]["opacity"];
+    if (opacity > 0) {
+      opacity -= 0.05;
+      infobox.setOptions({boxStyle: {opacity: opacity}});
+      fadeInfoBox(infobox);
+    } else {
+      infobox.setVisible(false);
+      infobox.close();
+    }
+  }, 50);
 }
 
 $(function () {
