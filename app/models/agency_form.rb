@@ -1,4 +1,4 @@
-class AchdForm < ActiveRecord::Base
+class AgencyForm < ActiveRecord::Base
 
   # smell_report :SmellReport
   # email :string
@@ -7,6 +7,7 @@ class AchdForm < ActiveRecord::Base
   # address :string
 
   belongs_to :smell_report
+  belongs_to :region
 
   # # this only works if we are saving records (which we are not)
   # def formatted_server_email
@@ -36,16 +37,16 @@ class AchdForm < ActiveRecord::Base
       Rails.logger.info("ACHD Form (GoogleGeocoder Error): reverse geocoding failed on smell report id=#{smell_report.id} with lat/long='#{smell_report.latitude}, #{smell_report.longitude}'; achd form not submitted")
     elsif not geo.zip.blank?
       # only send to ACHD if the zipcode is part of allegheny county
-      if AchdForm.allegheny_county_zipcodes.include?(geo.zip)
+      if AgencyForm.allegheny_county_zipcodes.include?(geo.zip)
         # construct object
-        form = AchdForm.new
+        form = AgencyForm.new
         form.smell_report = smell_report
         form.email = reply_email
         form.phone = phone_number
         form.name = name
         form.address = user_address
         # ... but do not save it
-        #form.save!
+        form.save!
 
         Rails.logger.info("------")
         Rails.logger.info("user_hash=(#{smell_report.user_hash})")

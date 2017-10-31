@@ -15,8 +15,6 @@ class ApiController < ApplicationController
   # "smell_value" : Integer *
   # "smell_description" : String
   # "feelings_symptoms" : String
-  # "horizontal_accuracy" : Double
-  # "vertical_accuracy" : Double
   # "additional_comments" : String
   #   (specific to ACHD form submission)
   # "custom_location" : Boolean
@@ -24,7 +22,7 @@ class ApiController < ApplicationController
   # "custom_time" : Boolean
   #   - Specify that the time for the report was manually entered (observed_at) and is not the current time
   # "observed_at" : DateTime (RFC3339)
-  # "submit_achd_form" : Boolean
+  # "send_form_to_agency" : Boolean
   # "email" : String [FILTERED]
   # "name" : String [FILTERED]
   # "phone_number" : String [FILTERED]
@@ -38,8 +36,6 @@ class ApiController < ApplicationController
     smell_report.smell_value = params["smell_value"].to_i unless params["smell_value"].blank?
     smell_report.smell_description = params["smell_description"] unless params["smell_description"].blank?
     smell_report.feelings_symptoms = params["feelings_symptoms"] unless params["feelings_symptoms"].blank?
-    smell_report.horizontal_accuracy = params["horizontal_accuracy"] unless params["horizontal_accuracy"].blank?
-    smell_report.vertical_accuracy = params["vertical_accuracy"] unless params["vertical_accuracy"].blank?
     smell_report.additional_comments = params["additional_comments"] unless params["additional_comments"].blank?
 
     # mark custom fields when included
@@ -48,19 +44,20 @@ class ApiController < ApplicationController
 
     # determine smell report observed at time
     # string format: %Y-%m-%dT%H:%M:%S%:z
-    smell_report.observed_at = DateTime.rfc3339(params["observed_at"]) unless params["observed_at"].blank?
+    smell_report.observed_at = DateTime.rfc3339(params["observed_at"]).to_i unless params["observed_at"].blank?
     if smell_report.custom_time == false or smell_report.observed_at.blank?
-      smell_report.observed_at = Time.now
+      smell_report.observed_at = Time.now.to_i
       smell_report.custom_time = false
     end
 
     # by default, send to achd
-    smell_report.submit_achd_form = true
+    smell_report.send_form_to_agency = true
     # override default when flag is present in API request
-    smell_report.submit_achd_form = (params["submit_achd_form"].blank? ? false : true) unless params["submit_achd_form"].nil?
+    # TODO rename this param to match new column name (submit_achd_form => send_form_to_agency)
+    smell_report.send_form_to_agency = (params["submit_achd_form"].blank? ? false : true) unless params["submit_achd_form"].nil?
     # do not send to ACHD if the smell report is outside the pgh bounding box
     # TODO we should also check against a list of valid zipcodes for ACHD submission
-    smell_report.submit_achd_form = false unless SmellReport.is_within_pittsburgh?(smell_report.latitude,smell_report.longitude)
+    smell_report.send_form_to_agency = false unless SmellReport.is_within_pittsburgh?(smell_report.latitude,smell_report.longitude)
     # request reverse geocode object
     geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{smell_report.latitude}, #{smell_report.longitude}" )
     # associate smell report with zip code
@@ -96,9 +93,7 @@ class ApiController < ApplicationController
         :smell_value => smell_report.smell_value,
         :smell_description => smell_report.smell_description,
         :feelings_symptoms => smell_report.feelings_symptoms,
-        :additional_comments => smell_report.additional_comments,
-        :horizontal_accuracy => smell_report.horizontal_accuracy,
-        :vertical_accuracy => smell_report.vertical_accuracy
+        :additional_comments => smell_report.additional_comments
       }
 
       # send push notifications for smell values at or above 3
@@ -118,7 +113,7 @@ class ApiController < ApplicationController
       end
 
       # send email
-      if smell_report.submit_achd_form
+      if smell_report.send_form_to_agency
         options = {
           "reply_email": params["email"],
           "name": params["name"],
@@ -126,7 +121,7 @@ class ApiController < ApplicationController
           "address": params["address"],
           "geo": geo
         }
-        AchdForm.submit_form(smell_report,options)
+        AgencyForm.submit_form(smell_report,options)
       end
     else
       # fail
@@ -194,7 +189,7 @@ class ApiController < ApplicationController
     end
 
     if allegheny_county_only
-      zipcodes = zipcodes & AchdForm.allegheny_county_zipcodes
+      zipcodes = zipcodes & AgencyForm.allegheny_county_zipcodes
     end
 
     # grab all smell reports
@@ -363,6 +358,138 @@ class ApiController < ApplicationController
       end
     end
     render :json => @aqi.to_json
+  end
+
+
+  def regions_index
+    render :json => Region.all.to_json(:except => [:description])
+  end
+
+
+  def regions_show
+    if Region.exists? params[:id]
+      @region = Region.find params[:id]
+      render :json => @region.to_json(:except => [:description])
+    else
+      render :json => { :error => "Region does not exist." }, :status => 404
+    end
+  end
+
+
+  def clients_index
+    render :json => Client.all.to_json(:only => [:id, :name, :created_at])
+  end
+
+
+  def regions_map_markers
+    if Region.exists? params[:id]
+      @region = Region.find params[:id]
+      render :json => @region.map_markers.map(&:to_api).to_json
+    else
+      render :json => { :error => "Region does not exist." }, :status => 404
+    end
+  end
+
+
+  def regions_zip_codes
+    if Region.exists? params[:id]
+      @region = Region.find params[:id]
+      render :json => @region.zip_codes.map(&:zip).to_json
+    else
+      render :json => { :error => "Region does not exist." }, :status => 404
+    end
+  end
+
+
+  def zip_codes
+    render :json => ZipCode.all.to_json(:only => [:id, :zip])
+  end
+
+
+  # TODO change terrible function name
+  def smell_reports_index2
+    start_time = params["start_time"]
+    end_time = params["end_time"]
+
+    client_ids = params["client_ids"].nil? ? [] : params["client_ids"].split(",").map(&:to_i)
+    region_ids = params["region_ids"].nil? ? [] : params["region_ids"].split(",").map(&:to_i)
+    smell_values = params["smell_value"].blank? ? [1,2,3,4,5] : params["smell_value"].split(",").map(&:to_i)
+    latlng_bbox = params["latlng_bbox"].blank? ? [] : params["latlng_bbox"].split(",").map(&:to_f)
+    # group_by = [zipcode|month|day]
+    group_by = params["group_by"].blank? ? "" : params["group_by"]
+    timezone_offset = params["timezone_offset"].blank? ? 0 : params["timezone_offset"].to_i
+    zipcodes = params["zipcodes"].blank? ? [] : params["zipcodes"].split(",")
+    # TODO handle format
+    format_as = params["format"] == "csv" ? "csv" : "json"
+
+    time_range = [Time.at(SmellReport.first.created_at).to_i, Time.now.to_i]
+    time_range[0] = start_time.to_i if start_time
+    time_range[1] = end_time.to_i if end_time
+
+    #
+    # 1. zip_codes/regions
+    zip_codes = zipcodes.map{|i| ZipCode.where(:zip => i).first}.delete_if(&:nil?).uniq
+    unless region_ids.empty?
+      zip_codes = (zip_codes + region_ids.map{ |i| Region.find(i) if Region.exists?(i) }.delete_if(&:nil?).map(&:zip_codes).flatten).uniq
+    end
+    results = zip_codes.empty? ? [SmellReport.all] : zip_codes.map(&:smell_reports)
+    #
+    # 2. clients
+    unless client_ids.empty?
+      results.map!{|i| i.where(:client_id => client_ids)}
+    end
+    #
+    # 3. smell_values
+    results.map!{|i| i.where(:smell_value => smell_values)}
+    #
+    # 4. time_range
+    results.map!{|i| i.where(:observed_at => time_range[0]..time_range[1])}
+    #
+    # 5. latlng_bbox
+    if latlng_bbox.size == 4
+      # this checks that lat1<lat2 and lng1<lng2
+      lat1 = (latlng_bbox[0] < latlng_bbox[2]) ? latlng_bbox[0] : latlng_bbox[2]
+      lat2 = (latlng_bbox[0] < latlng_bbox[2]) ? latlng_bbox[2] : latlng_bbox[0]
+      lng1 = (latlng_bbox[1] < latlng_bbox[3]) ? latlng_bbox[1] : latlng_bbox[3]
+      lng2 = (latlng_bbox[1] < latlng_bbox[3]) ? latlng_bbox[3] : latlng_bbox[1]
+      # we are bounding on the perturbed lat/long
+      results.map!{|i| i.where(:latitude => lat1..lat2).where(:longitude => lng1..lng2)}
+    end
+    #
+    # 6. group_by
+    # TODO make separate for grouping and aggregating (right now year/month/day are aggregate, not actually a group_by)
+    if group_by.blank?
+      results = results.flatten
+      results = results.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :observed_at, :zip_code_id])
+    else
+      if group_by == "month"
+        # results = SmellReport.aggregate_by_month(results)
+        # NOTE: this is a bit hacky. we are just adding seconds to the time object, which defaults to UTC. This will bucket the times properly (for month/day) based on timezone offset.
+        results = results.flatten.group_by{|i| Time.at(i.observed_at+timezone_offset*60).strftime("%Y-%m")}
+        results.each do |key,value|
+          results[key] = value.size
+        end
+      elsif group_by == "day"
+        # results = SmellReport.aggregate_by_day(results,timezone_offset)
+        # NOTE: (see above reference)
+        results = results.flatten.group_by{|i| Time.at(i.observed_at+timezone_offset*60).strftime("%Y-%m-%d")}
+        results.each do |key,value|
+          results[key] = value.size
+        end
+      elsif group_by == "zipcode"
+        tmp = results.flatten
+        results = {}
+        tmp_zips = tmp.map(&:zip_code_id).uniq.delete_if(&:nil?).map{|i| ZipCode.find(i)}.delete_if(&:nil?)
+        tmp_zips.each do |zip|
+          results[zip.zip] = zip.smell_reports & tmp
+        end
+        results.each do |key,value|
+          results[key] = value.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :observed_at, :zip_code_id])
+        end
+      end
+    end
+
+    render :json => results.to_json
   end
 
 end

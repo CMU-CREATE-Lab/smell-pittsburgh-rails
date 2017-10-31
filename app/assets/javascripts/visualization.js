@@ -8,10 +8,10 @@ var aqi_root_url = "http://api.smellpittsburgh.org/api/v1/get_aqi?city=";
 var map;
 var area;
 var init_latlng = {};
-var default_pittsburgh_latLng = {"lat": 40.45, "lng": -79.93};
+var default_latLng = {"lat": at_latitude, "lng": at_longitude};
 var init_date;
-var init_zoom_desktop = 12;
-var init_zoom_mobile = 11;
+var init_zoom_desktop = at_zoom+1;
+var init_zoom_mobile = at_zoom;
 
 // Smell reports variables
 var smell_reports_cache = {};
@@ -158,8 +158,8 @@ var sensors_list = [
 
 function init() {
 
-  // Listen to hash var changes
-  $(window).on('hashchange', onHashChange).trigger('hashchange');
+  // // Listen to hash var changes
+  // $(window).on('hashchange', onHashChange).trigger('hashchange');
 
   // Create the page
   initGoogleMapAndHomeButton();
@@ -208,7 +208,7 @@ function initGoogleMapAndHomeButton() {
   //default to Pittsburgh
   area = "PGH";
   if (!init_latlng.lat && !init_latlng.lng) {
-    init_latlng = default_pittsburgh_latLng;
+    init_latlng = default_latLng;
   }
   init_date = new Date(2016, 5, 4);
 
@@ -288,27 +288,8 @@ function initGoogleMapAndHomeButton() {
 }
 
 function onHashChange() {
-  var hash = window.location.hash.slice(1).split("&");
-  for (var i = 0; i < hash.length; i++) {
-    var hashVar = hash[i].split("=");
-    if (hashVar[0].indexOf("latLng") != -1) {
-      var latLng = hashVar[1].split(",");
-
-      var lat = parseFloat(latLng[0]);
-      var lng = parseFloat(latLng[1]);
-
-      // If an invalid lat/lng is passed in OR we were in the Pittsburgh bounding box, use our default Pittsburgh view.
-      if (isNaN(lat) || isNaN(lng) || (lat < 40.916992 && lat > 40.102992 && lng < -79.428193 && lng > -80.471694)) {
-        init_latlng = default_pittsburgh_latLng;
-      } else {
-        init_latlng.lat = lat;
-        init_latlng.lng = lng;
-      }
-      if (map) {
-        map.setCenter(init_latlng);
-      }
-    }
-  }
+  // // we used to handle latLng on hashchange, but since this wasn't needed we let it get handled in the rails controller
+  // var hash = window.location.hash.slice(1).split("&");
 }
 
 function styleInfoWindowCloseButton() {
