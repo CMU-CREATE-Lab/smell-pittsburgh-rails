@@ -401,6 +401,11 @@ class ApiController < ApplicationController
   end
 
 
+  def zip_codes
+    render :json => ZipCode.all.to_json(:only => [:id, :zip])
+  end
+
+
   # TODO change terrible function name
   def smell_reports_index2
     start_time = params["start_time"]
