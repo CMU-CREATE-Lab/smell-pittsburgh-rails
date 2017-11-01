@@ -203,24 +203,44 @@
   background-image: url("/img/smell_5.png");
 }
 
-.sensor-color-1 {
-  background-image: url("/img/sensor_1_legend.png");
+.PM25-color-1 {
+  background-image: url("/img/PM25_1_legend.png");
 }
 
-.sensor-color-2 {
-  background-image: url("/img/sensor_2_legend.png");
+.PM25-color-2 {
+  background-image: url("/img/PM25_2_legend.png");
 }
 
-.sensor-color-3 {
-  background-image: url("/img/sensor_3_legend.png");
+.PM25-color-3 {
+  background-image: url("/img/PM25_3_legend.png");
 }
 
-.sensor-color-4 {
-  background-image: url("/img/sensor_4_legend.png");
+.PM25-color-4 {
+  background-image: url("/img/PM25_4_legend.png");
 }
 
-.sensor-color-5 {
-  background-image: url("/img/sensor_5_legend.png");
+.PM25-color-5 {
+  background-image: url("/img/PM25_5_legend.png");
+}
+
+.voc-color-1 {
+  background-image: url("/img/voc_1.png");
+}
+
+.voc-color-2 {
+  background-image: url("/img/voc_2.png");
+}
+
+.voc-color-3 {
+  background-image: url("/img/voc_3.png");
+}
+
+.voc-color-4 {
+  background-image: url("/img/voc_4.png");
+}
+
+.voc-color-5 {
+  background-image: url("/img/voc_5.png");
 }
 
 .wind-arrow {
@@ -365,7 +385,7 @@
 
 .custom-dialog .ui-dialog-buttonpane {
   border-width: 0 !important;
-  padding-top: 0px !important;
+  padding-top: 0 !important;
 }
 
 .ui-widget-overlay {
@@ -375,5 +395,32 @@
 }
 
 .selected-td-btn {
-  box-shadow: 0px 0px 0px 6px #4d90fe inset;
+  box-shadow: 0 0 0 6px #4d90fe inset;
 }
+
+.voc-legend-row {
+  display: none;
+}
+
+.animation-infobox {
+  box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.4);
+  font-family: 'Open Sans', Helvetica, Arial, sans-serif;
+  border-radius: 2px;
+  text-align: left;
+  font-size: 11px;
+  width: 250px;
+  padding: 5px 8px 5px 8px;
+  background-color: #ffffff;
+}
+
+/*.animation-infobox:after {
+  content: " ";
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #fff;
+  position: absolute;
+  bottom: -8px;
+  left: 92px;
+}*/

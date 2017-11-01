@@ -30,6 +30,7 @@
   <%= javascript_include_tag "visualization" %>
   <%= javascript_include_tag "FlatBlockChart" %>
   <%= javascript_include_tag "CustomMapMarker" %>
+  <%= javascript_include_tag "infobox" %>
 <% end %>
 
 <% content_for :body do %>
@@ -53,11 +54,19 @@
         </tr>
         <tr>
           <td class="entry-title">PM<sub>2.5</sub></td>
-          <td class="smell-color-td sensor-color-1"></td>
-          <td class="smell-color-td sensor-color-2"></td>
-          <td class="smell-color-td sensor-color-3"></td>
-          <td class="smell-color-td sensor-color-4"></td>
-          <td class="smell-color-td sensor-color-5"></td>
+          <td class="smell-color-td PM25-color-1"></td>
+          <td class="smell-color-td PM25-color-2"></td>
+          <td class="smell-color-td PM25-color-3"></td>
+          <td class="smell-color-td PM25-color-4"></td>
+          <td class="smell-color-td PM25-color-5"></td>
+        </tr>
+        <tr class="voc-legend-row">
+          <td class="entry-title">VOC</td>
+          <td class="smell-color-td voc-color-1"></td>
+          <td class="smell-color-td voc-color-2"></td>
+          <td class="smell-color-td voc-color-3"></td>
+          <td class="smell-color-td voc-color-4"></td>
+          <td class="smell-color-td voc-color-5"></td>
         </tr>
         <tr>
           <td class="entry-title">Wind</td>

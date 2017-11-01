@@ -1,10 +1,5 @@
 /*************************************************************************
- * This library is developed by Yen-Chia Hsu
- * Copyright Yen-Chia Hsu. All rights reserved.
- * GitHub: https://github.com/yenchiah/eda-viz-js
- * Dependencies: jQuery (http://jquery.com/)
- * Contact: hsu.yenchia@gmail.com
- * License: GNU General Public License v2
+ * GitHub: https://github.com/yenchiah/flat-block-chart
  * Version: v1.0
  *************************************************************************/
 

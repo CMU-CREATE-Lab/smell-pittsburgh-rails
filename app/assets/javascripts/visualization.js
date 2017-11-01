@@ -1,5 +1,9 @@
 "use strict";
 
+// Staging testing features
+var animate_smell_text = true; // This is for animating smell descriptions
+var show_voc_sensors = true; // This is for showing VOC sensors on the map
+
 // URL variables
 var api_url = "/api/v1/smell_reports?";
 var aqi_root_url = "http://api.smellpittsburgh.org/api/v1/get_aqi?city=";
@@ -40,7 +44,8 @@ var timeline_jump_index = [];
 
 // Sensor variables
 var sensors_cache = {};
-var infowindow_sensor;
+var infowindow_PM25;
+var infowindow_VOC;
 var sensors_list = [
   {
     name: "County AQ Monitor - Liberty",
@@ -97,18 +102,27 @@ var sensors_list = [
         sources: [{
           feed: 43,
           channel: "SONICWS_MPH"
+        }, {
+          feed: 11067,
+          channel: "SONICWD_DEG"
         }]
       },
       wind_direction: {
         sources: [{
           feed: 43,
           channel: "SONICWD_DEG"
+        }, {
+          feed: 11067,
+          channel: "SONICWD_DEG"
         }]
       },
       PM25: {
         sources: [{
-          feed: 5975,
-          channel: "PM2_5"
+          feed: 43,
+          channel: "PM25T_UG_M3"
+        }, {
+          feed: 11067,
+          channel: "PM25T_UG_M3"
         }]
       }
     },
@@ -157,6 +171,62 @@ var sensors_list = [
 ];
 
 function init() {
+  // Check if enabling staging features or not
+  if (show_voc_sensors) {
+    $(".voc-legend-row").show();
+    sensors_list.push({
+      name: "Lloyd Ave at Chestnut St Outdoors AWAIR",
+      sensors: {
+        VOC: {
+          sources: [{
+            feed: 11079,
+            channel: "voc"
+          }]
+        }
+      },
+      latitude: 40.427418,
+      longitude: -79.882734
+    });
+    sensors_list.push({
+      name: "Dawson St at Frazier St AWAIR",
+      sensors: {
+        VOC: {
+          sources: [{
+            feed: 7715,
+            channel: "voc"
+          }]
+        }
+      },
+      latitude: 40.429782,
+      longitude: -79.954246
+    });
+    sensors_list.push({
+      name: "Ludwick St at Landview Rd AWAIR",
+      sensors: {
+        VOC: {
+          sources: [{
+            feed: 7713,
+            channel: "voc"
+          }]
+        }
+      },
+      latitude: 40.421608,
+      longitude: -79.925038
+    });
+    sensors_list.push({
+      name: "Monroe Ave at Upston St AWAIR",
+      sensors: {
+        VOC: {
+          sources: [{
+            feed: 7768,
+            channel: "voc"
+          }]
+        }
+      },
+      latitude: 40.344799,
+      longitude: -79.875582
+    });
+  }
 
   // // Listen to hash var changes
   // $(window).on('hashchange', onHashChange).trigger('hashchange');
@@ -250,8 +320,12 @@ function initGoogleMapAndHomeButton() {
     pixelOffset: new google.maps.Size(-1, 0),
     maxWidth: 250
   });
-  infowindow_sensor = new google.maps.InfoWindow({
+  infowindow_PM25 = new google.maps.InfoWindow({
     pixelOffset: new google.maps.Size(0, 37),
+    maxWidth: 250
+  });
+  infowindow_VOC = new google.maps.InfoWindow({
+    pixelOffset: new google.maps.Size(0, 0),
     maxWidth: 250
   });
 
@@ -259,7 +333,10 @@ function initGoogleMapAndHomeButton() {
   infowindow_smell.addListener("domready", function () {
     styleInfoWindowCloseButton();
   });
-  infowindow_sensor.addListener("domready", function () {
+  infowindow_PM25.addListener("domready", function () {
+    styleInfoWindowCloseButton();
+  });
+  infowindow_VOC.addListener("domready", function () {
     styleInfoWindowCloseButton();
   });
 
@@ -457,7 +534,10 @@ function createAndShowSmellMarker(data, epochtime_milisec) {
 }
 
 function handleSmellMarkerClicked(marker) {
-  infowindow_sensor.close();
+  if (isPlaying) return;
+
+  infowindow_PM25.close();
+  infowindow_VOC.close();
   infowindow_smell.setContent(marker.getContent());
   infowindow_smell.open(map, marker.getGoogleMapMarker());
 
@@ -481,25 +561,29 @@ function hideSmellMarkers(epochtime_milisec) {
 }
 
 function genSmellURL(method) {
-  var api_paras;
+  var api_paras = "";
   if (typeof method != "undefined" && method["aggregate"] == "month") {
-    api_paras = "aggregate=month";
+    api_paras += "aggregate=month";
   } else if (typeof method != "undefined" && method["aggregate"] == "day") {
     var min_smell_value = 3;
     var timezone_offset = new Date().getTimezoneOffset();
-    api_paras = "aggregate=day&min_smell_value=" + min_smell_value + "&timezone_offset=" + timezone_offset;
+    api_paras += "aggregate=day";
+    api_paras += "&min_smell_value=" + min_smell_value;
+    api_paras += "&timezone_offset=" + timezone_offset;
   } else if (typeof method != "undefined" && method["aggregate"] == "day_and_smell_value") {
     var timezone_offset = new Date().getTimezoneOffset();
-    api_paras = "aggregate=day_and_smell_value&timezone_offset=" + timezone_offset;
+    api_paras += "aggregate=day_and_smell_value";
+    api_paras += "&timezone_offset=" + timezone_offset;
   } else {
-    var date_obj = typeof method == "undefined" ? new Date() : new Date(method["epochtime_milisec"]);
     // Get only the smell reports for one day
+    var date_obj = typeof method == "undefined" ? new Date() : new Date(method["epochtime_milisec"]);
     var y = date_obj.getFullYear();
     var m = date_obj.getMonth();
     var d = date_obj.getDate();
-    var first_day_epochtime = parseInt((new Date(y, m, d).getTime()) / 1000);
-    var last_day_epochtime = first_day_epochtime + 86399;
-    api_paras = "start_time=" + first_day_epochtime + "&end_time=" + last_day_epochtime;
+    var start_time = parseInt((new Date(y, m, d).getTime()) / 1000);
+    var end_time = start_time + 86399;
+    api_paras += "start_time=" + start_time;
+    api_paras += "&end_time=" + end_time;
   }
   if (area != "PGH") {
     //specify default start time
@@ -540,7 +624,7 @@ function drawCalendar(data) {
   var month_arr = data.month;
   var today = new Date();
   $calendar.append($('<option value="' + -1 + '" data-year="' + today.getFullYear() + '" data-month="' + today.getMonth() + '">Today</option>'));
-  for (var i = 0; i < month_arr.length; i++) {
+  for (var i = month_arr.length - 1; i >= 0; i--) {
     var year = month_arr[i][0];
     var month = month_arr[i][1];
     $calendar.append($('<option value="' + i + '" data-year="' + year + '" data-month="' + month + '">' + month_names[month - 1] + ' ' + year + '</option>'));
@@ -719,7 +803,8 @@ function handleTimelineButtonClicked(epochtime_milisec) {
 
 function handleTimelineButtonSelected(epochtime_milisec) {
   infowindow_smell.close();
-  infowindow_sensor.close();
+  infowindow_PM25.close();
+  infowindow_VOC.close();
   hideSmellMarkers(current_epochtime_milisec);
   showSmellMarkers(epochtime_milisec);
   hideSensorMarkers(current_epochtime_milisec);
@@ -765,18 +850,20 @@ function loadAndCreateSensorMarkers(epochtime_milisec, info, is_current_day, i) 
   // Request urls and load all sensor data
   loadSensorData(urls, function (responses) {
     // Merge all sensor data
-    var data = formatAndMergeSensorData(responses, info)
+    var data = formatAndMergeSensorData(responses, info);
     // Roll the sensor data to fill in some missing values
-    var data_rolled = rollSensorData(data, info);
+    data = rollSensorData(data, info);
+    // For VOC sensors with faster sampling rates, we need to average data points
+    data = aggregateSensorData(data, info);
     // Create markers
-    createAndShowSensorMarker(data_rolled, epochtime_milisec, is_current_day, info, i);
-    createMarkerTableFromSensorData(data_rolled, epochtime_milisec, info, i);
+    createAndShowSensorMarker(data, epochtime_milisec, is_current_day, info, i);
+    createMarkerTableFromSensorData(data, epochtime_milisec, info, i);
   });
 }
 
 function createAndShowSensorMarker(data, epochtime_milisec, is_current_day, info, i) {
   return new CustomMapMarker({
-    "type": "sensor",
+    "type": getSensorType(info),
     "data": parseSensorMarkerData(data, is_current_day, info),
     "click": function (marker) {
       handleSensorMarkerClicked(marker);
@@ -796,13 +883,13 @@ function createAndShowSensorMarker(data, epochtime_milisec, is_current_day, info
 }
 
 function parseSensorMarkerData(data, is_current_day, info, i) {
-  // TODO: if we add voc data, need to fix the PM25_feed_id
+  var sensor_type = getSensorType(info);
   var marker_data = {
     "is_current_day": is_current_day,
     "name": info["name"],
     "latitude": info["latitude"],
     "longitude": info["longitude"],
-    "PM25_feed_id": info["sensors"]["PM25"]["sources"][0]["feed"]
+    "feed_id": info["sensors"][sensor_type]["sources"][0]["feed"]
   };
 
   if (is_current_day) {
@@ -813,14 +900,14 @@ function parseSensorMarkerData(data, is_current_day, info, i) {
     }
     var d = data["data"][i];
     if (typeof d === "undefined") return marker_data;
-    // For PM25
-    if (typeof d["PM25"] !== "undefined") {
-      if (typeof d["PM25"] === "object") {
-        marker_data["PM25_value"] = roundTo(d["PM25"]["value"], 2);
-        marker_data["PM25_data_time"] = d["PM25"]["time"] * 1000;
+    // For PM25 or VOC (these two types cannot both show up in info)
+    if (typeof d[sensor_type] !== "undefined") {
+      if (typeof d[sensor_type] === "object") {
+        marker_data["sensor_value"] = roundTo(d[sensor_type]["value"], 2);
+        marker_data["sensor_data_time"] = d[sensor_type]["time"] * 1000;
       } else {
-        marker_data["PM25_value"] = roundTo(d["PM25"], 2);
-        marker_data["PM25_data_time"] = d["time"] * 1000;
+        marker_data["sensor_value"] = roundTo(d[sensor_type], 2);
+        marker_data["sensor_data_time"] = d["time"] * 1000;
       }
     }
     // For wind direction
@@ -845,9 +932,9 @@ function parseSensorMarkerData(data, is_current_day, info, i) {
     ///////////////////////////////////////////////////////////////////////////////
     // If the selected day is not the current day, use the max
     var data_max = data["summary"]["max"];
-    if (typeof data_max["PM25"] !== "undefined") {
-      marker_data["PM25_value"] = roundTo(data_max["PM25"]["value"], 2);
-      marker_data["PM25_data_time"] = data_max["PM25"]["time"] * 1000;
+    if (typeof data_max[sensor_type] !== "undefined") {
+      marker_data["sensor_value"] = roundTo(data_max[sensor_type]["value"], 2);
+      marker_data["sensor_data_time"] = data_max[sensor_type]["time"] * 1000;
     }
   }
 
@@ -856,24 +943,33 @@ function parseSensorMarkerData(data, is_current_day, info, i) {
 
 function handleSensorMarkerClicked(marker) {
   infowindow_smell.close();
-  infowindow_sensor.setContent(marker.getContent());
-  infowindow_sensor.open(map, marker.getGoogleMapMarker());
+
+  var marker_type = marker.getMarkerType();
+  if (marker_type == "PM25") {
+    infowindow_VOC.close();
+    infowindow_PM25.setContent(marker.getContent());
+    infowindow_PM25.open(map, marker.getGoogleMapMarker());
+  } else if (marker_type == "VOC") {
+    infowindow_PM25.close();
+    infowindow_VOC.setContent(marker.getContent());
+    infowindow_VOC.open(map, marker.getGoogleMapMarker());
+  }
 
   // Add google analytics
   var marker_data = marker.getData();
-  var PM25_data_time = marker_data["PM25_data_time"];
-  if (typeof PM25_data_time != "undefined") {
-    PM25_data_time = PM25_data_time.toString();
+  var sensor_data_time = marker_data["sensor_data_time"];
+  if (typeof sensor_data_time != "undefined") {
+    sensor_data_time = sensor_data_time.toString();
   }
-  var PM25_feed_id = marker_data["PM25_feed_id"];
-  if (typeof PM25_feed_id != "undefined") {
-    PM25_feed_id = PM25_feed_id.toString();
+  var feed_id = marker_data["feed_id"];
+  if (typeof feed_id != "undefined") {
+    feed_id = feed_id.toString();
   }
-  var PM25_value = marker_data["PM25_value"];
+  var sensor_value = marker_data["sensor_value"];
   var label = {
-    "dimension5": PM25_data_time,
-    "dimension6": PM25_feed_id,
-    "metric2": PM25_value
+    "dimension5": sensor_data_time,
+    "dimension6": feed_id,
+    "metric2": sensor_value
   };
   addGoogleAnalyticEvent("sensor", "click", label);
 }
@@ -886,19 +982,29 @@ function createMarkerTableFromSensorData(data, epochtime_milisec, info, i) {
   sensors_cache[epochtime_milisec]["marker_table"][i] = [];
   for (var j = 0; j < data["data"].length; j++) {
     var marker_data = parseSensorMarkerData(data, true, info, j);
-    createSensorMarkerForAnimation(marker_data, epochtime_milisec, i, j);
+    createSensorMarkerForAnimation(marker_data, epochtime_milisec, info, i, j);
   }
 }
 
-function createSensorMarkerForAnimation(marker_data, epochtime_milisec, i, j) {
+function createSensorMarkerForAnimation(marker_data, epochtime_milisec, info, i, j) {
   return new CustomMapMarker({
-    "type": "sensor",
+    "type": getSensorType(info),
     "data": marker_data,
     "complete": function (marker) {
       // Cache markers
       sensors_cache[epochtime_milisec]["marker_table"][i][j] = marker;
     }
   });
+}
+
+function getSensorType(info) {
+  var sensor_type;
+  if (Object.keys(info["sensors"]).indexOf("PM25") > -1) {
+    sensor_type = "PM25";
+  } else if (Object.keys(info["sensors"]).indexOf("VOC") > -1) {
+    sensor_type = "VOC";
+  }
+  return sensor_type;
 }
 
 function showOrHideAQI(is_current_day) {
@@ -1025,13 +1131,13 @@ function formatAndMergeSensorData(responses, info, method) {
   // Also find the latest one and the max
   // (one sensor can have data from different channels)
   ////////////////////////////////////////////////////////////////
-  var sensors_to_channels = {}
+  var sensors_to_channels = {};
   for (var sensor_name in info["sensors"]) {
     var s = info["sensors"][sensor_name];
     // Get the unique set of channel names
     var channel_names = [];
     for (var i = 0; i < s["sources"].length; i++) {
-      channel_names.push(s["sources"][i]["channel"])
+      channel_names.push(s["sources"][i]["channel"]);
     }
     if (channel_names.length > 1) {
       channel_names = Array.from(new Set(channel_names));
@@ -1082,7 +1188,7 @@ function rollSensorData(data, info) {
 
   // Fill in missing values
   var cache = {}; // cache previous observations
-  var threshold = 7200; // two hours to look back
+  var threshold = 3600; // one hour to look back
   for (var i = 0; i < data["data"].length; i++) {
     var d = data["data"][i];
     for (var name in info["sensors"]) {
@@ -1109,6 +1215,45 @@ function rollSensorData(data, info) {
   return data;
 }
 
+// For faster sampling rates, we need to aggregate data points
+function aggregateSensorData(data, info) {
+  var sensor_type = getSensorType(info);
+  if (sensor_type == "PM25") {
+    return data;
+  }
+  if (data["data"].length <= 1) {
+    return data;
+  }
+
+  var data_cp = $.extend({}, data); // copy object
+  data_cp["data"] = [];
+  var L = data["data"].length;
+  var current_time = data["data"][L - 1]["time"];
+  var current_sum = data["data"][L - 1][sensor_type];
+  var current_counter = 1;
+  var threshold = 1800; // average previous 30 minutes of data
+  for (var i = L - 2; i >= 0; i--) {
+    var time = data["data"][i]["time"];
+    var value = data["data"][i][sensor_type];
+    if (current_time - time < threshold) {
+      current_sum += value;
+      current_counter++;
+    } else {
+      var pt = {"time": current_time};
+      pt[sensor_type] = roundTo(current_sum / current_counter, 0);
+      data_cp["data"].unshift(pt);
+      current_time = time;
+      current_sum = value;
+      current_counter = 1;
+    }
+  }
+  var pt = {"time": current_time};
+  pt[sensor_type] = roundTo(current_sum / current_counter, 0);
+  data_cp["data"].unshift(pt);
+
+  return data_cp;
+}
+
 function startAnimation(epochtime_milisec) {
   if (isPlaying) return;
   isPlaying = true;
@@ -1120,6 +1265,9 @@ function startAnimation(epochtime_milisec) {
   if (animate_interval != null || (smell_markers.length == 0 && marker_table[0].length == 0)) return;
 
   // Handle UI
+  infowindow_smell.close();
+  infowindow_VOC.close();
+  infowindow_PM25.close();
   if ($playback_button.hasClass("ui-icon-custom-play")) {
     $playback_button.removeClass("ui-icon-custom-play");
     $playback_button.addClass("ui-icon-custom-pause");
@@ -1164,7 +1312,38 @@ function startAnimation(epochtime_milisec) {
           var smell_m_data = smell_m.getData();
           var smell_epochtime_milisec = smell_m_data["created_at"] * 1000;
           if (smell_epochtime_milisec <= (current_epochtime_milisec + elapsed_milisec)) {
+            // Animate smell reports
             smell_m.setMap(map);
+            // Animate info window of smell descriptions
+            if (animate_smell_text) {
+              if (smell_m_data["smell_value"] >= 3) {
+                var msg = "";
+                if (smell_m_data["smell_description"] != null) {
+                  msg += smell_m_data["smell_description"];
+                }
+                if (smell_m_data["feelings_symptoms"] != null) {
+                  if (msg != "") msg += " / ";
+                  msg += smell_m_data["feelings_symptoms"];
+                }
+                if (msg != "" && msg.length > 60) {
+                  var infobox = new InfoBox({
+                    pixelOffset: new google.maps.Size(-131, -13),
+                    disableAutoPan: true,
+                    alignBottom: true,
+                    closeBoxURL: "",
+                    pane: "floatPane",
+                    zIndex: 10,
+                    boxClass: "animation-infobox",
+                    boxStyle: {
+                      opacity: 3.2
+                    }
+                  });
+                  infobox.setContent(msg);
+                  infobox.open(map, smell_m.getGoogleMapMarker());
+                  fadeInfoBox(infobox);
+                }
+              }
+            }
             // TODO: need to use a queue that contains the markers that need to be faded
             // TODO: store the remaining time in the queue and check the time at the beginning
             // TODO: if the remaining time is less than zero, fade the marker
@@ -1183,8 +1362,8 @@ function startAnimation(epochtime_milisec) {
           var sensor_m = sensor_markers[sensor_idx];
           var sensor_m_data = sensor_m.getData();
           var sensor_epochtime_milisec;
-          if (typeof sensor_m_data["PM25_data_time"] != "undefined") {
-            sensor_epochtime_milisec = sensor_m_data["PM25_data_time"];
+          if (typeof sensor_m_data["sensor_data_time"] != "undefined") {
+            sensor_epochtime_milisec = sensor_m_data["sensor_data_time"];
           } else {
             sensor_epochtime_milisec = sensor_m_data["wind_data_time"];
           }
@@ -1311,6 +1490,25 @@ function fadeMarker(marker, time) {
       marker.setOpacity(0.5);
     }
   }, time);
+}
+
+function fadeInfoBox(infobox) {
+  setTimeout(function () {
+    if (!isPlaying) {
+      infobox.setVisible(false);
+      infobox.close();
+      return;
+    }
+    var opacity = infobox["boxStyle_"]["opacity"];
+    if (opacity > 0) {
+      opacity -= 0.05;
+      infobox.setOptions({boxStyle: {opacity: opacity}});
+      fadeInfoBox(infobox);
+    } else {
+      infobox.setVisible(false);
+      infobox.close();
+    }
+  }, 50);
 }
 
 $(function () {

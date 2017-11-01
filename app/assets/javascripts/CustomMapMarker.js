@@ -46,8 +46,10 @@
     function init() {
       if (marker_type == "smell") {
         createSmellMarker();
-      } else if (marker_type == "sensor") {
-        createSensorMarker();
+      } else if (marker_type == "PM25") {
+        createPM25Marker();
+      } else if (marker_type == "VOC") {
+        createVOCMarker();
       }
     }
 
@@ -120,24 +122,25 @@
       return path + smell_icon;
     }
 
-    function createSensorMarker() {
-      var no_data_txt = "No data in last two hours";
-      var PM25_value = data["PM25_value"];
-      var PM25_data_time = data["PM25_data_time"];
-      var PM25_time_txt = "";
+    function createPM25Marker() {
+      // TODO: no_data_txt should be different for current day and previous day cases
+      var no_data_txt = "No data in last hour";
+      var sensor_value = data["sensor_value"];
+      var sensor_data_time = data["sensor_data_time"];
+      var sensor_time_txt = "";
       var wind_speed = data["wind_speed"];
-      var has_PM25 = !(isNaN(PM25_value) || PM25_value < 0);
-      var PM25_txt = has_PM25 ? PM25_value + " &mu;g/m<sup>3</sup>" : no_data_txt;
-      if (typeof PM25_data_time !== "undefined" && has_PM25) {
-        var PM25_time = new Date(PM25_data_time);
-        PM25_time_txt = " at time " + padTimeString(PM25_time.getHours() + 1) + ":" + padTimeString(PM25_time.getMinutes() + 1);
+      var has_sensor = !(isNaN(sensor_value) || sensor_value < 0);
+      var sensor_txt = has_sensor ? sensor_value + " &mu;g/m<sup>3</sup>" : no_data_txt;
+      if (typeof sensor_data_time !== "undefined" && has_sensor) {
+        var sensor_time = new Date(sensor_data_time);
+        sensor_time_txt = " at time " + padTimeString(sensor_time.getHours() + 1) + ":" + padTimeString(sensor_time.getMinutes() + 1);
       }
 
       // Create HTML content for the info window
       html_content = "";
       html_content += "<b>Name:</b> " + data["name"] + "<br>";
       if (data["is_current_day"]) {
-        html_content += "<b>Latest PM<sub>2.5</sub>:</b> " + PM25_txt + PM25_time_txt + "<br>";
+        html_content += "<b>Latest PM<sub>2.5</sub>:</b> " + sensor_txt + sensor_time_txt + "<br>";
         if (typeof wind_speed !== "undefined") {
           var wind_txt = (isNaN(wind_speed) || wind_speed < 0) ? no_data_txt : wind_speed + " MPH";
           var wind_time = new Date(data["wind_data_time"]);
@@ -145,10 +148,10 @@
           html_content += '<b>Latest Wind Speed:</b> ' + wind_txt + wind_time_txt;
         }
       } else {
-        html_content += "<b>Maximum PM<sub>2.5</sub>:</b> " + PM25_txt + PM25_time_txt;
+        html_content += "<b>Maximum PM<sub>2.5</sub>:</b> " + sensor_txt + sensor_time_txt;
       }
 
-      var sensor_icon_idx = sensorValToIconIndex(PM25_value);
+      var sensor_icon_idx = sensorValToIconIndex(sensor_value);
       var wind_direction = data["wind_direction"];
       var image = new Image();
 
@@ -156,8 +159,8 @@
       image.addEventListener("load", function () {
         google_map_marker = new google.maps.Marker({
           position: new google.maps.LatLng({lat: data["latitude"], lng: data["longitude"]}),
-          icon: generateSensorIcon(image, wind_direction),
-          zIndex: sensor_icon_idx,
+          icon: generatePM25SensorIcon(image, wind_direction),
+          zIndex: sensor_icon_idx + 5,
           opacity: marker_default_opacity,
           shape: {coords: [50, 50, 12.5], type: "circle"} // Modify click region
         });
@@ -167,10 +170,10 @@
           complete_event_callback(this_obj);
         }
       });
-      image.src = getSensorIconURL(sensor_icon_idx, (typeof wind_direction != "undefined"));
+      image.src = getPM25SensorIconURL(sensor_icon_idx, (typeof wind_direction != "undefined"));
     }
 
-    function generateSensorIcon(image, wind_direction) {
+    function generatePM25SensorIcon(image, wind_direction) {
       var icon_size = 100;
       var icon_size_half = 50;
 
@@ -179,7 +182,7 @@
         // The direction given by ACHD is the direction _from_ which the wind is coming.
         // We reverse it to show where the wind is going to. (+180)
         // Also, the arrow we start with is already rotated 90 degrees, so we need to account for this. (-90)
-        // This means we add 90 to the sensor wind direction value for the correct angle of the wind arrow.
+        // This means we add 90 to the wind direction value for the correct angle of the wind arrow.
         rotation_degree = wind_direction + 90;
       } else {
         rotation_degree = 0;
@@ -194,16 +197,24 @@
       };
     }
 
-    function getSensorIconURL(sensor_icon_idx, has_wind) {
+    function getPM25SensorIconURL(sensor_icon_idx, has_wind) {
       var path = "/img/";
-      var sensor_icon_all = ["sensor_0.png", "sensor_1.png", "sensor_2.png", "sensor_3.png", "sensor_4.png", "sensor_5.png"];
-      var sensor_icon_wind_all = ["sensor_0_wind.png", "sensor_1_wind.png", "sensor_2_wind.png", "sensor_3_wind.png", "sensor_4_wind.png", "sensor_5_wind.png"];
+      var sensor_icon_all = ["PM25_0.png", "PM25_1.png", "PM25_2.png", "PM25_3.png", "PM25_4.png", "PM25_5.png"];
+      var sensor_icon_wind_all = ["PM25_0_wind.png", "PM25_1_wind.png", "PM25_2_wind.png", "PM25_3_wind.png", "PM25_4_wind.png", "PM25_5_wind.png"];
       var sensor_icon = has_wind ? sensor_icon_wind_all[sensor_icon_idx] : sensor_icon_all[sensor_icon_idx];
       return path + sensor_icon;
     }
 
     function sensorValToIconIndex(sensor_value) {
-      var scale = [12, 35.4, 55.4, 150.4];
+      var scale;
+      if (marker_type == "PM25") {
+        scale = [12, 35.4, 55.4, 150.4];
+      } else if (marker_type == "VOC") {
+        scale = [400, 600, 800, 1000];
+      } else {
+        return null;
+      }
+
       if (isNaN(sensor_value) || sensor_value < 0) {
         return 0;
       } else if (sensor_value >= 0 && sensor_value <= scale[0]) {
@@ -239,6 +250,64 @@
       ctx.drawImage(image, 0, 0);
       ctx.restore();
       return canvas.toDataURL('image/png');
+    }
+
+    function createVOCMarker() {
+      // TODO: no_data_txt should be different for current day and previous day cases
+      var no_data_txt = "No data in last hour";
+      var sensor_value = data["sensor_value"];
+      var sensor_data_time = data["sensor_data_time"];
+      var sensor_time_txt = "";
+      var has_sensor = !(isNaN(sensor_value) || sensor_value < 0);
+      var sensor_txt = has_sensor ? sensor_value + " ppb" : no_data_txt;
+      if (typeof sensor_data_time !== "undefined" && has_sensor) {
+        var sensor_time = new Date(sensor_data_time);
+        sensor_time_txt = " at time " + padTimeString(sensor_time.getHours() + 1) + ":" + padTimeString(sensor_time.getMinutes() + 1);
+      }
+
+      // Create HTML content for the info window
+      html_content = "";
+      html_content += "<b>Name:</b> " + data["name"] + "<br>";
+      if (data["is_current_day"]) {
+        html_content += "<b>Latest VOC:</b> " + sensor_txt + sensor_time_txt;
+      } else {
+        html_content += "<b>Maximum VOC:</b> " + sensor_txt + sensor_time_txt;
+      }
+
+      var sensor_icon_idx = sensorValToIconIndex(sensor_value);
+
+      // Create google map marker
+      google_map_marker = new google.maps.Marker({
+        position: new google.maps.LatLng({lat: data["latitude"], lng: data["longitude"]}),
+        icon: generateVOCSensorIcon(sensor_icon_idx, 24),
+        zIndex: sensor_icon_idx + 5,
+        opacity: marker_default_opacity
+      });
+      addMarkerEvent();
+
+      // Fire complete event
+      if (typeof (complete_event_callback) == "function") {
+        complete_event_callback(this_obj);
+      }
+    }
+
+    function generateVOCSensorIcon(sensor_icon_idx, icon_size) {
+      var icon_size_half = icon_size / 2;
+
+      return {
+        url: getVOCSensorIconURL(sensor_icon_idx),
+        scaledSize: new google.maps.Size(icon_size, icon_size),
+        size: new google.maps.Size(icon_size, icon_size),
+        anchor: new google.maps.Point(icon_size_half, icon_size_half),
+        origin: new google.maps.Point(0, 0)
+      };
+    }
+
+    function getVOCSensorIconURL(sensor_icon_idx) {
+      var path = "/img/";
+      var sensor_icon_all = ["voc_0.png", "voc_1.png", "voc_2.png", "voc_3.png", "voc_4.png", "voc_5.png"];
+      var sensor_icon = sensor_icon_all[sensor_icon_idx];
+      return path + sensor_icon;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -292,6 +361,11 @@
       return google_map_marker;
     };
     this.getGoogleMapMarker = getGoogleMapMarker;
+
+    var getMarkerType = function () {
+      return marker_type;
+    };
+    this.getMarkerType = getMarkerType;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
