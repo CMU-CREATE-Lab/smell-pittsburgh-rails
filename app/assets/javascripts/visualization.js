@@ -760,7 +760,8 @@ function drawTimeline(data) {
     } else {
       date_ii = new Date();
     }
-    var diff_days = Math.floor(date_ii.getTime() - date_i.getTime()) / 86400000;
+    // when checking for gaps in time, subtract timezone offset
+    var diff_days = Math.floor((date_ii.getTime() - date_ii.getTimezoneOffset()*60000) - (date_i.getTime() - date_i.getTimezoneOffset()*60000)) / 86400000;
     if (diff_days > 1) {
       var date_i_time = date_i.getTime();
       for (var j = 1; j < diff_days; j++) {
