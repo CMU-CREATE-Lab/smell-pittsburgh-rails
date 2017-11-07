@@ -15,6 +15,7 @@ class VisualizationController < ApplicationController
       # request reverse geocode object
       geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{@latitude}, #{@longitude}" )
       @zipcode = geo.zip
+      @regions = []
       unless @zipcode.blank?
         zip_code = ZipCode.find_or_create_by(zip: @zipcode)
         @regions = zip_code.regions
