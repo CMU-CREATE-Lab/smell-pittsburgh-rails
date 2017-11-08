@@ -417,6 +417,7 @@ class ApiController < ApplicationController
     latlng_bbox = params["latlng_bbox"].blank? ? [] : params["latlng_bbox"].split(",").map(&:to_f)
     # group_by = [zipcode|month|day]
     group_by = params["group_by"].blank? ? "" : params["group_by"]
+    aggregate = (params["aggregate"] == "true")
     timezone_offset = params["timezone_offset"].blank? ? 0 : params["timezone_offset"].to_i
     zipcodes = params["zipcodes"].blank? ? [] : params["zipcodes"].split(",")
     # TODO handle format
@@ -456,8 +457,7 @@ class ApiController < ApplicationController
       results.map!{|i| i.where(:latitude => lat1..lat2).where(:longitude => lng1..lng2)}
     end
     #
-    # 6. group_by
-    # TODO make separate for grouping and aggregating (right now year/month/day are aggregate, not actually a group_by)
+    # 6. group_by and aggregate
     if group_by.blank?
       results = results.flatten
       results = results.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :observed_at, :zip_code_id])
@@ -466,16 +466,10 @@ class ApiController < ApplicationController
         # results = SmellReport.aggregate_by_month(results)
         # NOTE: this is a bit hacky. we are just adding seconds to the time object, which defaults to UTC. This will bucket the times properly (for month/day) based on timezone offset.
         results = results.flatten.group_by{|i| Time.at(i.observed_at+timezone_offset*60).strftime("%Y-%m")}
-        results.each do |key,value|
-          results[key] = value.size
-        end
       elsif group_by == "day"
         # results = SmellReport.aggregate_by_day(results,timezone_offset)
         # NOTE: (see above reference)
         results = results.flatten.group_by{|i| Time.at(i.observed_at+timezone_offset*60).strftime("%Y-%m-%d")}
-        results.each do |key,value|
-          results[key] = value.size
-        end
       elsif group_by == "zipcode"
         tmp = results.flatten
         results = {}
@@ -483,8 +477,15 @@ class ApiController < ApplicationController
         tmp_zips.each do |zip|
           results[zip.zip] = zip.smell_reports & tmp
         end
+        unless aggregate
+          results.each do |key,value|
+            results[key] = value.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :observed_at, :zip_code_id])
+          end
+        end
+      end
+      if aggregate
         results.each do |key,value|
-          results[key] = value.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :observed_at, :zip_code_id])
+          results[key] = value.size
         end
       end
     end

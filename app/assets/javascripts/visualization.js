@@ -6,6 +6,7 @@ var show_voc_sensors = true; // This is for showing VOC sensors on the map
 
 // URL variables
 var api_url = "/api/v1/smell_reports?";
+var api_url_v2 = "/api/v2/smell_reports?";
 var aqi_root_url = "http://api.smellpittsburgh.org/api/v1/get_aqi?city=";
 
 // Google map variables
@@ -453,10 +454,11 @@ function initAnimationUI() {
 }
 
 function loadAndDrawCalendar() {
+  // TODO make call to api v2, and format data with formatDataForTimeline()
   $.ajax({
-    "url": genSmellURL({"aggregate": "month"}),
+    "url": genSmellURLv2({"aggregate": "month"}),
     "success": function (data) {
-      drawCalendar(data);
+      drawCalendar(formatDataForCalendar(data));
     },
     "error": function (response) {
       console.log("server error:", response);
@@ -465,11 +467,12 @@ function loadAndDrawCalendar() {
 }
 
 function loadAndDrawTimeline() {
+  // TODO make call to api v2, and format data with formatDataForTimeline()
   $.ajax({
-    "url": genSmellURL({"aggregate": "day"}),
+    "url": genSmellURLv2({"aggregate": "day"}),
     //"url": genSmellURL({"aggregate": "day_and_smell_value"}), // this is used for colored timeline
     "success": function (data) {
-      drawTimeline(data);
+      drawTimeline(formatDataForTimeline(data));
       //drawTimelineWithColor(data); // this is used for colored timeline
       timeline.selectLastBlock();
     },
@@ -593,6 +596,17 @@ function genSmellURL(method) {
   return root_url + api_url + api_paras;
 }
 
+function genSmellURLv2(parameters) {
+  var api_paras = "";
+  // TODO generate URL for v2 api calls
+
+  // ...
+
+  // var root_url = window.location.origin;
+  // return root_url + api_url_v2 + api_paras;
+  return genSmellURL(parameters);
+}
+
 function histSmellReport(r) {
   if (r.length == 0) {
     return [];
@@ -618,6 +632,11 @@ function histSmellReport(r) {
     histogram[idx]["data"].push(r[i]);
   }
   return histogram;
+}
+
+function formatDataForCalendar(data) {
+  // TODO convert v2 results to look like v1 results (to pass into drawCalendar function)
+  return data;
 }
 
 function drawCalendar(data) {
@@ -719,6 +738,11 @@ function drawTimelineWithColor(data) {
   // Add horizontal scrolling to the timeline
   // Needed because Android <= 4.4 won't scroll without this
   addTouchHorizontalScroll($("#timeline-container"));
+}
+
+function formatDataForTimeline(data) {
+  // TODO convert v2 results to look like v1 results (to pass into drawTimeline function)
+  return data;
 }
 
 function drawTimeline(data) {
