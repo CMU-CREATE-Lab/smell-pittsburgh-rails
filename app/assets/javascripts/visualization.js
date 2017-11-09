@@ -6,7 +6,7 @@ var show_voc_sensors = true; // This is for showing VOC sensors on the map
 
 // URL variables
 var api_url = "/api/v1/smell_reports?";
-var api_url_v2 = "/api/v2/smell_reports?";
+var api_url_v2 = "/api/v2/smell_reports";
 var aqi_root_url = "http://api.smellpittsburgh.org/api/v1/get_aqi?city=";
 
 // Google map variables
@@ -454,9 +454,8 @@ function initAnimationUI() {
 }
 
 function loadAndDrawCalendar() {
-  // TODO make call to api v2, and format data with formatDataForTimeline()
   $.ajax({
-    "url": genSmellURLv2({"aggregate": "month"}),
+    "url": genSmellURLv2({"group_by": "month", "aggregate": "true"}),
     "success": function (data) {
       drawCalendar(formatDataForCalendar(data));
     },
@@ -467,9 +466,9 @@ function loadAndDrawCalendar() {
 }
 
 function loadAndDrawTimeline() {
-  // TODO make call to api v2, and format data with formatDataForTimeline()
+  // TODO this needs to make 5 separate calls (one for each smell value) then format as v1
   $.ajax({
-    "url": genSmellURLv2({"aggregate": "day"}),
+    "url": genSmellURL({"aggregate": "day"}),
     //"url": genSmellURL({"aggregate": "day_and_smell_value"}), // this is used for colored timeline
     "success": function (data) {
       drawTimeline(formatDataForTimeline(data));
@@ -598,13 +597,22 @@ function genSmellURL(method) {
 
 function genSmellURLv2(parameters) {
   var api_paras = "";
-  // TODO generate URL for v2 api calls
+  var parameter_list = [];
 
-  // ...
+  if (typeof parameters == "object") {
+    var list = Object.keys(parameters);
+    list.forEach(function(i) {
+      parameter_list.push(encodeURIComponent(i)+"="+encodeURIComponent(parameters[i]));
+    });
+    if (parameter_list.length > 0) {
+      api_paras += "?"+parameter_list.join("&");
+    }
+  } else {
+    console.log("parameters is not an object");
+  }
 
-  // var root_url = window.location.origin;
-  // return root_url + api_url_v2 + api_paras;
-  return genSmellURL(parameters);
+  var root_url = window.location.origin;
+  return root_url + api_url_v2 + api_paras;
 }
 
 function histSmellReport(r) {
@@ -635,8 +643,17 @@ function histSmellReport(r) {
 }
 
 function formatDataForCalendar(data) {
-  // TODO convert v2 results to look like v1 results (to pass into drawCalendar function)
-  return data;
+  // converts v2 results to look like v1 results (to pass into drawCalendar function)
+  var month = [];
+  var count = [];
+  var list = Object.keys(data).sort();
+  list.forEach(function(key) {
+    // key, value
+    var value = data[key];
+    month.push(key.split("-").map(function(i){return parseInt(i);}));
+    count.push(parseInt(value));
+  });
+  return {"month": month, "count": count};
 }
 
 function drawCalendar(data) {
