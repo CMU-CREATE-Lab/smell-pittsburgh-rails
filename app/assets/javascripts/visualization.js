@@ -455,7 +455,7 @@ function initAnimationUI() {
 
 function loadAndDrawCalendar() {
   $.ajax({
-    "url": genSmellURLv2({"group_by": "month", "aggregate": "true"}),
+    "url": genSmellURLv2({"client_id": "1", "group_by": "month", "aggregate": "true"}),
     "success": function (data) {
       drawCalendar(formatDataForCalendar(data));
     },
@@ -465,14 +465,41 @@ function loadAndDrawCalendar() {
   });
 }
 
+function loadAndDrawTimelineWithColor() {
+  function requestDaily(smell_value) {
+    return $.ajax({
+      "url": genSmellURLv2({"client_id": "1", "group_by": "day","aggregate": "true", "smell_values":smell_value}),
+      // "success": function (data) {
+      //   console.log("success for " + smell_value);
+      // },
+      // "error": function (response) {
+      //   console.log("error for " + smell_value);
+      // }
+    });
+  }
+
+  $.when( requestDaily("1"),requestDaily("2"),requestDaily("3"),requestDaily("4"),requestDaily("5") ).done( function(s1,s2,s3,s4,s5) {
+    var result = {};
+    [ [s1[0],1], [s2[0],2], [s3[0],3], [s4[0],4], [s5[0],5] ].forEach(function(query) {
+      var keys = Object.keys(query[0]);
+      var values = {};
+      keys.forEach(function(key) {
+        values[key+","+query[1]] = query[0][key];
+      });
+      result = $.extend({}, result, values);
+    });
+
+    drawTimelineWithColor( formatDataForTimelineWithColor(result) );
+    timeline.selectLastBlock();
+  });
+}
+
 function loadAndDrawTimeline() {
-  // TODO this needs to make 5 separate calls (one for each smell value) then format as v1
   $.ajax({
-    "url": genSmellURL({"aggregate": "day"}),
-    //"url": genSmellURL({"aggregate": "day_and_smell_value"}), // this is used for colored timeline
+    "url": genSmellURLv2({"client_id": "1", "group_by": "day", "aggregate": "true", "smell_values": "3,4,5", "timezone_offset": new Date().getTimezoneOffset() }),
     "success": function (data) {
+      console.log(data);
       drawTimeline(formatDataForTimeline(data));
-      //drawTimelineWithColor(data); // this is used for colored timeline
       timeline.selectLastBlock();
     },
     "error": function (response) {
@@ -667,6 +694,21 @@ function drawCalendar(data) {
   }
 }
 
+function formatDataForTimelineWithColor(data) {
+  var day_and_smell_value = [];
+  var count = [];
+  var list = Object.keys(data).sort();
+  list.forEach(function(key) {
+    // key, value
+    var value = data[key];
+    var newKey = key.split(",");
+    newKey[1] = parseInt(newKey[1]);
+    day_and_smell_value.push(newKey);
+    count.push(parseInt(value));
+  });
+  return {"day_and_smell_value": day_and_smell_value, "count": count};
+}
+
 function drawTimelineWithColor(data) {
   // Compute the weighted mean of smell reports
   var day_and_smell_value = data["day_and_smell_value"];
@@ -758,8 +800,16 @@ function drawTimelineWithColor(data) {
 }
 
 function formatDataForTimeline(data) {
-  // TODO convert v2 results to look like v1 results (to pass into drawTimeline function)
-  return data;
+  var day = [];
+  var count = [];
+  var list = Object.keys(data).sort();
+  list.forEach(function(key) {
+    // key, value
+    var value = data[key];
+    day.push(key);
+    count.push(parseInt(value));
+  });
+  return {"day": day, "count": count};
 }
 
 function drawTimeline(data) {

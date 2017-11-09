@@ -465,11 +465,11 @@ class ApiController < ApplicationController
       if group_by == "month"
         # results = SmellReport.aggregate_by_month(results)
         # NOTE: this is a bit hacky. we are just adding seconds to the time object, which defaults to UTC. This will bucket the times properly (for month/day) based on timezone offset.
-        results = results.flatten.group_by{|i| Time.at(i.observed_at+timezone_offset*60).strftime("%Y-%m")}
+        results = results.flatten.group_by{|i| Time.at(i.observed_at-timezone_offset*60).strftime("%Y-%m")}
       elsif group_by == "day"
         # results = SmellReport.aggregate_by_day(results,timezone_offset)
         # NOTE: (see above reference)
-        results = results.flatten.group_by{|i| Time.at(i.observed_at+timezone_offset*60).strftime("%Y-%m-%d")}
+        results = results.flatten.group_by{|i| Time.at(i.observed_at-timezone_offset*60).strftime("%Y-%m-%d")}
       elsif group_by == "zipcode"
         tmp = results.flatten
         results = {}
