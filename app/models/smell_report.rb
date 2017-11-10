@@ -136,7 +136,7 @@ class SmellReport < ActiveRecord::Base
 
 
   def handle_destroy
-    AchdForm.where(:smell_report_id => self.id).each do |form|
+    AgencyForm.where(:smell_report_id => self.id).each do |form|
       form.destroy
     end
   end
