@@ -65,6 +65,7 @@ function genEsdrURL(from_time) {
   return esdr_root_url + api_url + api_paras;
 }
 
+// TODO deprecated function
 function genSmellURL(from_time) {
   var min_smell_value = 3;
   var timezone_offset = new Date().getTimezoneOffset();
@@ -72,9 +73,9 @@ function genSmellURL(from_time) {
   api_paras += "&min_smell_value=" + min_smell_value;
   api_paras += "&timezone_offset=" + timezone_offset;
   api_paras += "&start_time=" + from_time;
-  var api_url = "/api/v1/smell_reports?";
+  var deprecated_api_url = "/api/v1/smell_reports?";
   var root_url = window.location.origin;
-  return root_url + api_url + api_paras;
+  return root_url + deprecated_api_url + api_paras;
 }
 
 function genSmellURLv2(from_time) {

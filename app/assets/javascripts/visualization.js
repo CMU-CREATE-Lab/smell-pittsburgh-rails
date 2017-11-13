@@ -5,7 +5,7 @@ var animate_smell_text = true; // This is for animating smell descriptions
 var show_voc_sensors = true; // This is for showing VOC sensors on the map
 
 // URL variables
-var api_url = "/api/v1/smell_reports?";
+var deprecated_api_url = "/api/v1/smell_reports?";
 var api_url_v2 = "/api/v2/smell_reports";
 var aqi_root_url = "http://api.smellpittsburgh.org/api/v1/get_aqi?city=";
 
@@ -594,6 +594,7 @@ function hideSmellMarkers(epochtime_milisec) {
   }
 }
 
+// TODO deprecated function
 function genSmellURL(method) {
   var api_paras = "";
   if (typeof method != "undefined" && method["aggregate"] == "month") {
@@ -624,7 +625,7 @@ function genSmellURL(method) {
     api_paras += "&area=" + area;
   }
   var root_url = window.location.origin;
-  return root_url + api_url + api_paras;
+  return root_url + deprecated_api_url + api_paras;
 }
 
 function genSmellURLv2(parameters) {
