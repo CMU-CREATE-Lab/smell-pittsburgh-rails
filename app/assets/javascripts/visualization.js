@@ -527,8 +527,14 @@ function showSmellMarkers(epochtime_milisec) {
 }
 
 function loadAndCreateSmellMarkers(epochtime_milisec) {
+  // generate start and end times from epochtime_milisec
+  var date_obj = new Date(epochtime_milisec);
+  date_obj.setHours(0,0,0,0);
+  var start_time = parseInt((date_obj.getTime()) / 1000);
+  var end_time = start_time + 86399;
+
   $.ajax({
-    "url": genSmellURL({"epochtime_milisec": epochtime_milisec}),
+    "url": genSmellURLv2({"start_time": start_time, "end_time": end_time}),
     "success": function (data) {
       // Create all smell report markers
       for (var i = 0; i < data.length; i++) {
