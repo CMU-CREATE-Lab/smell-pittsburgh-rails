@@ -498,7 +498,6 @@ function loadAndDrawTimeline() {
   $.ajax({
     "url": genSmellURLv2({"client_id": "1", "group_by": "day", "aggregate": "true", "smell_values": "3,4,5", "timezone_offset": new Date().getTimezoneOffset() }),
     "success": function (data) {
-      console.log(data);
       drawTimeline(formatDataForTimeline(data));
       timeline.selectLastBlock();
     },

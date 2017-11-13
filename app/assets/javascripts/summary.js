@@ -5,13 +5,14 @@ var start_time = 1464753600;
 function init() {
   // Load smell reports
   $.ajax({
-    "url": genSmellURL(start_time),
+    "url": genSmellURLv2(start_time),
     "success": function (response) {
+      var data = formatDataForSummary(response);
       var chart_data = [];
-      for (var i = 0; i < response["day"].length; i++) {
+      for (var i = 0; i < data["day"].length; i++) {
         chart_data.push({
-          "date": new Date(response["day"][i]),
-          "count": parseInt(response["count"][i])
+          "date": new Date(data["day"][i]),
+          "count": parseInt(data["count"][i])
         });
       }
       createCalendarHeatmap(chart_data, ".smell", [0, 1, 10, 20, 30], "report", true);
@@ -74,6 +75,30 @@ function genSmellURL(from_time) {
   var api_url = "/api/v1/smell_reports?";
   var root_url = window.location.origin;
   return root_url + api_url + api_paras;
+}
+
+function genSmellURLv2(from_time) {
+  var timezone_offset = new Date().getTimezoneOffset();
+  var api_paras = "aggregate=day";
+  api_paras += "&smell_values=" + "3,4,5";
+  api_paras += "&timezone_offset=" + timezone_offset;
+  api_paras += "&start_time=" + from_time;
+  var api_url = "/api/v2/smell_reports?";
+  var root_url = window.location.origin;
+  return root_url + api_url + api_paras;
+}
+
+function formatDataForSummary(data) {
+  var day = [];
+  var count = [];
+  var list = Object.keys(data).sort();
+  list.forEach(function(key) {
+    // key, value
+    var value = data[key];
+    day.push(key);
+    count.push(parseInt(value));
+  });
+  return {"day": day, "count": count};
 }
 
 $(init);
