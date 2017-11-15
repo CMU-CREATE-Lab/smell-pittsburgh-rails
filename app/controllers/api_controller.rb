@@ -300,7 +300,7 @@ class ApiController < ApplicationController
             csv_rows.push [key,value].to_csv
           end
         else
-          csv_rows.push ["year","month","day","hour","minute","second","timezone","smell value","zipcode","smell decription"].to_csv
+          csv_rows.push ["year","month","day","hour","minute","second","timezone","smell value","zipcode","smell description"].to_csv
           results.each do |key,values|
             values.each do |value|
               date = value["created_at"]
@@ -325,7 +325,7 @@ class ApiController < ApplicationController
           csv_rows.push ["count"].to_csv
           csv_rows.push [results[:total]].to_csv
         else
-          csv_rows.push ["year","month","day","hour","minute","second","timezone","smell value","zipcode","smell decription"].to_csv
+          csv_rows.push ["year","month","day","hour","minute","second","timezone","smell value","zipcode","smell description"].to_csv
           results.each do |value|
             date = value["created_at"]
             csv_rows.push [date.year,date.month,date.day,date.hour,date.min,date.sec,date.zone,value["smell_value"],value["zipcode"],value["smell_description"]].to_csv
@@ -420,7 +420,6 @@ class ApiController < ApplicationController
     aggregate = (params["aggregate"] == "true")
     timezone_offset = params["timezone_offset"].blank? ? 0 : params["timezone_offset"].to_i
     zipcodes = params["zipcodes"].blank? ? [] : params["zipcodes"].split(",")
-    # TODO handle format
     format_as = params["format"] == "csv" ? "csv" : "json"
 
     time_range = [Time.at(SmellReport.first.created_at).to_i, Time.now.to_i]
@@ -458,9 +457,9 @@ class ApiController < ApplicationController
     end
     #
     # 6. group_by and aggregate
-    if group_by.blank?
+    if group_by.blank? or format_as == "csv"
       results = results.flatten
-      results = results.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :observed_at, :zip_code_id])
+      results = results.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :smell_description, :observed_at, :zip_code_id])
     else
       if group_by == "month"
         # results = SmellReport.aggregate_by_month(results)
@@ -479,7 +478,7 @@ class ApiController < ApplicationController
         end
         unless aggregate
           results.each do |key,value|
-            results[key] = value.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :observed_at, :zip_code_id])
+            results[key] = value.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :smell_description, :observed_at, :zip_code_id])
           end
         end
       end
@@ -490,7 +489,22 @@ class ApiController < ApplicationController
       end
     end
 
-    render :json => results.to_json
+    if format_as == "csv"
+      csv_rows = []
+      id_zip_hash = Hash[ZipCode.all.map{|z| [z.id,z.zip]}]
+
+      csv_rows.push ["year","month","day","hour","minute","second","timezone","smell value","zipcode","smell description"].to_csv
+      results.each do |value|
+        date = Time.at(value["observed_at"])
+        csv_rows.push [date.year,date.month,date.day,date.hour,date.min,date.sec,date.zone,value["smell_value"],id_zip_hash[value["zip_code_id"]],value["smell_description"]].to_csv
+      end
+
+      headers["Content-Type"] = "text/csv; charset=utf-8"
+      headers["Content-Disposition"] = "attachment; filename=\"smell_reports.csv\""
+      render :plain => csv_rows.join("")
+    else
+      render :json => results.to_json
+    end
   end
 
 end
