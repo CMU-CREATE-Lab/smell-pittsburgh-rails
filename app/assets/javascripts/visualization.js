@@ -6,7 +6,6 @@ var show_voc_sensors = true; // This is for showing VOC sensors on the map
 
 // URL variables
 var deprecated_api_url = "/api/v1/smell_reports?";
-var api_url_v2 = "/api/v2/smell_reports";
 var aqi_root_url = "http://api.smellpittsburgh.org/api/v1/get_aqi?city=";
 
 // Google map variables
@@ -47,129 +46,7 @@ var timeline_jump_index = [];
 var sensors_cache = {};
 var infowindow_PM25;
 var infowindow_VOC;
-var sensors_list = [
-  {
-    name: "County AQ Monitor - Liberty",
-    sensors: {
-      wind_speed: {
-        sources: [{
-          feed: 28,
-          channel: "SONICWS_MPH"
-        }]
-      },
-      wind_direction: {
-        sources: [{
-          feed: 28,
-          channel: "SONICWD_DEG"
-        }]
-      },
-      PM25: {
-        sources: [{
-          feed: 29,
-          channel: "PM25_UG_M3"
-        }]
-      }
-    },
-    latitude: 40.32377,
-    longitude: -79.86806
-  }, {
-    name: "County AQ Monitor - Lawrenceville",
-    sensors: {
-      wind_speed: {
-        sources: [{
-          feed: 26,
-          channel: "SONICWS_MPH"
-        }]
-      },
-      wind_direction: {
-        sources: [{
-          feed: 26,
-          channel: "SONICWD_DEG"
-        }]
-      },
-      PM25: {
-        sources: [{
-          feed: 26,
-          channel: "PM25B_UG_M3"
-        }]
-      }
-    },
-    latitude: 40.46542,
-    longitude: -79.960757
-  }, {
-    name: "County AQ Monitor - Parkway East",
-    sensors: {
-      wind_speed: {
-        sources: [{
-          feed: 43,
-          channel: "SONICWS_MPH"
-        }, {
-          feed: 11067,
-          channel: "SONICWD_DEG"
-        }]
-      },
-      wind_direction: {
-        sources: [{
-          feed: 43,
-          channel: "SONICWD_DEG"
-        }, {
-          feed: 11067,
-          channel: "SONICWD_DEG"
-        }]
-      },
-      PM25: {
-        sources: [{
-          feed: 43,
-          channel: "PM25T_UG_M3"
-        }, {
-          feed: 11067,
-          channel: "PM25T_UG_M3"
-        }]
-      }
-    },
-    latitude: 40.43743,
-    longitude: -79.86357
-  }, {
-    name: "County AQ Monitor - Avalon",
-    sensors: {
-      wind_speed: {
-        sources: [{
-          feed: 1,
-          channel: "SONICWS_MPH"
-        }]
-      },
-      wind_direction: {
-        sources: [{
-          feed: 1,
-          channel: "SONICWD_DEG"
-        }]
-      },
-      PM25: {
-        sources: [{
-          feed: 1,
-          channel: "PM25B_UG_M3"
-        }, {
-          feed: 1,
-          channel: "PM25T_UG_M3"
-        }]
-      }
-    },
-    latitude: 40.49977,
-    longitude: -80.07134
-  }, {
-    name: "County AQ Monitor - Lincoln",
-    sensors: {
-      PM25: {
-        sources: [{
-          feed: 30,
-          channel: "PM25_UG_M3"
-        }]
-      }
-    },
-    latitude: 40.30822,
-    longitude: -79.86913
-  }
-];
+var sensors_list = [];
 
 function init() {
   // Check if enabling staging features or not
@@ -239,7 +116,13 @@ function init() {
 
   // Load data
   loadAndDrawCalendar();
-  loadAndDrawTimeline();
+  // load map markers and draw timeline if we are in a region; otherwise just draw the timeline
+  if (at_region_ids.length > 0) {
+    // also makes call to loadAndDrawTimeline
+    loadMapMarkers(at_region_ids[0]);
+  } else {
+    loadAndDrawTimeline();
+  }
 
   // Disable vertical bouncing effect on mobile browsers
   $(document).on("scrollstart", function (e) {
@@ -453,9 +336,25 @@ function initAnimationUI() {
   });
 }
 
+function loadMapMarkers(region_id) {
+  $.ajax({
+    "url": generateURLForMapMarkers(region_id),
+    "success": function(data) {
+      for (var i = 0; i < data.length; i++) {
+        sensors_list.push(data[i]);
+      }
+      loadAndDrawTimeline();
+    },
+    "error": function (response) {
+      console.log("server error on loadMapMarkers:", response);
+      loadAndDrawTimeline();
+    }
+  });
+}
+
 function loadAndDrawCalendar() {
   $.ajax({
-    "url": genSmellURLv2({"client_id": "1", "group_by": "month", "aggregate": "true"}),
+    "url": generateURLForSmellReports({"client_id": "1", "group_by": "month", "aggregate": "true"}),
     "success": function (data) {
       drawCalendar(formatDataForCalendar(data));
     },
@@ -468,7 +367,7 @@ function loadAndDrawCalendar() {
 function loadAndDrawTimelineWithColor() {
   function requestDaily(smell_value) {
     return $.ajax({
-      "url": genSmellURLv2({"client_id": "1", "group_by": "day","aggregate": "true", "smell_values":smell_value}),
+      "url": generateURLForSmellReports({"client_id": "1", "group_by": "day","aggregate": "true", "smell_values":smell_value}),
       // "success": function (data) {
       //   console.log("success for " + smell_value);
       // },
@@ -496,7 +395,7 @@ function loadAndDrawTimelineWithColor() {
 
 function loadAndDrawTimeline() {
   $.ajax({
-    "url": genSmellURLv2({"client_id": "1", "group_by": "day", "aggregate": "true", "smell_values": "3,4,5", "timezone_offset": new Date().getTimezoneOffset() }),
+    "url": generateURLForSmellReports({"client_id": "1", "group_by": "day", "aggregate": "true", "smell_values": "3,4,5", "timezone_offset": new Date().getTimezoneOffset() }),
     "success": function (data) {
       drawTimeline(formatDataForTimeline(data));
       timeline.selectLastBlock();
@@ -533,7 +432,7 @@ function loadAndCreateSmellMarkers(epochtime_milisec) {
   var end_time = start_time + 86399;
 
   $.ajax({
-    "url": genSmellURLv2({"start_time": start_time, "end_time": end_time}),
+    "url": generateURLForSmellReports({"start_time": start_time, "end_time": end_time}),
     "success": function (data) {
       // Create all smell report markers
       for (var i = 0; i < data.length; i++) {
@@ -628,7 +527,7 @@ function genSmellURL(method) {
   return root_url + deprecated_api_url + api_paras;
 }
 
-function genSmellURLv2(parameters) {
+function generateSmellPghURL(domain, path, parameters) {
   var api_paras = "";
   var parameter_list = [];
 
@@ -644,8 +543,15 @@ function genSmellURLv2(parameters) {
     console.log("parameters is not an object");
   }
 
-  var root_url = window.location.origin;
-  return root_url + api_url_v2 + api_paras;
+  return domain + path + api_paras;
+}
+
+function generateURLForSmellReports(parameters) {
+  return generateSmellPghURL(window.location.origin, "/api/v2/smell_reports", parameters);
+}
+
+function generateURLForMapMarkers(region_id) {
+  return generateSmellPghURL(window.location.origin, "/api/v2/regions/"+region_id+"/map_markers", {});
 }
 
 function histSmellReport(r) {
