@@ -422,7 +422,7 @@ class ApiController < ApplicationController
     zipcodes = params["zipcodes"].blank? ? [] : params["zipcodes"].split(",")
     format_as = params["format"] == "csv" ? "csv" : "json"
 
-    time_range = [Time.at(SmellReport.first.created_at).to_i, Time.now.to_i]
+    time_range = [0, Time.now.to_i]
     time_range[0] = start_time.to_i if start_time
     time_range[1] = end_time.to_i if end_time
 
