@@ -445,15 +445,13 @@ class ApiController < ApplicationController
     # 4. time_range
     results.map!{|i| i.where(:observed_at => time_range[0]..time_range[1])}
     #
-    # 5. latlng_bbox
+    # 5. latlng_bbox (top-left to bottom-right)
     if latlng_bbox.size == 4
-      # this checks that lat1<lat2 and lng1<lng2
-      lat1 = (latlng_bbox[0] < latlng_bbox[2]) ? latlng_bbox[0] : latlng_bbox[2]
-      lat2 = (latlng_bbox[0] < latlng_bbox[2]) ? latlng_bbox[2] : latlng_bbox[0]
-      lng1 = (latlng_bbox[1] < latlng_bbox[3]) ? latlng_bbox[1] : latlng_bbox[3]
-      lng2 = (latlng_bbox[1] < latlng_bbox[3]) ? latlng_bbox[3] : latlng_bbox[1]
+      # this checks whether the bounding box wraps around in latitude/longitude values (checks that lat1>lat2 and lng1<lng2)
+      lat_ranges = (latlng_bbox[0] > latlng_bbox[2]) ? [latlng_bbox[2]..latlng_bbox[0]] : [-90..latlng_bbox[0], latlng_bbox[2]..90]
+      long_ranges = (latlng_bbox[1] < latlng_bbox[3]) ? [latlng_bbox[1]..latlng_bbox[3]] : [latlng_bbox[1]..180, -180..latlng_bbox[3]]
       # we are bounding on the perturbed lat/long
-      results.map!{|i| i.where(:latitude => lat1..lat2).where(:longitude => lng1..lng2)}
+      results.map!{|i| i.where(:latitude => lat_ranges).where(:longitude => long_ranges)}
     end
     #
     # 6. group_by and aggregate
