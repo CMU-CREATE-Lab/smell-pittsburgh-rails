@@ -15,13 +15,15 @@ namespace :firebase_push_notification do
   end
 
 
-  task :send_prediction, [:to,:title,:body] => :environment do |t, args|
+  task :send_prediction, [:to] => :environment do |t, args|
     Rails.logger.info("Called raketask firebase_push_notification:send_prediction")
-    if args.to.blank? or args.title.blank? or args.body.blank?
-      puts "Incorrect format."
+    title = "Smell Event Alert"
+    body = "Local weather and pollution data indicates there may be a Pittsburgh smell event in the next few hours. Keep a nose out and report smells you notice!"
+    if args.to.blank?
+      puts "Please specify the topic to sent the notification to."
       exit 1
     else
-      FirebasePushNotification.send_push_notification(args.to, args.title, args.body, {"log_tag" => "smell_prediction", "notification_type" => "prediction"})
+      FirebasePushNotification.send_push_notification(args.to, title, body, {"log_tag" => "smell_prediction", "notification_type" => "prediction"})
     end
   end
 
