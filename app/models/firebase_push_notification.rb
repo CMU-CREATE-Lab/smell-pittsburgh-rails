@@ -134,6 +134,10 @@ class FirebasePushNotification < ActiveRecord::Base
 		json["data"] = {}
 		# used by cordova app to navigate user after clicking on notification
 		json["data"]["open_with_page"] = "map"
+		# used by cordova app to display a pop-up on first time explaining the prediction model
+		if not options.nil? and not options["notification_type"].blank?
+			json["data"]["notification_type"] = options["notification_type"]
+		end
 
 		# this is important so that devices get message in notification tray from background
 		json["priority"] = "high"
