@@ -23,7 +23,7 @@ namespace :firebase_push_notification do
       puts "Please specify the topic to sent the notification to."
       exit 1
     else
-      FirebasePushNotification.send_push_notification(args.to, title, body, {"log_tag" => "smell_prediction", "notification_type" => "prediction"})
+      FirebasePushNotification.send_push_notification(args.to, title, body, {"log_tag" => "smell_prediction", "notification_type" => "prediction", "open_with_page" => "home"})
     end
   end
 

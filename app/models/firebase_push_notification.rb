@@ -133,7 +133,7 @@ class FirebasePushNotification < ActiveRecord::Base
 		# TODO add more data
 		json["data"] = {}
 		# used by cordova app to navigate user after clicking on notification
-		json["data"]["open_with_page"] = "map"
+		json["data"]["open_with_page"] = options["open_with_page"].blank? ? "map" : options["open_with_page"]
 		# used by cordova app to display a pop-up on first time explaining the prediction model
 		if not options.nil? and not options["notification_type"].blank?
 			json["data"]["notification_type"] = options["notification_type"]
