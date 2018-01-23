@@ -354,7 +354,7 @@ function loadMapMarkers(region_id) {
 
 function loadAndDrawCalendar() {
   $.ajax({
-    "url": generateURLForSmellReports({"client_id": "1", "group_by": "month", "aggregate": "true"}),
+    "url": generateURLForSmellReports({"client_ids": "1", "region_ids": "1", "group_by": "month", "aggregate": "true"}),
     "success": function (data) {
       drawCalendar(formatDataForCalendar(data));
     },
@@ -367,7 +367,7 @@ function loadAndDrawCalendar() {
 function loadAndDrawTimelineWithColor() {
   function requestDaily(smell_value) {
     return $.ajax({
-      "url": generateURLForSmellReports({"client_id": "1", "group_by": "day","aggregate": "true", "smell_values":smell_value}),
+      "url": generateURLForSmellReports({"client_ids": "1", "region_ids": "1", "group_by": "day","aggregate": "true", "smell_values":smell_value}),
       // "success": function (data) {
       //   console.log("success for " + smell_value);
       // },
@@ -395,7 +395,7 @@ function loadAndDrawTimelineWithColor() {
 
 function loadAndDrawTimeline() {
   $.ajax({
-    "url": generateURLForSmellReports({"client_id": "1", "group_by": "day", "aggregate": "true", "smell_values": "3,4,5", "timezone_offset": new Date().getTimezoneOffset() }),
+    "url": generateURLForSmellReports({"client_ids": "1", "region_ids": "1", "group_by": "day", "aggregate": "true", "smell_values": "3,4,5", "timezone_offset": new Date().getTimezoneOffset() }),
     "success": function (data) {
       drawTimeline(formatDataForTimeline(data));
       timeline.selectLastBlock();

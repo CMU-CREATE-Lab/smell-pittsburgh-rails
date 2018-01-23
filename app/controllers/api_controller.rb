@@ -413,7 +413,7 @@ class ApiController < ApplicationController
 
     client_ids = params["client_ids"].nil? ? [] : params["client_ids"].split(",").map(&:to_i)
     region_ids = params["region_ids"].nil? ? [] : params["region_ids"].split(",").map(&:to_i)
-    smell_values = params["smell_value"].blank? ? [1,2,3,4,5] : params["smell_value"].split(",").map(&:to_i)
+    smell_values = params["smell_values"].blank? ? [1,2,3,4,5] : params["smell_values"].split(",").map(&:to_i)
     latlng_bbox = params["latlng_bbox"].blank? ? [] : params["latlng_bbox"].split(",").map(&:to_f)
     # group_by = [zipcode|month|day]
     group_by = params["group_by"].blank? ? "" : params["group_by"]
