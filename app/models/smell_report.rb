@@ -127,6 +127,11 @@ class SmellReport < ActiveRecord::Base
   end
 
 
+  def anonymized_user_hash
+    Digest::MD5.hexdigest("#{self.user_hash}:#{ANONYMOUS_USER_HASH}")
+  end
+
+
   # WARNING: Do not use this unless you have good reason to!
   # This exposes the raw lat/long coordinates that were submitted
   # by the user. NEVER use this for general public use (e.g. on maps)

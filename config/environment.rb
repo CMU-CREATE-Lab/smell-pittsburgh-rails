@@ -15,3 +15,5 @@ FIREBASE_AUTH_KEY = "DO-NOT-PUSH-ME"
 AIRNOW_API_KEY = "DO-NOT-PUSH-ME"
 # the email address for who receives the ACHD Form mail
 ACHD_EMAIL_RECIPIENT = "DO-NOT-PUSH-ME"
+# this is a string appended to user hash when reporting anonymized user hashes
+ANONYMOUS_USER_HASH = "DO-NOT-PUSH-ME"

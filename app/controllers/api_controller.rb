@@ -174,6 +174,7 @@ class ApiController < ApplicationController
     zipcodes = params["zipcodes"]
     format_as = params["format"] == "csv" ? "csv" : "json"
     allegheny_county_only = params["allegheny_county_only"] == "true" ? true : false
+    prediction_query = params["prediction_query"] == "true" ? true : false
 
     if start_time
       start_datetime = Time.at(start_time.to_i).to_datetime if start_time
@@ -215,7 +216,9 @@ class ApiController < ApplicationController
         fields = [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at]
         # TODO: Specific to Bay Area
         fields << :additional_comments if area == "BA"
-        results[key] = value.as_json(:only => fields)
+        # prediction query
+        methods = prediction_query ? [:anonymized_user_hash] : []
+        results[key] = value.as_json(:only => fields, :methods => methods)
         unless format_as == "csv"
           # Convert created_at to epoch time
           for i in 0..results[key].size()-1
