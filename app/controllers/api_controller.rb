@@ -169,6 +169,7 @@ class ApiController < ApplicationController
     zipcodes = params["zipcodes"]
     format_as = params["format"] == "csv" ? "csv" : "json"
     allegheny_county_only = params["allegheny_county_only"] == "true" ? true : false
+    prediction_query = params["prediction_query"] == "true" ? true : false
 
     if start_time
       start_datetime = Time.at(start_time.to_i).to_datetime if start_time
@@ -210,7 +211,9 @@ class ApiController < ApplicationController
         fields = [:latitude, :longitude, :smell_value, :smell_description, :feelings_symptoms, :created_at]
         # TODO: Specific to Bay Area
         fields << :additional_comments if area == "BA"
-        results[key] = value.as_json(:only => fields)
+        # prediction query
+        methods = prediction_query ? [:anonymized_user_hash] : []
+        results[key] = value.as_json(:only => fields, :methods => methods)
         unless format_as == "csv"
           # Convert created_at to epoch time
           for i in 0..results[key].size()-1
@@ -413,14 +416,13 @@ class ApiController < ApplicationController
 
     client_ids = params["client_ids"].nil? ? [] : params["client_ids"].split(",").map(&:to_i)
     region_ids = params["region_ids"].nil? ? [] : params["region_ids"].split(",").map(&:to_i)
-    smell_values = params["smell_values"].blank? ? [1,2,3,4,5] : params["smell_values"].split(",").map(&:to_i)
+    smell_values = params["smell_value"].blank? ? [] : params["smell_value"].split(",").map(&:to_i)
     latlng_bbox = params["latlng_bbox"].blank? ? [] : params["latlng_bbox"].split(",").map(&:to_f)
-    # group_by = [zipcode|month|day]
-    group_by = params["group_by"].blank? ? "" : params["group_by"]
+    group_by = ["zipcode","month","day"].index(params["group_by"]).nil? ? "" : params["group_by"]
     aggregate = (params["aggregate"] == "true")
     timezone_offset = params["timezone_offset"].blank? ? 0 : params["timezone_offset"].to_i
     zipcodes = params["zipcodes"].blank? ? [] : params["zipcodes"].split(",")
-    format_as = params["format"] == "csv" ? "csv" : "json"
+    format_as = ["csv","json"].index(params["format"]).nil? ? "json" : params["format"]
 
     time_range = [0, Time.now.to_i]
     time_range[0] = start_time.to_i if start_time
@@ -440,10 +442,14 @@ class ApiController < ApplicationController
     end
     #
     # 3. smell_values
-    results.map!{|i| i.where(:smell_value => smell_values)}
+    unless smell_values.empty?
+      results.map!{|i| i.where(:smell_value => smell_values)}
+    end
     #
     # 4. time_range
-    results.map!{|i| i.where(:observed_at => time_range[0]..time_range[1])}
+    if start_time or end_time
+      results.map!{|i| i.where(:observed_at => time_range[0]..time_range[1])}
+    end
     #
     # 5. latlng_bbox (top-left to bottom-right)
     if latlng_bbox.size == 4
