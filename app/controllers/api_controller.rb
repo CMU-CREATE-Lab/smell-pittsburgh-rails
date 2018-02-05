@@ -416,14 +416,13 @@ class ApiController < ApplicationController
 
     client_ids = params["client_ids"].nil? ? [] : params["client_ids"].split(",").map(&:to_i)
     region_ids = params["region_ids"].nil? ? [] : params["region_ids"].split(",").map(&:to_i)
-    smell_values = params["smell_value"].blank? ? [1,2,3,4,5] : params["smell_value"].split(",").map(&:to_i)
+    smell_values = params["smell_value"].blank? ? [] : params["smell_value"].split(",").map(&:to_i)
     latlng_bbox = params["latlng_bbox"].blank? ? [] : params["latlng_bbox"].split(",").map(&:to_f)
-    # group_by = [zipcode|month|day]
-    group_by = params["group_by"].blank? ? "" : params["group_by"]
+    group_by = ["zipcode","month","day"].index(params["group_by"]).nil? ? "" : params["group_by"]
     aggregate = (params["aggregate"] == "true")
     timezone_offset = params["timezone_offset"].blank? ? 0 : params["timezone_offset"].to_i
     zipcodes = params["zipcodes"].blank? ? [] : params["zipcodes"].split(",")
-    format_as = params["format"] == "csv" ? "csv" : "json"
+    format_as = ["csv","json"].index(params["format"]).nil? ? "json" : params["format"]
 
     time_range = [0, Time.now.to_i]
     time_range[0] = start_time.to_i if start_time
@@ -443,10 +442,14 @@ class ApiController < ApplicationController
     end
     #
     # 3. smell_values
-    results.map!{|i| i.where(:smell_value => smell_values)}
+    unless smell_values.empty?
+      results.map!{|i| i.where(:smell_value => smell_values)}
+    end
     #
     # 4. time_range
-    results.map!{|i| i.where(:observed_at => time_range[0]..time_range[1])}
+    if start_time or end_time
+      results.map!{|i| i.where(:observed_at => time_range[0]..time_range[1])}
+    end
     #
     # 5. latlng_bbox (top-left to bottom-right)
     if latlng_bbox.size == 4
