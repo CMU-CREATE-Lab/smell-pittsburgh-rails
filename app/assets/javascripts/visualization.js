@@ -5,7 +5,6 @@ var animate_smell_text = false; // This is for animating smell descriptions
 var show_voc_sensors = false; // This is for showing VOC sensors on the map
 
 // URL variables
-var deprecated_api_url = "/api/v1/smell_reports?";
 var aqi_root_url = "http://api.smellpittsburgh.org/api/v1/get_aqi?city=";
 
 // Google map variables
@@ -105,8 +104,10 @@ function init() {
     });
   }
 
-  // // Listen to hash var changes
-  // $(window).on('hashchange', onHashChange).trigger('hashchange');
+  // we used to handle latLng on hashchange, but since this wasn't needed we let it get handled in the rails controller
+  //$(window).on('hashchange', function(){
+  //  var hash = window.location.hash.slice(1).split("&");
+  //}).trigger('hashchange');
 
   // Create the page
   initGoogleMapAndHomeButton();
@@ -247,11 +248,6 @@ function initGoogleMapAndHomeButton() {
   });
 }
 
-function onHashChange() {
-  // // we used to handle latLng on hashchange, but since this wasn't needed we let it get handled in the rails controller
-  // var hash = window.location.hash.slice(1).split("&");
-}
-
 function styleInfoWindowCloseButton() {
   $(".gm-style-iw").next().css({
     "-ms-transform": "scale(1.3, 1.3)",
@@ -277,8 +273,12 @@ function initCalendarButtonAndDialog() {
     var $selected = $calendar.find(":selected");
     if ($selected.val() == -1) {
       // TODO: update the timeline
+      //timeline_data = ...
+      //timeline.updateBlocks(timeline_data);
     } else {
       // TODO: update the timeline
+      //timeline_data = ...
+      //timeline.updateBlocks(timeline_data);
       // Google Analytics
       var data_time = (new Date($selected.data("year"), $selected.data("month") - 1)).getTime();
       var label = {
@@ -459,40 +459,6 @@ function hideSmellMarkers(epochtime_milisec) {
   }
 }
 
-// TODO deprecated function
-function genSmellURL(method) {
-  var api_paras = "";
-  if (typeof method != "undefined" && method["aggregate"] == "month") {
-    api_paras += "aggregate=month";
-  } else if (typeof method != "undefined" && method["aggregate"] == "day") {
-    var min_smell_value = 3;
-    var timezone_offset = new Date().getTimezoneOffset();
-    api_paras += "aggregate=day";
-    api_paras += "&min_smell_value=" + min_smell_value;
-    api_paras += "&timezone_offset=" + timezone_offset;
-  } else if (typeof method != "undefined" && method["aggregate"] == "day_and_smell_value") {
-    var timezone_offset = new Date().getTimezoneOffset();
-    api_paras += "aggregate=day_and_smell_value";
-    api_paras += "&timezone_offset=" + timezone_offset;
-  } else {
-    // Get only the smell reports for one day
-    var date_obj = typeof method == "undefined" ? new Date() : new Date(method["epochtime_milisec"]);
-    var y = date_obj.getFullYear();
-    var m = date_obj.getMonth();
-    var d = date_obj.getDate();
-    var start_time = parseInt((new Date(y, m, d).getTime()) / 1000);
-    var end_time = start_time + 86399;
-    api_paras += "start_time=" + start_time;
-    api_paras += "&end_time=" + end_time;
-  }
-  if (area != "PGH") {
-    //specify default start time
-    api_paras += "&area=" + area;
-  }
-  var root_url = window.location.origin;
-  return root_url + deprecated_api_url + api_paras;
-}
-
 function generateSmellPghURL(domain, path, parameters) {
   var api_paras = "";
   var parameter_list = [];
@@ -570,21 +536,6 @@ function drawCalendar(data) {
     var month = month_arr[i][1];
     $calendar.append($('<option value="' + i + '" data-year="' + year + '" data-month="' + month + '">' + month_names[month - 1] + ' ' + year + '</option>'));
   }
-}
-
-function formatDataForTimelineWithColor(data) {
-  var day_and_smell_value = [];
-  var count = [];
-  var list = Object.keys(data).sort();
-  list.forEach(function(key) {
-    // key, value
-    var value = data[key];
-    var newKey = key.split(",");
-    newKey[1] = parseInt(newKey[1]);
-    day_and_smell_value.push(newKey);
-    count.push(parseInt(value));
-  });
-  return {"day_and_smell_value": day_and_smell_value, "count": count};
 }
 
 function formatDataForTimeline(data) {
@@ -670,6 +621,8 @@ function drawTimeline(data) {
     dataIndexForValues: 1,
     addLeftArrow: function(obj) {
       // TODO: prepend more data
+      //timeline_data = ...
+      //timeline.prependBlocks(timeline_data);
     }
   };
   timeline = new edaplotjs.FlatBlockChart("timeline-container", chart_settings);
