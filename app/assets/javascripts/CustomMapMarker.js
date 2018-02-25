@@ -71,7 +71,7 @@
       // Create HTML content for the info window
       current_icon_size = zoom_level_to_icon_size[init_zoom_level];
       html_content = "";
-      html_content += "<b>Date:</b> " + (new Date(data["created_at"] * 1000)).toLocaleString() + "<br>";
+      html_content += "<b>Date:</b> " + (new Date(data["observed_at"] * 1000)).toLocaleString() + "<br>";
       html_content += "<b>Smell Rating:</b> " + smell_value + " (" + smell_value_to_text[smell_value - 1] + ")<br>";
       html_content += "<b>Symptoms:</b> " + feelings_symptoms + "<br>";
       html_content += "<b>Smell Description:</b> " + smell_description;

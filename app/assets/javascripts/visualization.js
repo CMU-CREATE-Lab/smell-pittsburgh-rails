@@ -443,7 +443,7 @@ function handleSmellMarkerClicked(marker) {
   // Add google analytics event
   var marker_data = marker.getData();
   var label = {
-    "dimension5": (marker_data["created_at"] * 1000).toString(),
+    "dimension5": (marker_data["observed_at"] * 1000).toString(),
     "metric1": marker_data["smell_value"]
   };
   addGoogleAnalyticEvent("smell", "click", label);
@@ -535,7 +535,7 @@ function histSmellReport(r) {
     };
   }
   for (var i = 0; i < r.length; i++) {
-    var d = new Date(r[i]["created_at"] * 1000);
+    var d = new Date(r[i]["observed_at"] * 1000);
     var hour = d.getHours();
     var minute = d.getMinutes();
     var idx = hour * 2;
@@ -1196,7 +1196,7 @@ function startAnimation(epochtime_milisec) {
         for (var i = smell_idx; i < smell_markers.length; i++) {
           var smell_m = smell_markers[i];
           var smell_m_data = smell_m.getData();
-          var smell_epochtime_milisec = smell_m_data["created_at"] * 1000;
+          var smell_epochtime_milisec = smell_m_data["observed_at"] * 1000;
           if (smell_epochtime_milisec <= (current_epochtime_milisec + elapsed_milisec)) {
             // Animate smell reports
             smell_m.setMap(map);
