@@ -1,8 +1,8 @@
 "use strict";
 
 // Staging testing features
-var animate_smell_text = true; // This is for animating smell descriptions
-var show_voc_sensors = true; // This is for showing VOC sensors on the map
+var animate_smell_text = false; // This is for animating smell descriptions
+var show_voc_sensors = false; // This is for showing VOC sensors on the map
 
 // URL variables
 var deprecated_api_url = "/api/v1/smell_reports?";
@@ -40,7 +40,6 @@ var $dialog_ok_button;
 
 // Timeline variables
 var timeline;
-var timeline_jump_index = [];
 
 // Sensor variables
 var sensors_cache = {};
@@ -277,18 +276,15 @@ function initCalendarButtonAndDialog() {
     $calendar_dialog.dialog("close");
     var $selected = $calendar.find(":selected");
     if ($selected.val() == -1) {
-      timeline.selectLastBlock();
+      // TODO: update the timeline
     } else {
-      var desired_index = timeline_jump_index[$selected.val()];
-      if (typeof desired_index != "undefined") {
-        timeline.selectBlockByIndex(desired_index);
-        // Google Analytics
-        var data_time = (new Date($selected.data("year"), $selected.data("month") - 1)).getTime();
-        var label = {
-          "dimension5": data_time.toString()
-        };
-        addGoogleAnalyticEvent("calendar", "click", label);
-      }
+      // TODO: update the timeline
+      // Google Analytics
+      var data_time = (new Date($selected.data("year"), $selected.data("month") - 1)).getTime();
+      var label = {
+        "dimension5": data_time.toString()
+      };
+      addGoogleAnalyticEvent("calendar", "click", label);
     }
     // Have selector go back to showing default option
     $(this).prop('selectedIndex', 0);
@@ -364,41 +360,11 @@ function loadAndDrawCalendar() {
   });
 }
 
-function loadAndDrawTimelineWithColor() {
-  function requestDaily(smell_value) {
-    return $.ajax({
-      "url": generateURLForSmellReports({"client_ids": "1", "region_ids": at_region_ids.join(","), "group_by": "day","aggregate": "true", "smell_values":smell_value}),
-      // "success": function (data) {
-      //   console.log("success for " + smell_value);
-      // },
-      // "error": function (response) {
-      //   console.log("error for " + smell_value);
-      // }
-    });
-  }
-
-  $.when( requestDaily("1"),requestDaily("2"),requestDaily("3"),requestDaily("4"),requestDaily("5") ).done( function(s1,s2,s3,s4,s5) {
-    var result = {};
-    [ [s1[0],1], [s2[0],2], [s3[0],3], [s4[0],4], [s5[0],5] ].forEach(function(query) {
-      var keys = Object.keys(query[0]);
-      var values = {};
-      keys.forEach(function(key) {
-        values[key+","+query[1]] = query[0][key];
-      });
-      result = $.extend({}, result, values);
-    });
-
-    drawTimelineWithColor( formatDataForTimelineWithColor(result) );
-    timeline.selectLastBlock();
-  });
-}
-
 function loadAndDrawTimeline() {
   $.ajax({
     "url": generateURLForSmellReports({"client_ids": "1", "region_ids": at_region_ids.join(","), "group_by": "day", "aggregate": "true", "smell_values": "3,4,5", "timezone_offset": new Date().getTimezoneOffset() }),
     "success": function (data) {
       drawTimeline(formatDataForTimeline(data));
-      timeline.selectLastBlock();
     },
     "error": function (response) {
       console.log("server error:", response);
@@ -621,96 +587,6 @@ function formatDataForTimelineWithColor(data) {
   return {"day_and_smell_value": day_and_smell_value, "count": count};
 }
 
-function drawTimelineWithColor(data) {
-  // Compute the weighted mean of smell reports
-  var day_and_smell_value = data["day_and_smell_value"];
-  var count = data["count"];
-  var sum = {};
-  var n = {};
-  for (var i = 0; i < day_and_smell_value.length; i++) {
-    var d_i = day_and_smell_value[i];
-    if (typeof sum[d_i[0]] == "undefined") {
-      sum[d_i[0]] = d_i[1] * count[i];
-    } else {
-      sum[d_i[0]] += d_i[1] * count[i];
-    }
-    if (typeof n[d_i[0]] == "undefined") {
-      n[d_i[0]] = count[i];
-    } else {
-      n[d_i[0]] += count[i];
-    }
-  }
-  var weighted_mean = {};
-  var num_reports = {};
-  for (var key in sum) {
-    // Convert all keys to epochtime
-    weighted_mean[dateStringToObject(key).getTime()] = roundTo(sum[key] / n[key], 2);
-    num_reports[dateStringToObject(key).getTime()] = n[key]
-  }
-
-  // Pad missing dates
-  var t_all = Object.keys(weighted_mean).map(Number);
-  var min_dt = new Date(Math.min.apply(null, t_all));
-  var max_dt = new Date(Math.max.apply(null, t_all));
-  var current_dt = min_dt;
-  while (current_dt <= max_dt) {
-    var t_str = current_dt.getTime().toString();
-    if (typeof weighted_mean[t_str] == "undefined") {
-      weighted_mean[t_str] = 0;
-      num_reports[t_str] = 0;
-    }
-    current_dt.setDate(current_dt.getDate() + 1);
-  }
-
-  // Construct data points
-  var t_all = Object.keys(weighted_mean).map(Number).sort(function (a, b) {
-    return a - b
-  });
-  var pts = [];
-  var td_count = 0;
-  var last_month;
-  for (var i = 0; i < t_all.length; i++) {
-    var t = t_all[i];
-    var dt = new Date(t);
-    var dt_str = dt.toDateString().split(" ");
-    var label = dt_str[1] + " " + dt_str[2];
-    pts.push([label, weighted_mean[t.toString()], num_reports[t.toString()], t]);
-    // Save the index if necessary (the calendar will use this)
-    var month = dt.getMonth();
-    if (typeof last_month == "undefined" || last_month != month) {
-      timeline_jump_index.push(td_count);
-      last_month = month;
-    }
-    td_count++;
-  }
-  timeline_jump_index.push(td_count);
-
-  // Use the charting library to draw the timeline
-  var chart_settings = {
-    click: function ($e) {
-      handleTimelineButtonClicked(parseInt($e.data("epochtime_milisec")));
-    },
-    select: function ($e) {
-      handleTimelineButtonSelected(parseInt($e.data("epochtime_milisec")));
-    },
-    data: pts,
-    format: ["label", "color", "height", "epochtime_milisec"],
-    dataIndexForLabels: 0, // format[0] is for the label of the block
-    dataIndexForColors: 1, // format[1] is for the color of the block
-    dataIndexForHeights: 2, // format[2] is for the height of the block
-    useColorQuantiles: true, // use quantile color scale instead of the default linear one
-    colorBin: [1, 2, 2.5, 3, 3.5],
-    colorRange: ["#dcdcdc", "#52b947", "#f3ec19", "#f57e20", "#ed1f24", "#991b4f"],
-    heightBin: [30],
-    heightRange: ["50%", "100%"]
-  };
-  timeline = new EdaVizJS.FlatBlockChart("timeline-container", chart_settings);
-
-  // Add horizontal scrolling to the timeline
-  // Needed because Android <= 4.4 won't scroll without this
-  addTouchHorizontalScroll($("#timeline-container"));
-}
-
 function formatDataForTimeline(data) {
   var day = [];
   var count = [];
@@ -763,19 +639,16 @@ function drawTimeline(data) {
       var month = date.getMonth();
       if (typeof last_month == "undefined") {
         last_month = month;
-        timeline_jump_index.push(td_count);
       }
       if (last_month != month) {
         batches.push(pts);
         pts = [];
-        timeline_jump_index.push(td_count);
         last_month = month;
       }
       td_count++;
     }
   }
   batches.push(pts);
-  timeline_jump_index.push(td_count);
 
   // Use the charting library to draw the timeline
   var chart_settings = {
@@ -785,12 +658,21 @@ function drawTimeline(data) {
     select: function ($e) {
       handleTimelineButtonSelected(parseInt($e.data("epochtime_milisec")));
     },
+    create: function(obj) {
+      obj.selectLastBlock();
+    },
+    update: function(obj) {
+      obj.selectLastBlock();
+    },
     data: batches,
-    format: ["label", "value", "epochtime_milisec"],
+    columnNames: ["label", "value", "epochtime_milisec"],
     dataIndexForLabels: 0,
-    dataIndexForValues: 1
+    dataIndexForValues: 1,
+    addLeftArrow: function(obj) {
+      // TODO: prepend more data
+    }
   };
-  timeline = new EdaVizJS.FlatBlockChart("timeline-container", chart_settings);
+  timeline = new edaplotjs.FlatBlockChart("timeline-container", chart_settings);
 
   // Add horizontal scrolling to the timeline
   // Needed because Android <= 4.4 won't scroll without this

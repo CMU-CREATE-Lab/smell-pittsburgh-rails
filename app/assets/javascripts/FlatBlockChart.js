@@ -1,6 +1,6 @@
 /*************************************************************************
  * GitHub: https://github.com/yenchiah/flat-block-chart
- * Version: v1.0
+ * Version: v2.0
  *************************************************************************/
 
 (function () {
@@ -27,17 +27,17 @@
     // (e.g. sometimes we only wants to normalize values for each month or week)
     var data = settings["data"];
 
-    // The format takes any user-specified string
+    // The column names takes any user-specified string
     // This is used for creating data attributes on the DOM element
-    // e.g. if the format is ["label", "color", "height"],
+    // e.g. if the column names is ["label", "color", "height"],
     // for each DOM element, there will be data-label, data-color, and data-height attributes
-    var format = settings["format"];
+    var column_names = settings["columnNames"];
 
     // The column index in the data matrix for showing labels under each block
-    var data_index_for_labels = typeof settings["dataIndexForLabels"] == "undefined" ? 0 : settings["dataIndexForLabels"];
+    var data_index_for_labels = typeof settings["dataIndexForLabels"] === "undefined" ? 0 : settings["dataIndexForLabels"];
 
     // The column index in the data matrix for coding the color of each block
-    var data_index_for_colors = typeof settings["dataIndexForColors"] == "undefined" ? 1 : settings["dataIndexForColors"];
+    var data_index_for_colors = typeof settings["dataIndexForColors"] === "undefined" ? 1 : settings["dataIndexForColors"];
 
     // The column index in the data matrix for coding the height of each block (optional field)
     var data_index_for_heights = settings["dataIndexForHeights"];
@@ -48,25 +48,39 @@
     // The callback event that will be fired when a block is selected
     var select_event_callback = settings["select"];
 
+    // The callback event that will be fired when blocks are updated (prepend or update)
+    var update_event_callback = settings["update"];
+
+    // The callback event that will be fired when the chart is created for the first time
+    var create_event_callback = settings["create"];
+
     // The bin and range of the color that will be used to render the blocks
-    var use_color_quantiles = typeof settings["useColorQuantiles"] == "undefined" ? false : settings["useColorQuantiles"];
-    var color_bin = typeof settings["colorBin"] == "undefined" ? [1, 2, 2.5, 3, 3.5] : settings["colorBin"];
-    var color_range = typeof settings["colorRange"] == "undefined" ? ["#dcdcdc", "#52b947", "#f3ec19", "#f57e20", "#ed1f24", "#991b4f"] : settings["colorRange"];
+    var use_color_quantiles = typeof settings["useColorQuantiles"] === "undefined" ? false : settings["useColorQuantiles"];
+    var color_bin = typeof settings["colorBin"] === "undefined" ? [1, 2, 2.5, 3, 3.5] : settings["colorBin"];
+    var color_range = typeof settings["colorRange"] === "undefined" ? ["#dcdcdc", "#52b947", "#f3ec19", "#f57e20", "#ed1f24", "#991b4f"] : settings["colorRange"];
 
     // The bin and range of the height that will be used to render the blocks
-    var height_bin = typeof settings["heightBin"] == "undefined" ? [10, 20] : settings["heightBin"];
-    var height_range = typeof settings["heightRange"] == "undefined" ? ["33%", "66%", "100%"] : settings["heightRange"];
+    var height_bin = typeof settings["heightBin"] === "undefined" ? [10, 20] : settings["heightBin"];
+    var height_range = typeof settings["heightRange"] === "undefined" ? ["33%", "66%", "100%"] : settings["heightRange"];
+
+    // Add an arrow on the left of the timeline for appending new data
+    // If this setting is a function, when the arrow is clicked, the function will be triggered
+    var add_left_arrow = typeof settings["addLeftArrow"] === "undefined" ? false : settings["addLeftArrow"];
+    var left_arrow_label = typeof settings["leftArrowLabel"] === "undefined" ? "" : settings["leftArrowLabel"];
 
     // Cache DOM elements
     var $chart_container = $("#" + chart_container_id);
     var $flat_block_chart_value;
     var $flat_block_chart_label;
-    var $flat_blocks_click_region;
+    var $flat_blocks_click_region = [];
+    var $arrow_block_container;
+    var $arrow_label;
 
     // Parameters
     var flat_block_chart_touched = false;
     var flat_block_chart_touched_position = {};
     var selected_block_class = use_color_quantiles ? "selected-block-no-color" : "selected-block";
+    var this_obj = this;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
@@ -84,38 +98,79 @@
       $flat_block_chart_value = $("#" + chart_container_id + " .flat-block-chart-value");
       $flat_block_chart_label = $("#" + chart_container_id + " .flat-block-chart-label");
 
-      plot();
-      addEvents();
+      // Plot the timeline
+      plot(data);
+
+      // Callback event
+      if (typeof (create_event_callback) === "function") {
+        create_event_callback(this_obj);
+      }
     }
 
-    function plot() {
+    function setLeftArrow() {
+      if (typeof $arrow_block_container === "undefined" && typeof $arrow_label === "undefined") {
+        // Add block
+        $arrow_block_container = $("<td></td>");
+        var $arrow_block = $("<div class='left-arrow'></div>");
+        var $arrow_block_click_region = $("<div class='left-arrow-click-region'></div>");
+        $arrow_block_container.append($arrow_block);
+        $arrow_block_container.append($arrow_block_click_region);
+        if (typeof add_left_arrow === "function") {
+          $arrow_block_click_region.on("click touchend", function () {
+            add_left_arrow(this_obj);
+          });
+        }
+        // Add label
+        $arrow_label = $("<td>" + left_arrow_label + "</td>");
+      }
+
+      // Move block
+      $flat_block_chart_value.prepend($arrow_block_container);
+
+      // Move label
+      $flat_block_chart_label.prepend($arrow_label);
+    }
+
+    function plot(block_data) {
+      var current_num_blocks = getNumberOfBlocks();
+
       // Check if data is 2D or 3D
-      var is_data_matrix_2d = typeof data[0][0] != "object";
+      var is_data_matrix_2d = typeof block_data[0][0] != "object";
       if (is_data_matrix_2d) {
         // The entire 2D data matrix is a batch
-        plotOneBatch(data);
+        plotOneBatch(block_data, block_data.length + current_num_blocks);
       } else {
         // Each 2D matrix in the 3D data matrix is a batch
-        var previous_index = 0;
-        for (var i = 0; i < data.length; i++) {
-          plotOneBatch(data[i], previous_index);
-          previous_index += data[i].length;
+        // We want to add index to the blocks reversely
+        // The right-most block has index 0
+        var previous_index = current_num_blocks;
+        for (var i = block_data.length - 1; i >= 0; i--) {
+          previous_index += block_data[i].length;
+          plotOneBatch(block_data[i], previous_index);
         }
+      }
+
+      // Update click regions
+      $flat_blocks_click_region = $flat_block_chart_value.find(".flat-block-click-region");
+
+      // Add the left arrow on the timeline
+      if (add_left_arrow) {
+        setLeftArrow();
       }
     }
 
     function plotOneBatch(batch, previous_index) {
-      if (typeof previous_index == "undefined") {
-        previous_index = 0;
-      }
+      var chart_value_elements = [];
+      var chart_label_elements = [];
 
+      // Compute the min and max value of the color values
       if (!use_color_quantiles) {
         // Get all color values
         var color_vals = [];
         for (var i = 0; i < batch.length; i++) {
           color_vals.push(batch[i][data_index_for_colors])
         }
-        var color_vals = powerTransform(color_vals);
+        color_vals = powerTransform(color_vals);
         var max_color_val = Math.max.apply(null, color_vals);
         var min_color_val = Math.min.apply(null, color_vals);
       }
@@ -138,41 +193,47 @@
         var height = valueToQuantile(height_val, height_bin, height_range);
         var height_str = "height:" + height + ";";
         // Add data string
-        var data_str = "data-index='" + (i + previous_index) + "' ";
-        for (var j = 0; j < format.length; j++) {
-          data_str += "data-" + format[j] + "='" + pt[j] + "' ";
+        var data_str = "data-index='" + (previous_index - i - 1) + "' ";
+        for (var j = 0; j < column_names.length; j++) {
+          data_str += "data-" + column_names[j] + "='" + pt[j] + "' ";
         }
-        // Add block
+        // Create block
         var style_str = "style='" + color_str + height_str + "' ";
-        var block_str = "<div class='flat-block' " + style_str + "></div>";
-        var block_click_region_str = "<div class='flat-block-click-region' " + data_str + "></div>";
-        $flat_block_chart_value.append($("<td>" + block_str + block_click_region_str + "</td>"));
-        // Add label
-        var label = pt[data_index_for_labels];
-        $flat_block_chart_label.append($("<td>" + label + "</td>"));
+        var $block = $("<div class='flat-block' " + style_str + "></div>");
+        var $block_click_region = $("<div class='flat-block-click-region' " + data_str + "></div>");
+        var $block_container = $("<td></td>");
+        $block_container.append($block);
+        $block_container.append($block_click_region);
+        addEvents($block_click_region);
+        // Create label
+        var $label = $("<td>" + pt[data_index_for_labels] + "</td>");
+        // Add to collections
+        chart_value_elements.push($block_container);
+        chart_label_elements.push($label);
       }
+      $flat_block_chart_value.prepend(chart_value_elements);
+      $flat_block_chart_label.prepend(chart_label_elements);
     }
 
-    function addEvents() {
-      $flat_blocks_click_region = $flat_block_chart_value.find(".flat-block-click-region");
-
-      $flat_blocks_click_region.on("click touchend", function (e) {
+    function addEvents($block_click_region) {
+      $block_click_region.on("click touchend", function (e) {
         if (e.type == "click") flat_block_chart_touched = true;
         if (flat_block_chart_touched) {
           var $this = $(this);
           selectBlock($this, false);
-          if (typeof (click_event_callback) == "function") {
-            click_event_callback($this);
+          // Callback event
+          if (typeof (click_event_callback) === "function") {
+            click_event_callback($this, this_obj);
           }
         }
       });
 
-      $flat_blocks_click_region.on('touchstart', function (e) {
+      $block_click_region.on('touchstart', function (e) {
         flat_block_chart_touched_position = {x: e.originalEvent.touches[0].pageX, y: e.originalEvent.touches[0].pageY};
         flat_block_chart_touched = true;
       });
 
-      $flat_blocks_click_region.on('touchmove', function (e) {
+      $block_click_region.on('touchmove', function (e) {
         if (Math.abs(flat_block_chart_touched_position.x - e.originalEvent.touches[0].pageX) >= 2 || Math.abs(flat_block_chart_touched_position.y - e.originalEvent.touches[0].pageY) >= 2) {
           flat_block_chart_touched = false;
         }
@@ -205,15 +266,10 @@
         if (auto_scroll) {
           $chart_container.scrollLeft(Math.round($ele.parent().position().left - $chart_container.width() / 5));
         }
-        if (typeof (select_event_callback) == "function") {
-          select_event_callback($ele);
+        // Callback event
+        if (typeof (select_event_callback) === "function") {
+          select_event_callback($ele, this_obj);
         }
-      }
-    }
-
-    function clearBlockSelection() {
-      if ($flat_blocks_click_region.hasClass(selected_block_class)) {
-        $flat_blocks_click_region.removeClass(selected_block_class);
       }
     }
 
@@ -236,7 +292,7 @@
       for (var i = 0; i < n; i++) {
         var x = values[i];
         if (x > 0) {
-          values_new.push(gm * Math.log(values[i]))
+          values_new.push(gm * Math.log(x));
         } else {
           values_new.push(0);
         }
@@ -245,26 +301,23 @@
       return values_new;
     }
 
+    function removeBlocks() {
+      $flat_block_chart_value.empty();
+      $flat_block_chart_label.empty();
+      $arrow_block_container = undefined;
+      $arrow_label = undefined;
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
     // Privileged methods
     //
-
-    // tanh is not defined before Chrome 38
-    // which means that Android <= 4.4.x will
-    // throw an error when we attempt to use it;
-    // so here is a pollyfill.
-    var tanh_func = function (x) {
-      if (x === Infinity) {
-        return 1;
-      } else if (x === -Infinity) {
-        return -1;
-      } else {
-        var y = Math.exp(2 * x);
-        return (y - 1) / (y + 1);
+    var clearBlockSelection = function () {
+      if ($flat_blocks_click_region.hasClass(selected_block_class)) {
+        $flat_blocks_click_region.removeClass(selected_block_class);
       }
     };
-    Math.tanh = Math.tanh || tanh_func;
+    this.clearBlockSelection = clearBlockSelection;
 
     var selectBlockByIndex = function (index) {
       selectBlock($($flat_blocks_click_region.filter("div[data-index=" + index + "]")[0]), true);
@@ -272,9 +325,49 @@
     this.selectBlockByIndex = selectBlockByIndex;
 
     var selectLastBlock = function () {
-      selectBlockByIndex($flat_blocks_click_region.length - 1);
+      selectBlockByIndex(0);
     };
     this.selectLastBlock = selectLastBlock;
+
+    var prependBlocks = function (block_data) {
+      plot(block_data);
+      // Callback event
+      if (typeof (update_event_callback) === "function") {
+        update_event_callback(this_obj);
+      }
+    };
+    this.prependBlocks = prependBlocks;
+
+    var updateBlocks = function (block_data) {
+      removeBlocks();
+      plot(block_data);
+      // Callback event
+      if (typeof (update_event_callback) === "function") {
+        update_event_callback(this_obj);
+      }
+    };
+    this.updateBlocks = updateBlocks;
+
+    var getSelectedBlockData = function () {
+      var $selected = getSelectedBlock();
+      return $selected.data();
+    };
+    this.getSelectedBlockData = getSelectedBlockData;
+
+    var getSelectedBlock = function () {
+      return $chart_container.find("." + selected_block_class);
+    };
+    this.getSelectedBlock = getSelectedBlock;
+
+    var getNumberOfBlocks = function () {
+      return $flat_blocks_click_region.length;
+    };
+    this.getNumberOfBlocks = getNumberOfBlocks;
+
+    var selectFirstBlock = function () {
+      selectBlockByIndex(getNumberOfBlocks() - 1);
+    };
+    this.selectFirstBlock = selectFirstBlock;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
@@ -287,10 +380,10 @@
   //
   // Register to window
   //
-  if (window.EdaVizJS) {
-    window.EdaVizJS.FlatBlockChart = FlatBlockChart;
+  if (window.edaplotjs) {
+    window.edaplotjs.FlatBlockChart = FlatBlockChart;
   } else {
-    window.EdaVizJS = {};
-    window.EdaVizJS.FlatBlockChart = FlatBlockChart;
+    window.edaplotjs = {};
+    window.edaplotjs.FlatBlockChart = FlatBlockChart;
   }
 })();
