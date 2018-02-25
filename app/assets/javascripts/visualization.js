@@ -13,7 +13,7 @@ var area;
 var init_latlng = {};
 var default_latLng = {"lat": at_latitude, "lng": at_longitude};
 var init_date;
-var init_zoom_desktop = at_zoom+1;
+var init_zoom_desktop = at_zoom + 1;
 var init_zoom_mobile = at_zoom;
 
 // Smell reports variables
@@ -335,7 +335,7 @@ function initAnimationUI() {
 function loadMapMarkers(region_id) {
   $.ajax({
     "url": generateURLForMapMarkers(region_id),
-    "success": function(data) {
+    "success": function (data) {
       for (var i = 0; i < data.length; i++) {
         sensors_list.push(data[i]);
       }
@@ -350,7 +350,12 @@ function loadMapMarkers(region_id) {
 
 function loadAndDrawCalendar() {
   $.ajax({
-    "url": generateURLForSmellReports({"client_ids": "1", "region_ids": at_region_ids.join(","), "group_by": "month", "aggregate": "true"}),
+    "url": generateURLForSmellReports({
+      "client_ids": "1",
+      "region_ids": at_region_ids.join(","),
+      "group_by": "month",
+      "aggregate": "true"
+    }),
     "success": function (data) {
       drawCalendar(formatDataForCalendar(data));
     },
@@ -362,7 +367,14 @@ function loadAndDrawCalendar() {
 
 function loadAndDrawTimeline() {
   $.ajax({
-    "url": generateURLForSmellReports({"client_ids": "1", "region_ids": at_region_ids.join(","), "group_by": "day", "aggregate": "true", "smell_values": "3,4,5", "timezone_offset": new Date().getTimezoneOffset() }),
+    "url": generateURLForSmellReports({
+      "client_ids": "1",
+      "region_ids": at_region_ids.join(","),
+      "group_by": "day",
+      "aggregate": "true",
+      "smell_values": "3,4,5",
+      "timezone_offset": new Date().getTimezoneOffset()
+    }),
     "success": function (data) {
       drawTimeline(formatDataForTimeline(data));
     },
@@ -393,7 +405,7 @@ function showSmellMarkers(epochtime_milisec) {
 function loadAndCreateSmellMarkers(epochtime_milisec) {
   // generate start and end times from epochtime_milisec
   var date_obj = new Date(epochtime_milisec);
-  date_obj.setHours(0,0,0,0);
+  date_obj.setHours(0, 0, 0, 0);
   var start_time = parseInt((date_obj.getTime()) / 1000);
   var end_time = start_time + 86399;
 
@@ -465,11 +477,11 @@ function generateSmellPghURL(domain, path, parameters) {
 
   if (typeof parameters == "object") {
     var list = Object.keys(parameters);
-    list.forEach(function(i) {
-      parameter_list.push(encodeURIComponent(i)+"="+encodeURIComponent(parameters[i]));
+    list.forEach(function (i) {
+      parameter_list.push(encodeURIComponent(i) + "=" + encodeURIComponent(parameters[i]));
     });
     if (parameter_list.length > 0) {
-      api_paras += "?"+parameter_list.join("&");
+      api_paras += "?" + parameter_list.join("&");
     }
   } else {
     console.log("parameters is not an object");
@@ -483,7 +495,7 @@ function generateURLForSmellReports(parameters) {
 }
 
 function generateURLForMapMarkers(region_id) {
-  return generateSmellPghURL(window.location.origin, "/api/v2/regions/"+region_id+"/map_markers", {});
+  return generateSmellPghURL(window.location.origin, "/api/v2/regions/" + region_id + "/map_markers", {});
 }
 
 function histSmellReport(r) {
@@ -518,10 +530,12 @@ function formatDataForCalendar(data) {
   var month = [];
   var count = [];
   var list = Object.keys(data).sort();
-  list.forEach(function(key) {
+  list.forEach(function (key) {
     // key, value
     var value = data[key];
-    month.push(key.split("-").map(function(i){return parseInt(i);}));
+    month.push(key.split("-").map(function (i) {
+      return parseInt(i);
+    }));
     count.push(parseInt(value));
   });
   return {"month": month, "count": count};
@@ -542,7 +556,7 @@ function formatDataForTimeline(data) {
   var day = [];
   var count = [];
   var list = Object.keys(data).sort();
-  list.forEach(function(key) {
+  list.forEach(function (key) {
     // key, value
     var value = data[key];
     day.push(key);
@@ -572,7 +586,7 @@ function drawTimeline(data) {
       date_ii = new Date();
     }
     // when checking for gaps in time, subtract timezone offset
-    var diff_days = Math.floor((date_ii.getTime() - date_ii.getTimezoneOffset()*60000) - (date_i.getTime() - date_i.getTimezoneOffset()*60000)) / 86400000;
+    var diff_days = Math.floor((date_ii.getTime() - date_ii.getTimezoneOffset() * 60000) - (date_i.getTime() - date_i.getTimezoneOffset() * 60000)) / 86400000;
     if (diff_days > 1) {
       var date_i_time = date_i.getTime();
       for (var j = 1; j < diff_days; j++) {
@@ -609,17 +623,17 @@ function drawTimeline(data) {
     select: function ($e) {
       handleTimelineButtonSelected(parseInt($e.data("epochtime_milisec")));
     },
-    create: function(obj) {
+    create: function (obj) {
       obj.selectLastBlock();
     },
-    update: function(obj) {
+    update: function (obj) {
       obj.selectLastBlock();
     },
     data: batches,
     columnNames: ["label", "value", "epochtime_milisec"],
     dataIndexForLabels: 0,
     dataIndexForValues: 1,
-    addLeftArrow: function(obj) {
+    addLeftArrow: function (obj) {
       // TODO: prepend more data
       //timeline_data = ...
       //timeline.prependBlocks(timeline_data);
