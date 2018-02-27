@@ -7,7 +7,7 @@ class AgencyForm < ActiveRecord::Base
   # address :string
 
   belongs_to :smell_report
-  belongs_to :region
+  belongs_to :agency
 
   # # this only works if we are saving records (which we are not)
   # def formatted_server_email
