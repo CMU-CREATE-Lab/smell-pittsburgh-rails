@@ -614,9 +614,15 @@ class ApiController < ApplicationController
     end
     #
     # 6. group_by and aggregate
+    id_zip_hash = Hash[ZipCode.all.map{|z| [z.id,z.zip]}]
     if group_by.blank? or format_as == "csv"
       results = results.flatten
+      # format as json
       results = results.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :smell_description, :observed_at, :zip_code_id])
+      # plus zipcode
+      results.each do |json|
+        json["zipcode"] = id_zip_hash[json["zip_code_id"]]
+      end
     else
       if group_by == "month"
         # results = SmellReport.aggregate_by_month(results)
@@ -633,27 +639,30 @@ class ApiController < ApplicationController
         tmp_zips.each do |zip|
           results[zip.zip] = zip.smell_reports & tmp
         end
-        unless aggregate
-          results.each do |key,value|
-            results[key] = value.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :smell_description, :observed_at, :zip_code_id])
-          end
-        end
       end
       if aggregate
         results.each do |key,value|
           results[key] = value.size
+        end
+      else
+        # format grouped values as json
+        results.each do |key,value|
+          results[key] = value.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :smell_description, :observed_at, :zip_code_id])
+        end
+        # plus zipcode
+        results.values.flatten.each do |json|
+          json["zipcode"] = id_zip_hash[json["zip_code_id"]]
         end
       end
     end
 
     if format_as == "csv"
       csv_rows = []
-      id_zip_hash = Hash[ZipCode.all.map{|z| [z.id,z.zip]}]
 
       csv_rows.push ["year","month","day","hour","minute","second","timezone","smell value","zipcode","smell description"].to_csv
       results.each do |value|
         date = Time.at(value["observed_at"])
-        csv_rows.push [date.year,date.month,date.day,date.hour,date.min,date.sec,date.zone,value["smell_value"],id_zip_hash[value["zip_code_id"]],value["smell_description"]].to_csv
+        csv_rows.push [date.year,date.month,date.day,date.hour,date.min,date.sec,date.zone,value["smell_value"],value["zipcode"],value["smell_description"]].to_csv
       end
 
       headers["Content-Type"] = "text/csv; charset=utf-8"
