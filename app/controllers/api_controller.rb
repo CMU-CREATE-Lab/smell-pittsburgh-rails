@@ -3,7 +3,7 @@ require 'csv'
 class ApiController < ApplicationController
 
   # protect_from_forgery with: :null_session
-  skip_before_action :verify_authenticity_token, :only => [:smell_report_create]
+  skip_before_action :verify_authenticity_token, :only => [:smell_report_create, :smell_report_create_api2]
 
 
   # POST /api/v1/smell_reports
@@ -409,8 +409,161 @@ class ApiController < ApplicationController
   end
 
 
-  # TODO change terrible function name
-  def smell_reports_index2
+  # POST /api/v2/smell_reports
+  #
+  # PARAMS (required fields denoted by asterisk)
+  # "client_token" : String *
+  # "latitude" : Double *
+  # "longitude" : Double *
+  # "user_hash" : String *
+  # "smell_value" : Integer *
+  # "smell_description" : String
+  # "feelings_symptoms" : String
+  # "additional_comments" : String
+  #   (specific to ACHD form submission)
+  # "debug_info" : String
+  # "custom_location" : Boolean
+  #   - Specify that the location for the report was manually entered and is not from GPS
+  # "custom_time" : Boolean
+  #   - Specify that the time for the report was manually entered (observed_at) and is not the current time
+  # "observed_at" : DateTime (RFC3339)
+  # "send_form_to_agency" : Boolean
+  #   - When set to true, send smell report info to relevant agencies (currently ACHD only)
+  # "email" : String [FILTERED]
+  # "name" : String [FILTERED]
+  # "phone_number" : String [FILTERED]
+  # "address" : String [FILTERED]
+  #
+  def smell_report_create_api2
+    client_token = params["client_token"].blank? ? "" : params["client_token"]
+    client = Client.find_by_secret_token(client_token)
+    unless client
+      response = {
+        :error => "client_token not recognized."
+      }
+      render :json => response, :layout => false
+      return
+    end
+
+    smell_report = SmellReport.new
+    smell_report.client = client
+    smell_report.latitude = params["latitude"].to_f unless params["latitude"].blank?
+    smell_report.longitude = params["longitude"].to_f unless params["longitude"].blank?
+    smell_report.user_hash = params["user_hash"] unless params["user_hash"].blank?
+    smell_report.smell_value = params["smell_value"].to_i unless params["smell_value"].blank?
+    smell_report.smell_description = params["smell_description"] unless params["smell_description"].blank?
+    smell_report.feelings_symptoms = params["feelings_symptoms"] unless params["feelings_symptoms"].blank?
+    smell_report.additional_comments = params["additional_comments"] unless params["additional_comments"].blank?
+    smell_report.debug_info = params["debug_info"] unless params["debug_info"].blank?
+
+    # drop/avoid spam reports
+    last_smell_report_from_user = SmellReport.where(:user_hash => smell_report.user_hash).order("created_at").last
+    if (last_smell_report_from_user and (Time.now.to_i - last_smell_report_from_user.created_at.to_i) <= 5)
+      Rails.logger.info("(ApiController::smell_report_create) ignoring smell report from user_hash=#{smell_report.user_hash} because time from last report is too soon")
+      # sending reports too fast (within 5 seconds of previous)
+      response = {
+        :error => "failed to create smell report from submitted form."
+      }
+      render :json => response, :layout => false
+      return
+    elsif BannedUserHash.where(:user_hash => smell_report.user_hash).size > 0
+      Rails.logger.info("(ApiController::smell_report_create) ignoring smell report with banned user_hash=#{smell_report.user_hash}")
+      # banned users
+      response = {
+        :error => "failed to create smell report from submitted form."
+      }
+      render :json => response, :layout => false
+      return
+    end
+
+    # mark custom fields when included
+    smell_report.custom_location = (not params["custom_location"].blank? and params["custom_location"] == "true") ? true : false
+    smell_report.custom_time = (not params["custom_time"].blank? and params["custom_time"] == "true") ? true : false
+
+    # determine smell report observed at time
+    # string format: %Y-%m-%dT%H:%M:%S%:z
+    smell_report.observed_at = DateTime.rfc3339(params["observed_at"]).to_i unless params["observed_at"].blank?
+    if smell_report.custom_time == false or smell_report.observed_at.blank?
+      smell_report.observed_at = Time.now.to_i
+      smell_report.custom_time = false
+    end
+
+    # by default, send to agency
+    smell_report.send_form_to_agency = true
+    # override when flag is present in API request (and blank non-nil implies false)
+    smell_report.send_form_to_agency = (params["send_form_to_agency"].blank? ? false : true) unless params["send_form_to_agency"].nil?
+
+    # request reverse geocode object
+    geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{smell_report.latitude}, #{smell_report.longitude}" )
+    # associate smell report with zip code
+    unless geo.zip.blank?
+      zip_code = ZipCode.find_or_create_by(zip: geo.zip)
+      smell_report.zip_code_id = zip_code.id
+    end
+    # get the street name from reverse geocoding
+    unless geo.street_name.blank?
+      smell_report.street_name = geo.street_name
+    end
+
+    if smell_report.save
+      # success
+      response = {
+        :latitude => smell_report.latitude,
+        :longitude => smell_report.longitude,
+        :user_hash => smell_report.user_hash,
+        :smell_value => smell_report.smell_value,
+        :smell_description => smell_report.smell_description,
+        :feelings_symptoms => smell_report.feelings_symptoms,
+        :additional_comments => smell_report.additional_comments
+      }
+
+      # NOTE: we have removed the smell report trackers, which pushed notifications for smell values at or above 3
+
+      # send email
+      if smell_report.send_form_to_agency
+        options = {
+          "reply_email": params["email"],
+          "name": params["name"],
+          "phone_number": params["phone_number"],
+          "address": params["address"],
+          "geo": geo
+        }
+        regions = smell_report.zip_code.regions
+        unless regions.empty?
+          # create and submit one form per agency (smell_report => zip_code => regions => agencies)
+          regions.map(&:agencies).flatten.uniq.each do |agency|
+            agency.create_and_submit_form(smell_report,options)
+          end
+        end
+      end
+    else
+      # fail
+      response = {
+        :error => "failed to create smell report from submitted form."
+      }
+    end
+
+    render :json => response, :layout => false
+  end
+
+
+  # GET /api/v2/smell_reports
+  #
+  # PARAMS
+  # start_time: Integer (default: 0)
+  # end_time: Integer (default: now)
+  # client_ids: List of Client IDs
+  # region_ids: List of Region IDs
+  # smell_value: List of smell values (default: "1,2,3,4,5")
+  # latlng_bbox: lat/long coordinates, top-left to bottom-right
+  # group_by: {zipcode|month|day}
+  # aggregate: {true|false} (default: False)
+  # timezone_offset: number representing offset in minutes (default: 0)
+  # zipcodes: List of zipcodes
+  # format:  {json|csv} (default: json)
+  #   - What format the output should be in, either JSON or CSV.
+  #
+  def smell_reports_index_api2
     start_time = params["start_time"]
     end_time = params["end_time"]
 
