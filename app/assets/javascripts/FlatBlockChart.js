@@ -1,6 +1,6 @@
 /*************************************************************************
  * GitHub: https://github.com/yenchiah/flat-block-chart
- * Version: v2.0
+ * Version: v2.1
  *************************************************************************/
 
 (function () {
@@ -47,9 +47,6 @@
 
     // The callback event that will be fired when a block is selected
     var select_event_callback = settings["select"];
-
-    // The callback event that will be fired when blocks are updated (prepend or update)
-    var update_event_callback = settings["update"];
 
     // The callback event that will be fired when the chart is created for the first time
     var create_event_callback = settings["create"];
@@ -304,6 +301,7 @@
     function removeBlocks() {
       $flat_block_chart_value.empty();
       $flat_block_chart_label.empty();
+      $flat_blocks_click_region = [];
       $arrow_block_container = undefined;
       $arrow_label = undefined;
     }
@@ -331,20 +329,12 @@
 
     var prependBlocks = function (block_data) {
       plot(block_data);
-      // Callback event
-      if (typeof (update_event_callback) === "function") {
-        update_event_callback(this_obj);
-      }
     };
     this.prependBlocks = prependBlocks;
 
     var updateBlocks = function (block_data) {
       removeBlocks();
       plot(block_data);
-      // Callback event
-      if (typeof (update_event_callback) === "function") {
-        update_event_callback(this_obj);
-      }
     };
     this.updateBlocks = updateBlocks;
 
@@ -368,6 +358,33 @@
       selectBlockByIndex(getNumberOfBlocks() - 1);
     };
     this.selectFirstBlock = selectFirstBlock;
+
+    var getBlockDataByIndex = function (index) {
+      return $flat_blocks_click_region.filter("div[data-index=" + index + "]").data();
+    };
+    this.getBlockDataByIndex = getBlockDataByIndex;
+
+    var getFirstBlockData = function () {
+      return getBlockDataByIndex(getNumberOfBlocks() - 1);
+    };
+    this.getFirstBlockData = getFirstBlockData;
+
+    var getLastBlockData = function () {
+      return getBlockDataByIndex(0);
+    };
+    this.getLastBlockData = getLastBlockData;
+
+    var hideLeftArrow = function () {
+      $arrow_block_container.hide();
+      $arrow_label.hide();
+    };
+    this.hideLeftArrow = hideLeftArrow;
+
+    var showLeftArrow = function () {
+      $arrow_block_container.show();
+      $arrow_label.show();
+    };
+    this.showLeftArrow = showLeftArrow;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //

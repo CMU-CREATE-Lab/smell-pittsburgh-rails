@@ -116,12 +116,13 @@ function init() {
 
   // Load data
   loadAndDrawCalendar();
+
   // load map markers and draw timeline if we are in a region; otherwise just draw the timeline
   if (at_region_ids.length > 0) {
-    // also makes call to loadAndDrawTimeline
+    // also makes call to loadAndCreateTimeline
     loadMapMarkers(at_region_ids[0]);
   } else {
-    loadAndDrawTimeline();
+    loadAndCreateTimeline();
   }
 
   // Disable vertical bouncing effect on mobile browsers
@@ -339,11 +340,11 @@ function loadMapMarkers(region_id) {
       for (var i = 0; i < data.length; i++) {
         sensors_list.push(data[i]);
       }
-      loadAndDrawTimeline();
+      loadAndCreateTimeline();
     },
     "error": function (response) {
       console.log("server error on loadMapMarkers:", response);
-      loadAndDrawTimeline();
+      loadAndCreateTimeline();
     }
   });
 }
@@ -354,8 +355,7 @@ function loadAndDrawCalendar() {
       "client_ids": "1",
       "region_ids": at_region_ids.join(","),
       "group_by": "month",
-      "aggregate": "true",
-      "timezone_offset": new Date().getTimezoneOffset()
+      "aggregate": "true"
     }),
     "success": function (data) {
       drawCalendar(formatDataForCalendar(data));
@@ -366,10 +366,19 @@ function loadAndDrawCalendar() {
   });
 }
 
-function loadAndDrawTimeline() {
+function loadAndCreateTimeline() {
   // generate the starting time of the first day of the last month
   var date_obj = firstDayInPreviousMonth(new Date());
-  var start_time = parseInt((date_obj.getTime()) / 1000);
+  var start_time = parseInt(date_obj.getTime() / 1000);
+  var end_time = parseInt(Date.now() / 1000);
+  loadTimelineData(start_time, end_time, function (data) {
+    if (!isDictEmpty(data)) {
+      createTimeline(formatDataForTimeline(data, new Date()));
+    }
+  });
+}
+
+function loadTimelineData(start_time, end_time, callback) {
   $.ajax({
     "url": generateURLForSmellReports({
       "client_ids": "1",
@@ -377,11 +386,13 @@ function loadAndDrawTimeline() {
       "group_by": "day",
       "aggregate": "true",
       "smell_values": "3,4,5",
-      "timezone_offset": new Date().getTimezoneOffset(),
-      "start_time": start_time
+      "start_time": start_time,
+      "end_time": end_time
     }),
     "success": function (data) {
-      drawTimeline(formatDataForTimeline(data));
+      if (typeof callback === "function") {
+        callback(data);
+      }
     },
     "error": function (response) {
       console.log("server error:", response);
@@ -561,7 +572,7 @@ function drawCalendar(data) {
   }
 }
 
-function formatDataForTimeline(data) {
+function formatDataForTimeline(data, pad_to_date_obj) {
   var batch_3d = []; // 3D batch data for the flat-block-chart library
   var batch_2d = []; // the inner small 2D batch data for batch_3d
   var sorted_day_str = Object.keys(data).sort();
@@ -592,7 +603,7 @@ function formatDataForTimeline(data) {
     if (i < sorted_day_str.length - 1) {
       next_day_obj = dateStringToObject(sorted_day_str[i + 1]);
     } else {
-      next_day_obj = new Date(); // future date is the current date
+      next_day_obj = pad_to_date_obj; // future date is the next date
     }
     var diff_days = getDiffDays(day_obj, next_day_obj);
     // Push missing days into the 2D array if necessary
@@ -613,12 +624,12 @@ function formatDataForTimeline(data) {
 // Compute the difference of the number of days of two date objects
 // Notice that d2 must be larger than d1
 function getDiffDays(d1, d2) {
-  var d2_time = d2.getTime() - d2.getTimezoneOffset() * 60000;
-  var d1_time = d1.getTime() - d1.getTimezoneOffset() * 60000;
+  var d2_time = d2.getTime();// - d2.getTimezoneOffset() * 60000;
+  var d1_time = d1.getTime();// - d1.getTimezoneOffset() * 60000;
   return Math.ceil((d2_time - d1_time) / 86400000);
 }
 
-function drawTimeline(data) {
+function createTimeline(data) {
   // Use the charting library to draw the timeline
   var chart_settings = {
     click: function ($e) {
@@ -630,19 +641,24 @@ function drawTimeline(data) {
     create: function (obj) {
       obj.selectLastBlock();
     },
-    update: function (obj) {
-      obj.selectLastBlock();
-    },
     data: data,
     columnNames: ["label", "value", "epochtime_milisec"],
     dataIndexForLabels: 0,
     dataIndexForValues: 1,
     addLeftArrow: function (obj) {
-      // TODO: prepend more data
-      console.log("Left arrow clicked");
-      //timeline_data = ...
-      //timeline.prependBlocks(timeline_data);
-    }
+      obj.hideLeftArrow();
+      var end_time = obj.getFirstBlockData()["epochtime_milisec"];
+      var start_time = firstDayInPreviousMonth(new Date(end_time)).getTime();
+      end_time = parseInt(end_time / 1000);
+      start_time = parseInt(start_time / 1000);
+      loadTimelineData(start_time, end_time, function (data) {
+        if (!isDictEmpty(data)) {
+          obj.prependBlocks(formatDataForTimeline(data, new Date(end_time * 1000)));
+          obj.showLeftArrow();
+        }
+      });
+    },
+    leftArrowLabel: "More"
   };
   timeline = new edaplotjs.FlatBlockChart("timeline-container", chart_settings);
 

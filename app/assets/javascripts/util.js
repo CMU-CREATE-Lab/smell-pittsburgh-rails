@@ -57,3 +57,8 @@ function unique(array) {
     return ar.indexOf(item) === i;
   })
 }
+
+// Is dictionary empty
+function isDictEmpty(dict) {
+  return Object.keys(dict).length === 0;
+}
