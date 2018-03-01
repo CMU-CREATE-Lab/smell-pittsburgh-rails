@@ -435,6 +435,7 @@ class ApiController < ApplicationController
   # "address" : String [FILTERED]
   #
   def smell_report_create_api2
+    # check client
     client_token = params["client_token"].blank? ? "" : params["client_token"]
     client = Client.find_by_secret_token(client_token)
     unless client
@@ -445,6 +446,7 @@ class ApiController < ApplicationController
       return
     end
 
+    # create SmellReport object
     smell_report = SmellReport.new
     smell_report.client = client
     smell_report.latitude = params["latitude"].to_f unless params["latitude"].blank?
