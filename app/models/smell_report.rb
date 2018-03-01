@@ -16,7 +16,7 @@ class SmellReport < ActiveRecord::Base
   belongs_to :zip_code
   belongs_to :client
 
-  validates :user_hash, :latitude, :longitude, :smell_value, :observed_at, :presence => true
+  validates :user_hash, :latitude, :longitude, :smell_value, :presence => true
   validates :smell_value, :inclusion => { in: (1..5) }
 
   before_create :generate_perturbed_coordinates
