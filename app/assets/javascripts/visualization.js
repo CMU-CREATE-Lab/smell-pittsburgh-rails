@@ -354,7 +354,8 @@ function loadAndDrawCalendar() {
       "client_ids": "1",
       "region_ids": at_region_ids.join(","),
       "group_by": "month",
-      "aggregate": "true"
+      "aggregate": "true",
+      "timezone_offset": new Date().getTimezoneOffset()
     }),
     "success": function (data) {
       drawCalendar(formatDataForCalendar(data));
@@ -366,6 +367,9 @@ function loadAndDrawCalendar() {
 }
 
 function loadAndDrawTimeline() {
+  // generate the starting time of the first day of the last month
+  var date_obj = firstDayInPreviousMonth(new Date());
+  var start_time = parseInt((date_obj.getTime()) / 1000);
   $.ajax({
     "url": generateURLForSmellReports({
       "client_ids": "1",
@@ -373,7 +377,8 @@ function loadAndDrawTimeline() {
       "group_by": "day",
       "aggregate": "true",
       "smell_values": "3,4,5",
-      "timezone_offset": new Date().getTimezoneOffset()
+      "timezone_offset": new Date().getTimezoneOffset(),
+      "start_time": start_time
     }),
     "success": function (data) {
       drawTimeline(formatDataForTimeline(data));
@@ -382,6 +387,11 @@ function loadAndDrawTimeline() {
       console.log("server error:", response);
     }
   });
+}
+
+// Get the first day of the previous month
+function firstDayInPreviousMonth(date_obj) {
+  return new Date(date_obj.getFullYear(), date_obj.getMonth() - 1, 1);
 }
 
 function showSmellMarkers(epochtime_milisec) {
@@ -407,8 +417,7 @@ function loadAndCreateSmellMarkers(epochtime_milisec) {
   var date_obj = new Date(epochtime_milisec);
   date_obj.setHours(0, 0, 0, 0);
   var start_time = parseInt((date_obj.getTime()) / 1000);
-  var end_time = start_time + 86399;
-
+  var end_time = start_time + 86399; // one day after the starting time
   $.ajax({
     "url": generateURLForSmellReports({"start_time": start_time, "end_time": end_time}),
     "success": function (data) {
@@ -553,68 +562,63 @@ function drawCalendar(data) {
 }
 
 function formatDataForTimeline(data) {
-  var day = [];
-  var count = [];
-  var list = Object.keys(data).sort();
-  list.forEach(function (key) {
-    // key, value
-    var value = data[key];
-    day.push(key);
-    count.push(parseInt(value));
-  });
-  return {"day": day, "count": count};
+  var batch_3d = []; // 3D batch data for the flat-block-chart library
+  var batch_2d = []; // the inner small 2D batch data for batch_3d
+  var sorted_day_str = Object.keys(data).sort();
+  var last_month;
+  for (var i = 0; i < sorted_day_str.length; i++) {
+    // Get current day and count
+    var day_str = sorted_day_str[i];
+    var day_obj = dateStringToObject(day_str);
+    var count = parseInt(data[day_str]);
+    // Check if we need to push the 2D array to 3D, and empty the 2D array
+    var month = day_obj.getMonth();
+    if (typeof last_month === "undefined") {
+      last_month = month;
+    } else {
+      if (last_month != month) {
+        batch_3d.push(batch_2d);
+        batch_2d = [];
+        last_month = month;
+      }
+    }
+    // Push into the 2D array
+    var label = day_obj.toDateString().split(" ");
+    label = label[1] + " " + label[2];
+    var day_obj_time = day_obj.getTime();
+    batch_2d.push([label, count, day_obj_time]);
+    // Check if we need to pad missing days of the future
+    var next_day_obj;
+    if (i < sorted_day_str.length - 1) {
+      next_day_obj = dateStringToObject(sorted_day_str[i + 1]);
+    } else {
+      next_day_obj = new Date(); // future date is the current date
+    }
+    var diff_days = getDiffDays(day_obj, next_day_obj);
+    // Push missing days into the 2D array if necessary
+    if (diff_days > 1) {
+      for (var j = 1; j < diff_days; j++) {
+        var day_obj_time_j = day_obj_time + 86400000 * j;
+        var day_obj_j = new Date(day_obj_time_j);
+        var label_j = day_obj_j.toDateString().split(" ");
+        label_j = label_j[1] + " " + label_j[2];
+        batch_2d.push([label_j, 0, day_obj_time_j]);
+      }
+    }
+  }
+  if (batch_2d.length > 0) batch_3d.push(batch_2d);
+  return batch_3d;
+}
+
+// Compute the difference of the number of days of two date objects
+// Notice that d2 must be larger than d1
+function getDiffDays(d1, d2) {
+  var d2_time = d2.getTime() - d2.getTimezoneOffset() * 60000;
+  var d1_time = d1.getTime() - d1.getTimezoneOffset() * 60000;
+  return Math.ceil((d2_time - d1_time) / 86400000);
 }
 
 function drawTimeline(data) {
-  // Collect the data for drawing the timeline
-  var batches = [];
-  var pts = [];
-  var td_count = 0;
-  var last_month;
-  var day = data["day"];
-  var count = data["count"];
-
-  for (var i = 0; i < day.length; i++) {
-    var date_i = dateStringToObject(day[i]);
-    var date_array = [date_i];
-    var count_array = [count[i]];
-    // Check if we need to pad missing days
-    var date_ii;
-    if (i < day.length - 1) {
-      date_ii = dateStringToObject(day[i + 1]);
-    } else {
-      date_ii = new Date();
-    }
-    // when checking for gaps in time, subtract timezone offset
-    var diff_days = Math.floor((date_ii.getTime() - date_ii.getTimezoneOffset() * 60000) - (date_i.getTime() - date_i.getTimezoneOffset() * 60000)) / 86400000;
-    if (diff_days > 1) {
-      var date_i_time = date_i.getTime();
-      for (var j = 1; j < diff_days; j++) {
-        date_array.push(new Date(date_i_time + 86400000 * j));
-        count_array.push(0);
-      }
-    }
-    // Push a data point
-    for (var k = 0; k < date_array.length; k++) {
-      var date = date_array[k];
-      var date_str = date.toDateString().split(" ");
-      var label = date_str[1] + " " + date_str[2];
-      pts.push([label, count_array[k], date.getTime()]);
-      // Save the index if necessary (the calendar will use this)
-      var month = date.getMonth();
-      if (typeof last_month == "undefined") {
-        last_month = month;
-      }
-      if (last_month != month) {
-        batches.push(pts);
-        pts = [];
-        last_month = month;
-      }
-      td_count++;
-    }
-  }
-  batches.push(pts);
-
   // Use the charting library to draw the timeline
   var chart_settings = {
     click: function ($e) {
@@ -629,12 +633,13 @@ function drawTimeline(data) {
     update: function (obj) {
       obj.selectLastBlock();
     },
-    data: batches,
+    data: data,
     columnNames: ["label", "value", "epochtime_milisec"],
     dataIndexForLabels: 0,
     dataIndexForValues: 1,
     addLeftArrow: function (obj) {
       // TODO: prepend more data
+      console.log("Left arrow clicked");
       //timeline_data = ...
       //timeline.prependBlocks(timeline_data);
     }
