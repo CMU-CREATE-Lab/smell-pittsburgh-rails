@@ -7,7 +7,7 @@ class AgencyForm < ActiveRecord::Base
   # address :string
 
   belongs_to :smell_report
-  belongs_to :region
+  belongs_to :agency
 
   # # this only works if we are saving records (which we are not)
   # def formatted_server_email
@@ -25,6 +25,7 @@ class AgencyForm < ActiveRecord::Base
   # options["name"]: String
   # options["phone_number"]: String
   # options["address"]: String
+  # NOTE: deprecated function; use Agency.create_and_submit_form instead
   def self.submit_form(smell_report, options={})
     reply_email = options[:reply_email].blank? ? "" : options[:reply_email]
     name = options[:name].blank? ? "" : options[:name]
