@@ -442,7 +442,7 @@ class ApiController < ApplicationController
       response = {
         :error => "client_token not recognized."
       }
-      render :json => response, :layout => false
+      render :json => response, :layout => false, :status => :internal_server_error
       return
     end
 
@@ -543,6 +543,8 @@ class ApiController < ApplicationController
       response = {
         :error => "failed to create smell report from submitted form."
       }
+      render :json => response, :layout => false, :status => :internal_server_error
+      return
     end
 
     render :json => response, :layout => false
