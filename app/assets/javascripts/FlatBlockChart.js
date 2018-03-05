@@ -78,6 +78,7 @@
     var flat_block_chart_touched_position = {};
     var selected_block_class = use_color_quantiles ? "selected-block-no-color" : "selected-block";
     var this_obj = this;
+    var enable_left_arrow_event = true;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
@@ -114,7 +115,9 @@
         $arrow_block_container.append($arrow_block_click_region);
         if (typeof add_left_arrow === "function") {
           $arrow_block_click_region.on("click touchend", function () {
-            add_left_arrow(this_obj);
+            if (enable_left_arrow_event) {
+              add_left_arrow(this_obj);
+            }
           });
         }
         // Add label
@@ -385,6 +388,23 @@
       $arrow_label.show();
     };
     this.showLeftArrow = showLeftArrow;
+
+    var setLeftArrowOpacity = function (opacity) {
+      $arrow_block_container.find(".left-arrow-click-region").css("opacity", opacity);
+      $arrow_label.css("opacity", opacity);
+    };
+    this.setLeftArrowOpacity = setLeftArrowOpacity;
+
+    var disableLeftArrow = function () {
+      enable_left_arrow_event = false;
+    };
+    this.disableLeftArrow = disableLeftArrow;
+
+    var enableLeftArrow = function () {
+      enable_left_arrow_event = true;
+    };
+    this.enableLeftArrow = enableLeftArrow;
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //

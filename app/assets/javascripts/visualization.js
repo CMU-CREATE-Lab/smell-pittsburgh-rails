@@ -646,7 +646,8 @@ function createTimeline(data) {
     dataIndexForLabels: 0,
     dataIndexForValues: 1,
     addLeftArrow: function (obj) {
-      obj.hideLeftArrow();
+      obj.setLeftArrowOpacity(0.3);
+      obj.disableLeftArrow();
       var end_time = obj.getFirstBlockData()["epochtime_milisec"];
       var start_time = firstDayInPreviousMonth(new Date(end_time)).getTime();
       end_time = parseInt(end_time / 1000);
@@ -654,7 +655,10 @@ function createTimeline(data) {
       loadTimelineData(start_time, end_time, function (data) {
         if (!isDictEmpty(data)) {
           obj.prependBlocks(formatDataForTimeline(data, new Date(end_time * 1000)));
-          obj.showLeftArrow();
+          obj.setLeftArrowOpacity(1);
+          obj.enableLeftArrow();
+        } else {
+          obj.hideLeftArrow();
         }
       });
     },

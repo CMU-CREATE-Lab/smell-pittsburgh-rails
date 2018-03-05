@@ -109,7 +109,7 @@
   -webkit-box-shadow: none;
 }
 
-.flat-block-chart .left-arrow:after {
+.flat-block-chart .left-arrow-click-region:after {
   position: absolute;
   top: 50%;
   right: 50%;
@@ -117,7 +117,7 @@
   content: '';
   width: 0;
   height: 0;
-  border-top: 20px solid transparent;
-  border-bottom: 20px solid transparent;
+  border-top: 15px solid transparent;
+  border-bottom: 15px solid transparent;
   border-right: 15px solid #888888;
 }
