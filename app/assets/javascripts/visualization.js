@@ -273,9 +273,14 @@ function initCalendarButtonAndDialog() {
     $calendar_dialog.dialog("close");
     var $selected = $calendar.find(":selected");
     if ($selected.val() == -1) {
-      // TODO: update the timeline
-      //timeline_data = ...
-      //timeline.updateBlocks(timeline_data);
+      var last_block_data = timeline.getLastBlockData();
+      var last_block_date = new Date(last_block_data["epochtime_milisec"]);
+      var selected_month = $selected.data("month");
+      if (last_block_date.getMonth() != selected_month) {
+        loadInitialTimeLine();
+      }
+      timeline.clearBlockSelection();
+      timeline.selectLastBlock();
     } else {
       // TODO: update the timeline
       //timeline_data = ...
@@ -366,12 +371,27 @@ function loadAndDrawCalendar() {
   });
 }
 
-function loadAndCreateTimeline() {
-  // generate the starting time of the first day of the last month
+function getInitialTimeRange() {
   var date_obj = firstDayInPreviousMonth(new Date());
+  // The starting time is the first day of the last month
   var start_time = parseInt(date_obj.getTime() / 1000);
+  // The ending time is the current time
   var end_time = parseInt(Date.now() / 1000);
-  loadTimelineData(start_time, end_time, function (data) {
+  return {"start_time": start_time, "end_time": end_time};
+}
+
+function loadInitialTimeLine() {
+  var T = getInitialTimeRange();
+  loadTimelineData(T["start_time"], T["end_time"], function (data) {
+    if (!isDictEmpty(data)) {
+      timeline.updateBlocks(formatDataForTimeline(data, new Date()));
+    }
+  });
+}
+
+function loadAndCreateTimeline() {
+  var T = getInitialTimeRange();
+  loadTimelineData(T["start_time"], T["end_time"], function (data) {
     if (!isDictEmpty(data)) {
       createTimeline(formatDataForTimeline(data, new Date()));
     }
