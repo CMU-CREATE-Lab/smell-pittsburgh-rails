@@ -273,25 +273,42 @@ function initCalendarButtonAndDialog() {
     $calendar_dialog.dialog("close");
     var $selected = $calendar.find(":selected");
     var last_block_data = timeline.getLastBlockData();
-    var last_block_date = new Date(last_block_data["epochtime_milisec"]);
+    var last_block_month = (new Date(last_block_data["epochtime_milisec"])).getMonth();
     if ($selected.val() == -1) {
+      // This means that user selects "today"
       var selected_month = $selected.data("month");
-      if (last_block_date.getMonth() + 1 != selected_month) {
+      if (selected_month - 1 != last_block_month) {
+        // Only load a new timeline when the desired month does not contain the last block
         loadInitialTimeLine();
       } else {
+        // Otherwise, just select the last block
         timeline.clearBlockSelection();
         timeline.selectLastBlock();
       }
     } else {
       var start_date_obj = new Date($selected.data("year"), $selected.data("month") - 1);
       var start_time = start_date_obj.getTime();
-      if (last_block_date.getMonth() != start_date_obj.getMonth()) {
-        var end_date_obj = firstDayOfNextMonth(start_date_obj);
-        var end_time = end_date_obj.getTime();
-        loadAndUpdateTimeLine(start_time, end_time);
+      if (start_date_obj.getMonth() == (new Date()).getMonth()) {
+        // Only load a new timeline when the desired month does not contain the last block
+        if (start_date_obj.getMonth() != last_block_month) {
+          // If the desired month is the current month, load the initial timeline
+          loadInitialTimeLine();
+        } else {
+          // Otherwise, just select the last block
+          timeline.clearBlockSelection();
+          timeline.selectLastBlock();
+        }
       } else {
-        timeline.clearBlockSelection();
-        timeline.selectLastBlock();
+        // Only load a new timeline when the desired month does not contain the last block
+        if (start_date_obj.getMonth() != last_block_month) {
+          var end_date_obj = firstDayOfNextMonth(start_date_obj);
+          var end_time = end_date_obj.getTime();
+          loadAndUpdateTimeLine(start_time, end_time);
+        } else {
+          // Otherwise, just select the last block
+          timeline.clearBlockSelection();
+          timeline.selectLastBlock();
+        }
       }
       var label = {
         "dimension5": start_time.toString()
@@ -697,6 +714,8 @@ function createTimeline(data) {
           obj.setLeftArrowOpacity(1);
           obj.enableLeftArrow();
         } else {
+          obj.setLeftArrowOpacity(1);
+          obj.enableLeftArrow();
           obj.hideLeftArrow();
         }
       });
