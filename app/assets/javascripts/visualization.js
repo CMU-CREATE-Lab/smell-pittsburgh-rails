@@ -272,23 +272,29 @@ function initCalendarButtonAndDialog() {
   $calendar.on("change", function () {
     $calendar_dialog.dialog("close");
     var $selected = $calendar.find(":selected");
+    var last_block_data = timeline.getLastBlockData();
+    var last_block_date = new Date(last_block_data["epochtime_milisec"]);
     if ($selected.val() == -1) {
-      var last_block_data = timeline.getLastBlockData();
-      var last_block_date = new Date(last_block_data["epochtime_milisec"]);
       var selected_month = $selected.data("month");
-      if (last_block_date.getMonth() != selected_month) {
+      if (last_block_date.getMonth() + 1 != selected_month) {
         loadInitialTimeLine();
+      } else {
+        timeline.clearBlockSelection();
+        timeline.selectLastBlock();
       }
-      timeline.clearBlockSelection();
-      timeline.selectLastBlock();
     } else {
-      // TODO: update the timeline
-      //timeline_data = ...
-      //timeline.updateBlocks(timeline_data);
-      // Google Analytics
-      var data_time = (new Date($selected.data("year"), $selected.data("month") - 1)).getTime();
+      var start_date_obj = new Date($selected.data("year"), $selected.data("month") - 1);
+      var start_time = start_date_obj.getTime();
+      if (last_block_date.getMonth() != start_date_obj.getMonth()) {
+        var end_date_obj = firstDayOfNextMonth(start_date_obj);
+        var end_time = end_date_obj.getTime();
+        loadAndUpdateTimeLine(start_time, end_time);
+      } else {
+        timeline.clearBlockSelection();
+        timeline.selectLastBlock();
+      }
       var label = {
-        "dimension5": data_time.toString()
+        "dimension5": start_time.toString()
       };
       addGoogleAnalyticEvent("calendar", "click", label);
     }
@@ -372,19 +378,25 @@ function loadAndDrawCalendar() {
 }
 
 function getInitialTimeRange() {
-  var date_obj = firstDayInPreviousMonth(new Date());
+  var date_obj = firstDayOfPreviousMonth(new Date());
   // The starting time is the first day of the last month
-  var start_time = parseInt(date_obj.getTime() / 1000);
+  var start_time = date_obj.getTime();
   // The ending time is the current time
-  var end_time = parseInt(Date.now() / 1000);
+  var end_time = Date.now();
   return {"start_time": start_time, "end_time": end_time};
 }
 
 function loadInitialTimeLine() {
   var T = getInitialTimeRange();
-  loadTimelineData(T["start_time"], T["end_time"], function (data) {
+  loadAndUpdateTimeLine(T["start_time"], T["end_time"]);
+}
+
+function loadAndUpdateTimeLine(start_time, end_time) {
+  loadTimelineData(start_time, end_time, function (data) {
     if (!isDictEmpty(data)) {
-      timeline.updateBlocks(formatDataForTimeline(data, new Date()));
+      timeline.updateBlocks(formatDataForTimeline(data, new Date(end_time)));
+      timeline.clearBlockSelection();
+      timeline.selectLastBlock();
     }
   });
 }
@@ -393,7 +405,7 @@ function loadAndCreateTimeline() {
   var T = getInitialTimeRange();
   loadTimelineData(T["start_time"], T["end_time"], function (data) {
     if (!isDictEmpty(data)) {
-      createTimeline(formatDataForTimeline(data, new Date()));
+      createTimeline(formatDataForTimeline(data, new Date(T["end_time"])));
     }
   });
 }
@@ -406,8 +418,8 @@ function loadTimelineData(start_time, end_time, callback) {
       "group_by": "day",
       "aggregate": "true",
       "smell_values": "3,4,5",
-      "start_time": start_time,
-      "end_time": end_time
+      "start_time": parseInt(start_time / 1000).toString(),
+      "end_time": parseInt(end_time / 1000).toString()
     }),
     "success": function (data) {
       if (typeof callback === "function") {
@@ -420,8 +432,13 @@ function loadTimelineData(start_time, end_time, callback) {
   });
 }
 
+// Get the end day of the current month
+function firstDayOfNextMonth(date_obj) {
+  return new Date(date_obj.getFullYear(), date_obj.getMonth() + 1, 1);
+}
+
 // Get the first day of the previous month
-function firstDayInPreviousMonth(date_obj) {
+function firstDayOfPreviousMonth(date_obj) {
   return new Date(date_obj.getFullYear(), date_obj.getMonth() - 1, 1);
 }
 
@@ -447,10 +464,13 @@ function loadAndCreateSmellMarkers(epochtime_milisec) {
   // generate start and end times from epochtime_milisec
   var date_obj = new Date(epochtime_milisec);
   date_obj.setHours(0, 0, 0, 0);
-  var start_time = parseInt((date_obj.getTime()) / 1000);
+  var start_time = parseInt(date_obj.getTime() / 1000);
   var end_time = start_time + 86399; // one day after the starting time
   $.ajax({
-    "url": generateURLForSmellReports({"start_time": start_time, "end_time": end_time}),
+    "url": generateURLForSmellReports({
+      "start_time": start_time,
+      "end_time": end_time
+    }),
     "success": function (data) {
       // Create all smell report markers
       for (var i = 0; i < data.length; i++) {
@@ -584,7 +604,7 @@ function formatDataForCalendar(data) {
 function drawCalendar(data) {
   var month_arr = data.month;
   var today = new Date();
-  $calendar.append($('<option value="' + -1 + '" data-year="' + today.getFullYear() + '" data-month="' + today.getMonth() + '">Today</option>'));
+  $calendar.append($('<option value="' + -1 + '" data-year="' + today.getFullYear() + '" data-month="' + (today.getMonth() + 1) + '">Today</option>'));
   for (var i = month_arr.length - 1; i >= 0; i--) {
     var year = month_arr[i][0];
     var month = month_arr[i][1];
@@ -644,8 +664,9 @@ function formatDataForTimeline(data, pad_to_date_obj) {
 // Compute the difference of the number of days of two date objects
 // Notice that d2 must be larger than d1
 function getDiffDays(d1, d2) {
-  var d2_time = d2.getTime();// - d2.getTimezoneOffset() * 60000;
-  var d1_time = d1.getTime();// - d1.getTimezoneOffset() * 60000;
+  // Need to subtract timezone offset for daylight saving issues
+  var d2_time = d2.getTime() - d2.getTimezoneOffset() * 60000;
+  var d1_time = d1.getTime() - d1.getTimezoneOffset() * 60000;
   return Math.ceil((d2_time - d1_time) / 86400000);
 }
 
@@ -669,12 +690,10 @@ function createTimeline(data) {
       obj.setLeftArrowOpacity(0.3);
       obj.disableLeftArrow();
       var end_time = obj.getFirstBlockData()["epochtime_milisec"];
-      var start_time = firstDayInPreviousMonth(new Date(end_time)).getTime();
-      end_time = parseInt(end_time / 1000);
-      start_time = parseInt(start_time / 1000);
+      var start_time = firstDayOfPreviousMonth(new Date(end_time)).getTime();
       loadTimelineData(start_time, end_time, function (data) {
         if (!isDictEmpty(data)) {
-          obj.prependBlocks(formatDataForTimeline(data, new Date(end_time * 1000)));
+          obj.prependBlocks(formatDataForTimeline(data, new Date(end_time)));
           obj.setLeftArrowOpacity(1);
           obj.enableLeftArrow();
         } else {
