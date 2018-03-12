@@ -31,6 +31,10 @@
   background-color: white;
 }
 
+#selected-day {
+  text-align: left !important;
+}
+
 #terrain-btn {
   position: absolute;
   font-size: 11px;

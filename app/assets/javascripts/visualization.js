@@ -694,6 +694,8 @@ function createTimeline(data) {
       handleTimelineButtonClicked(parseInt($e.data("epochtime_milisec")));
     },
     select: function ($e) {
+      // Update selected day in the legend
+      $("#selected-day").html(String(new Date($e.data("epochtime_milisec"))).substr(4, 11));
       handleTimelineButtonSelected(parseInt($e.data("epochtime_milisec")));
     },
     create: function (obj) {
