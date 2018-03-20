@@ -27,4 +27,17 @@ namespace :firebase_push_notification do
     end
   end
 
+
+  task :send_prediction_type2, [:to] => :environment do |t, args|
+    Rails.logger.info("Called raketask firebase_push_notification:send_smell_report_based_prediction")
+    title = "Smell Event Alert"
+    body = "Many residents are reporting poor odors in Pittsburgh. Were you affected by this smell event? Be sure to submit a smell report!"
+    if args.to.blank?
+      puts "Please specify the topic to sent the notification to."
+      exit 1
+    else
+      FirebasePushNotification.send_push_notification(args.to, title, body, {"log_tag" => "smell_prediction_type_2", "notification_type" => "prediction", "open_with_page" => "home"})
+    end
+  end
+
 end
