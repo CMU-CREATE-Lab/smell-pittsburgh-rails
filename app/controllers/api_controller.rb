@@ -96,13 +96,13 @@ class ApiController < ApplicationController
         :additional_comments => smell_report.additional_comments
       }
 
-      # send push notifications for smell values at or above 3
-      if SmellReportTracker.is_listening_for_smell_reports? and smell_report.smell_value >= 3 and smell_report.is_within_pittsburgh?
-        SmellReportTracker.set_last_reported(smell_report.created_at.to_i)
-        SmellReportTracker.listening_for_smell_reports(false)
-        SmellReportTracker.generating_hourly_summary(true)
-        FirebasePushNotification.push_smell_report(smell_report)
-      end
+      # # send push notifications for smell values at or above 3
+      # if SmellReportTracker.is_listening_for_smell_reports? and smell_report.smell_value >= 3 and smell_report.is_within_pittsburgh?
+      #   SmellReportTracker.set_last_reported(smell_report.created_at.to_i)
+      #   SmellReportTracker.listening_for_smell_reports(false)
+      #   SmellReportTracker.generating_hourly_summary(true)
+      #   FirebasePushNotification.push_smell_report(smell_report)
+      # end
 
       # send push notifications for smell values at or above 3 in Bay Area
       if BASmellReportTracker.is_listening_for_smell_reports? and smell_report.smell_value >= 3 and smell_report.is_within_bay_area?
