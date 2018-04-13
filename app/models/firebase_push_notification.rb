@@ -115,7 +115,7 @@ class FirebasePushNotification < ActiveRecord::Base
 
 
 	# TODO add options
-	def self.send_push_notification(to, title, body, options=nil)
+	def self.send_push_notification(to, title, body, options={})
 		# prepend to topics if we are on staging
 		if Rails.env == "staging"
 			to = self.TOPIC_PREFIX + "STAGING-" + to.split(self.TOPIC_PREFIX).last if to.split(self.TOPIC_PREFIX).size > 1
@@ -125,7 +125,7 @@ class FirebasePushNotification < ActiveRecord::Base
 			end
 		end
 
-		if not options.nil? and options["area"] == "BA"
+		if options["area"] == "BA"
 			current_hour = (Time.now - 3 * 60 * 60).hour
 		else
 			current_hour = Time.now.hour
@@ -149,7 +149,7 @@ class FirebasePushNotification < ActiveRecord::Base
 		# used by cordova app to navigate user after clicking on notification
 		json["data"]["open_with_page"] = options["open_with_page"].blank? ? "map" : options["open_with_page"]
 		# used by cordova app to display a pop-up on first time explaining the prediction model
-		if not options.nil? and not options["notification_type"].blank?
+		if not options["notification_type"].blank?
 			json["data"]["notification_type"] = options["notification_type"]
 		end
 
@@ -170,12 +170,13 @@ class FirebasePushNotification < ActiveRecord::Base
 				Rails.logger.info("Refusing to send push notification at hour=#{current_hour}; info was: headers=#{headers}, url=#{url}, data=#{data}")
 			else
 				response = `curl -X POST #{headers} #{url} -d '#{data}'`
+				# TODO this could be silently crashing on us
 				begin
 					json_response = JSON.parse(response)
 					unless json_response["message_id"].blank?
 						Rails.logger.info("Successfully sent push with id=#{json_response["message_id"]}")
 						# only record in database if we have a log_tag
-						tag = (not options.nil? and not options["log_tag"].blank?) ? options["log_tag"] : ""
+						tag = (not options["log_tag"].blank?) ? options["log_tag"] : ""
 						Rails.logger.info("send_push_notification: tag=#{tag},time=#{DateTime.now.to_i},topic=#{to},title=#{title},body=#{body}") unless tag.blank?
 						return
 					end
