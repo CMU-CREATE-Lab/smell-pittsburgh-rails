@@ -1,4 +1,4 @@
-Dear Dr. Karen Hacker and the Allegheny County Health Department,
+Dear Allegheny County Health Department,
 
 
 <% if @smell_report.smell_value == 1 %>
@@ -23,9 +23,9 @@ Below are some things I noticed about this smell episode.
 
 <% end %>
 <% if @phone_number.blank? %>
-Please let me know if there were particular causes of this smell by emailing: <%= @reply_to %>.
+My contact information is <%= @reply_to %>.
 <% else %>
-Please let me know if there were particular causes of this smell by emailing: <%= @reply_to %>, or by calling: <%= @phone_number %>.
+My contact information is (email) <%= @reply_to %>, (phone): <%= @phone_number %>.
 <% end %>
 <% end %>
 
