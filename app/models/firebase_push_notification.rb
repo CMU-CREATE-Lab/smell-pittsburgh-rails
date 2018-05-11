@@ -39,7 +39,7 @@ class FirebasePushNotification < ActiveRecord::Base
     title = "Does it smell better?"
     body = "Pittsburgh AQI just improved"
 
-    self.send_push_notification(topic,title,body)
+		self.send_push_notification(topic,title,body, {"analytics_category" => "push_notification_aqi_improved"})
   end
 
 
@@ -47,7 +47,8 @@ class FirebasePushNotification < ActiveRecord::Base
 		topic = self.TOPIC_PREFIX+"pghaqi"
 		title = "PGH Air Quality Notification"
 		body = "AQI has been over 50 for last 2 hrs"
-		self.send_push_notification(topic,title,body)
+
+		self.send_push_notification(topic,title,body, {"analytics_category" => "push_notification_aqi_worse"})
 	end
 
 
@@ -151,6 +152,9 @@ class FirebasePushNotification < ActiveRecord::Base
 		# used by cordova app to display a pop-up on first time explaining the prediction model
 		if not options["notification_type"].blank?
 			json["data"]["notification_type"] = options["notification_type"]
+		end
+		if not options["analytics_category"].blank?
+			json["data"]["analytics_category"] = options["analytics_category"]
 		end
 
 		# this is important so that devices get message in notification tray from background
