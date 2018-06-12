@@ -663,10 +663,9 @@ class ApiController < ApplicationController
     if format_as == "csv"
       csv_rows = []
 
-      csv_rows.push ["year","month","day","hour","minute","second","timezone","smell value","zipcode","smell description"].to_csv
+      csv_rows.push ["epoch time","rfc3339 time","smell value","zipcode","smell description","feelings symptoms"].to_csv
       results.each do |value|
-        date = Time.at(value["observed_at"])
-        csv_rows.push [date.year,date.month,date.day,date.hour,date.min,date.sec,date.zone,value["smell_value"],value["zipcode"],value["smell_description"]].to_csv
+        csv_rows.push [value["observed_at"],Time.at(value["observed_at"]).to_datetime.rfc3339,value["smell_value"],value["zipcode"],value["smell_description"],value["feelings_symptoms"]].to_csv
       end
 
       headers["Content-Type"] = "text/csv; charset=utf-8"
