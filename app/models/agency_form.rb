@@ -11,7 +11,7 @@ class AgencyForm < ActiveRecord::Base
 
   # # this only works if we are saving records (which we are not)
   # def formatted_server_email
-  #   return "smellpgh-reports+#{self.id}@createlab.org"
+  #   return "smellpgh-reports+#{self.id}@cmucreatelab.org"
   # end
 
   def self.allegheny_county_zipcodes

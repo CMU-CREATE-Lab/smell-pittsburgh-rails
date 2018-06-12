@@ -1,6 +1,6 @@
 class AchdMailer < ApplicationMailer
 
-  default :from => "smellpgh-reports@createlab.org",
+  default :from => "smellpgh-reports@cmucreatelab.org",
           :to => ACHD_EMAIL_RECIPIENT,
           :content_type => "text/plain"
 
