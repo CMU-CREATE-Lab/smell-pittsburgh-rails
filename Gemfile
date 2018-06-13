@@ -2,9 +2,12 @@ source 'https://rubygems.org'
 
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-gem 'rails', '4.2.8'
+gem 'rails', '4.2.10'
+# Until we go to >= Ruby 2.2.6 we need to max out at this version
+gem 'net-ssh', '4.2.0'
 # Use mysql2 as the database for Active Record
-gem 'mysql2'
+# Going past this version requires Rails >= 5.x
+gem 'mysql2', '0.4.10'
 # Use SCSS for stylesheets
 gem 'sass-rails', '~> 5.0'
 # Use Uglifier as compressor for JavaScript assets
