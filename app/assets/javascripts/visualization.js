@@ -702,6 +702,13 @@ function createTimeline(data) {
       obj.selectLastBlock();
     },
     data: data,
+	useColorQuantiles:true,
+	//changes colorBin based on even division of data
+	// 40 would not work as far to many days are over 40
+	// like the whole bar would be black
+	//colors are made to be similar to existing chart
+	colorBin:[0,16,32,46,77,183],
+	colorRange:["#ededed","#dbdbdb","#afafaf","#848383","#545454","#000000"],
     columnNames: ["label", "value", "epochtime_milisec"],
     dataIndexForLabels: 0,
     dataIndexForValues: 1,

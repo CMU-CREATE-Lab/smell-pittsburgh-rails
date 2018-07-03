@@ -416,6 +416,15 @@
   background-color: #ffffff;
 }
 
+.flat-block-chart .selected-block-no-color {
+  box-shadow: 0px 0px 0px 5px rgb(0, 154, 255) inset !important;
+  background-color: rgba(0, 0, 0, 0) !important;
+}
+
+.flat-block-chart .flat-block-chart-value {
+  background-color: white !important;
+}
+
 /*.animation-infobox:after {
   content: " ";
   width: 0;
