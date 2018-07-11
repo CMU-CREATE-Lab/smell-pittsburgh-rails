@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<!-- Andrew's automated pipeline for creating ruby migration files for Smell MyCity regions-->
+<!--This progam takes in county and state and outputs ruby migration files-->
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>auto migration pipeline</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+  </head>
+  <body>
+    <form action="javascript:setUp();">
+      County: <input id="county" type="text" name="County"><br>
+      State: <input id="state" type="text" name="State"><br>
+    <input type="submit" value="Submit">
+    <p>Click <a id="zip" style="color:red">here</a> to download ruby zips file</p>
+    <p>Click <a id="markers" style="color:red">here</a> to download ruby markers file</p>
+    
+    <script>
+      //global variables 
+      var geocoder = new google.maps.Geocoder;
+      //object of commonly used data
+      var info ={
+        state:"",
+        countyName:"",
+        rawData:"",
+        lat:0,
+        long:0,
+        desc:"",
+        zipArr:null
+      }
+    //array of the types of data that should be processed
+      var interests=["PM25","PM10","SO2","PM2_5", "PM25B_UG_M3","PM25_2__UG_M3","PM25_UG_M3"];
+    //defualt region
+      var id=2;
+    // lat lng bounds box
+      var box;
+    
+ /**
+  * Gets data from form and begings long chain of methods
+  * calls reset and scrapZips
+  */   
+function setUp(){
+  var req="http://api.smellpittsburgh.org/api/v2/regions";
+  $.getJSON(req, function(data){
+		id=data[data.length-1].id+1;
+		var s = document.getElementById('state').value;
+		var c = document.getElementById('county').value;
+		reset();
+		scrapZips(s,c);
+	});
+}
+
+/**
+ * removes href and changes color to show that the file is not ready to be downloaded
+ */
+function reset(){
+	var link = document.getElementById("zip");
+  link.removeAttribute("href");
+  link.setAttribute("style","color:red");
+  link = document.getElementById("markers");
+  link.removeAttribute("href");
+  link.setAttribute("style","color:red");
+
+}
+
+/**
+ * Gets latlng and stores in info object
+ * calls getIDs
+ */
+function getLatLng(){
+  
+  geocoder.geocode( { 'address': info.countyName+" county "+info.state}, function(results, status) {
+
+          box=results[0].geometry.bounds;
+          var x=results[0].geometry.bounds.b.b+results[0].geometry.bounds.b.f;
+          var z=results[0].geometry.bounds.f.b+results[0].geometry.bounds.f.f;
+          info.lat=z/2;
+          info.long=x/2;
+          getIDs(box);
+        
+        }); 
+}
+
+
+/**
+ * scraps web page from zip-codes.com 
+ * Stores retrieved data in info object as rawData
+ * calls findZips
+ */
+	function scrapZips(stateCode, county,){
+	 info.countyName=county;
+   info.state=stateCode;
+   getLatLng()
+   //avoid in CORS error may need to be replaced
+   var url = "http://www.whateverorigin.org/get?url=" + encodeURIComponent("https://www.zip-codes.com/county/"+stateCode.toLowerCase()+"-"+county.toLowerCase()+".asp") + "&callback=?";
+   $.getJSON(url, function(data){
+      var page=""+data.contents+"";
+      var hold=page.substring(page.indexOf(county.toUpperCase()+" County, "+stateCode.toUpperCase()+" Covers"));
+	  //the text containing relevant zipcodes
+      var pert=hold.substring(0,hold.indexOf("demographics"));
+	 info.rawData=pert;
+   findZips();
+  });
+	}
+
+  /**
+   * search through info.rawData to find actual zip codes and stores this in info.zipArr 
+   * as an array calls downloadRB or alert if there is an issue with inputs
+   */
+  function findZips(){
+  //string to be searched
+    var str=info.rawData;
+	//string searching for (because it comes before all zipcodes)
+    var look="zip-code-";
+    var zips=[];
+    while(str.indexOf(look)>-1){
+	//parse out zip codes and add to array
+      str=str.substring(str.indexOf(look)+look.length);
+      zips.push(str.substring(0,str.indexOf(".")));
+    }
+    info.zipArr=zips;
+	//if no zip codes were found error
+    if(zips.length==0){
+      alert("Data not found \ninputs may not be a valid county/state");
+    }else{
+      downloadRB(makeZipRb(),"zip",getTimeStamp()+"_generate_"+info.countyName+info.state.toLocaleUpperCase()+"_region");
+    }
+  }
+
+  /**
+   * returns a time stamp string in YYYYMMDDHHMMSS format
+   */ 
+  function getTimeStamp(){
+    var d =new Date();
+    var month=d.getUTCMonth();
+    var day=d.getUTCDate();
+    var hour=d.getUTCHours();
+    var min=d.getUTCMinutes();
+    var sec=d.getUTCSeconds();
+    //no milliseconds because ruby docs say so
+    if(month<10){
+      month=""+0+""+month;
+    }
+    if(day<10){
+      day=""+0+""+day;
+    }
+    if(hour<10){
+      hour=""+0+""+hour;
+    }
+    if(min<10){
+      min=""+0+""+min;
+    }
+    if(sec<10){
+      sec=""+0+""+sec;
+    }
+
+    return ""+d.getUTCFullYear()+month+day+hour+min+sec;
+
+  }
+
+/**
+ * returns string formated to match a ruby migration file for a region
+ */
+  function makeZipRb(){
+    
+    var str1="class GenerateAchdRegion < ActiveRecord::Migration \n  def up\n    r = Region.new+\n    r.name = \""+info.countyName+" county\"";
+    str1+="\n    r.description = \""+info.countyName+" county zip codes\"";
+    str1+="\n    r.latitude ="+info.lat+"\n    r.longitude = "+info.long;
+    str1+="\n    r.zoom_level = 11";
+    str1+="\n    achd_zipcodes = [";
+    for(var i=0;i< info.zipArr.length;i++){
+      if(i==info.zipArr.length-1){
+         str1+="\""+info.zipArr[i]+"\"";
+      }else{
+         str1+="\""+info.zipArr[i]+"\",";
+      }
+     
+    }
+    str1=str1.substring(0,str1.length);
+    str1+="]";
+    str1+="\n    r.zip_codes.push( achd_zipcodes.map{|i| ZipCode.find_or_create_by(:zip => i)} )";
+    str1+="\n    r.save!";
+    str1+="\n  end";
+    str1+="\n"+"end";
+    
+    return str1;
+
+  }
+
+  /**
+   * takes a str (the file content) the type (zip or markers) and a file name
+   * sets atributes and color of links to show/make download available
+   */
+  function downloadRB(str,type,name){
+    let rbContent = "data:text/csv;charset=utf-8,";
+    var encodedUri = encodeURI(rbContent+str);
+    var link = document.getElementById(""+type);
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", ""+name+".rb");
+    link.setAttribute("style","color:blue");
+
+  }
+  
+/**
+ * takes a LatLng bonfing box and uses the points for an ESDR query to get all sensor IDs in the box
+ * calls getSensorInfo
+ */
+  function getIDs(LatLngBox){
+    var arrID=[];
+    var urlBox="http://esdr.cmucreatelab.org/api/v1/feeds?whereAnd=latitude%3E="+box.f.b+",latitude%3C="+box.f.f+",longitude%3E="+box.b.b+",longitude%3C="+box.b.f+"&fields=id,name"
+    $.getJSON(urlBox, function(data){
+      var arrRows=data.data.rows
+      for(var i=0;i<arrRows.length;i++){
+        arrID.push(arrRows[i].id);
+      }
+        getSensorInfo(arrID);
+      });
+    
+  }
+  
+  /**
+   * uses IDs to make an array of sensor objects from ESDR
+   * calls formatSensors
+   */
+  function getSensorInfo(IDArray){
+    var arrSensorData=[];
+    for(var i=0;i<IDArray.length;i++){
+      var id=""+IDArray[i];
+      var url="https://esdr.cmucreatelab.org/api/v1/feeds/"+id+"/";
+      $.getJSON(url, function(data){
+        arrSensorData.push(data.data);
+        if(arrSensorData.length==IDArray.length){
+          formatSensors(arrSensorData);
+        }
+      });
+    }
+
+  }
+
+  /**
+   * Creates string formated for ruby file for senors
+   * calls downloadRB hasInterestData getSensorChannel and getRegionID
+   */
+  function formatSensors(arr){
+    str="class AddAchdMarkers < ActiveRecord::Migration";
+    str+="\n  def up";
+    str+="\n    markers = [";
+    for(var k=0; k<arr.length;k++){
+      if(hasInterestData(arr[k])){
+        str+=getSensorChannel(arr[k]);
+      }
+      if(i=arr.length-1){
+        str=str.substring(0,str.length-1);
+      }
+    }
+    str+="\n    ]";
+    str+="\n   markers.each do |item|";
+    str+="\n      m = MapMarker.new";
+    getRegionID(function(regID){
+      str+="\n      m.region_id = "+regID;
+      str+="\n      m.marker_type = \"esdr_feed\"";
+      str+="\n      m.data = item[0].to_json";
+      str+="\n      m.latitude = item[1]";
+      str+="\n      m.longitude = item[2]";
+      str+="\n      m.save!";
+      str+="\n    end";
+      str+="\n  end";
+      str+="\nend";
+      downloadRB(str,"markers",getTimeStamp()+"_add_"+info.countyName+info.state.toLocaleUpperCase()+"_markers")
+
+    });
+    
+  }
+
+  /**
+   * returns a string formated for the ruby file for a channel of interest
+   */
+  function getSensorChannel(sensor){
+    var keys=Object.keys(sensor.channelBounds.channels);
+    var mStr="";
+    mStr+="\n      [";
+    mStr+="\n        {";
+    mStr+="\"name\":\""+sensor.name+"\",\"sensors\":{";
+     for(var i=0;i<keys.length;i++){
+      for(var j=0;j<interests.length;j++){
+        if(keys[i].substring(0,interests[j].length)===interests[j]){
+          mStr+="\""+interests[j]+"\":{\"sources\":[{\"feed\":"+sensor.id+",\"channel\":\""+keys[i]+"\"}}";
+        }
+      }
+    }
+    mStr+="}},\n      "+info.lat+",\n      "+info.long+",\n      ],";  
+    return mStr;  
+  }
+
+  /**
+   * returns a boolean of weather a sensor has at least one of the data types of interest
+   */
+  function hasInterestData(sensor){
+    var keys=Object.keys(sensor.channelBounds.channels);
+    for(var i=0;i<keys.length;i++){
+      for(var j=0;j<interests.length;j++){
+        if(keys[i].substring(0,interests[j].length)===interests[j]){
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * gets latest region from smellpitt api
+   * takes a call back function which should take the parameter of the latest ID
+   */
+  function getRegionID(callBackFunction){
+    var urlRegion="https://api.smellpittsburgh.org/api/v2/regions";
+    $.getJSON(urlRegion, function(data){
+      callBackFunction(data[data.length-1].id+1)
+    });
+  }
+    </script>
+
+  </body>
+</html>
+
+

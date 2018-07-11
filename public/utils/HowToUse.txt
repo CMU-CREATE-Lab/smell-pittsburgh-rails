@@ -1,0 +1,35 @@
+feed.html
+This file can be used generally by passing 3 parameters into the genFeed method
+parameters:
+	regionID -the id of the region you want to display smell reports from
+	elemID	 -the id of the html element that the feed should be displayed in
+	path	 -the path to the images this program needs (the colored triangles)
+If this functionality does not suffice there are several variables that can be changed
+	updateDelay (line 21) how frequently in milliseconds the smell PGH data base is queried for new reports
+	wid (line 22) a string for the width of the feed. As a string it includes both a number and units
+	hi (line 23) a string for the width of the feed should be both a number and units
+---------------------------------------------
+Wind.html
+Used by passing four parameters into the getWindData function
+will pass an array of near by station objects. A station object is formatted as follows:
+~~~~~~~
+Name:string (meaning full location name)
+Station:string (a four letter code)
+Location: Array(2) (latLng location of the sensor as an array)
+ 0:latitude
+ 1:longitude
+windDirectionDegrees:number (wind direction in degrees)
+windSpeedMPH:number (wind speed in miles per hour)
+~~~~~~~
+parameters:
+	lat -the latitude of a point that you want sensors near as a number
+	lng -the longitude of a point that you want sensors near as a number
+	limit -the maximum number of miles away from the above LatLng point that a sensor can be to be included
+	callBack -a function that the array of station objects will be passed into
+Other variables that change functionality:
+	remove0 -Boolean whether or not sensors that say wind speed and direction are both zero
+		 by default is false so sensors with both values as zero are included
+------------------------------------
+migrationPipeline.html
+State (two letter code) and county as a string are put into html input boxes. when the submit button is pressed the setUp function is called
+sets up downloadable ruby files which can be downloaded when the "here" link turns blue

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Get wind</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+	/*This program is based around the input of a latitude, longitude, distance limit and call back to the
+	getWindData function to get data from sensors accessable through the national weather service api*/
+	
+  //defualt function point set to pittsburgh lat lng
+  /*getWindData(40.4406,-79.9959,100,function(dataArr){
+    console.log(dataArr)
+  });*/
+  //finished array of wind data
+  var windDataArr=[];
+  // should data from senors displaying 0 mph and 0 as angle orgin be removed
+  var remove0=false;
+  //the call back to be used at the end of async string
+  var callBackF;
+  //a sample call back function
+  var cbf=function(a){
+    console.log(a);
+  }
+
+/*gets all sensors and api calls for them near the given point
+ *Takes a latitude and longitude value as well as a distance away value in miles also takes a call back function
+ *the call back function should take an arr
+ *Calls getNameLocation
+ */
+  function getWindData(lat,lng,limit,callBack){
+    windDataArr=[];
+    var url="https://api.weather.gov/points/"+lat+","+lng+"/stations";
+    //nation weather service api call to get all stations near a point
+    callBackF=callBack;
+    $.ajax({
+      url: url,
+      dataType: 'json',
+      success: function( data ) {
+        var stations=data.observationStations;
+        //goes through all return station
+        for(var i=0;i<stations.length;i++){
+          //future url based on data from this request
+          var req=""+stations[i]+"/observations/current";
+          //used to make substring easier to deal with
+          var word="stations";
+          //the current station url
+          var deltStr=stations[i];
+          //the 4 letter station code
+          var station=deltStr.substring(deltStr.indexOf(word)+word.length+1);
+          //data frequently needed in subsiquent methods
+          var passData={
+            url:req,
+            isLast:(i==stations.length-1),
+            sta:station,
+            lat:lat,
+            lng:lng,
+            limit:limit,
+          }
+          getNameLocation(passData)
+        }
+      },
+      error: function( data ) {
+        console.log( 'ERROR: ', data );
+        console.log("Error cause: Lat Lng input likely invalid")
+      }
+    });
+  }
+
+/*takes passing data object as defined in getWindData used to reference early parameters 
+ *gets specific information such as name and latLng location of station
+ *Calls getStationData
+ */
+  function getNameLocation(passingData){
+    var sta=passingData.sta;
+    var url="https://api.weather.gov/stations/"+sta;
+    //national weather service api call for station information
+    $.getJSON(url, function(data){
+      var name=data.properties.name;
+      var loc=data.geometry.coordinates;
+      var name=data.properties.name;
+      var loc=data.geometry.coordinates;
+      //~~~~ As the crow flys distance calculation to determin if in the limit~~~
+      //Haversine equation
+      var lat1=passingData.lat;
+      var lng2=loc[0];
+      var lng1=passingData.lng;
+      var lat2=loc[1];
+        var unitConstantRadius = 3959; // Earths radius in miles 
+        var dLat = (lat2-lat1)*Math.PI/180;  
+        var dLng = (lng2-lng1)*Math.PI/180;   
+        var a = Math.sin(dLat/2) * Math.sin(dLat/2) +  
+        Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *   
+        Math.sin(dLng/2) * Math.sin(dLng/2);   
+        var c = 2 * Math.asin(Math.sqrt(a));   
+        var distance = unitConstantRadius * c;//distance between initial point parameter and weather station in miles
+      //~~~ end complicated math~~~
+        
+          getStationData(passingData.url,sta,passingData.isLast,name,loc,distance<passingData.limit)
+    });
+  }
+/*end function
+ *calls callBack function param
+ */
+  function formatData(arr){
+    callBackF(arr);
+  }
+  /*Gets and formats wind data
+   *takes and api call url a station code a boolean of if this is the last loop of the for loop
+   *a station name a length 2 array of lat and lng and a boolean of if a station is within the distance limit
+   * calls formatData
+   */
+  function getStationData(url,sta,last,name,locArr,inDist){
+    //requests from national weather service a station's most recent data
+    $.getJSON(url, function(data){
+      //parsing out wind speed and direction
+           var windSpd=data.properties.windSpeed.value;
+           var windDir=data.properties.windDirection.value;
+           //convert to mph
+           windSpd=windSpd*(0.000621371)*60;
+           //check if 
+              //1st the wind direction and origin are both 0
+              //2nd and more import such sensors metting the above be removed
+           if((!(windDir==0&&windSpd==0)||!remove0)&&inDist){
+             //Adds station to the returned list
+            windDataArr.push({Station:sta,Name:name,location:locArr,windDirectionDegrees:windDir,windSpeedMPH:windSpd});
+           }
+           //if it is the last loop in the for loop go to the end function
+          if(last){
+            formatData(windDataArr);
+          }
+    });
+  }
+  
+  
+  </script>
+  </head>
+  <body>
+  
+  
+
+  </body>
+</html>
+
+

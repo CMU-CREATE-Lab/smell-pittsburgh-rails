@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<!--This program takes a region id to load reports from, the id of the div wanted and a path to the images needed-->
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Gen feed</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+var constants={
+    id:"",
+    path:"",
+    regionId:"",
+    end:0,
+    numbDivsToLoad:0
+}
+
+var isLoadMore=false;
+var load=10;
+var loadedSmells=[];
+var updateDelay=3000;
+var wid="50%";
+var hi="500px";
+
+        // example method call for pittsburgh genFeed(1,"reportFeed","./img/");
+
+    function genFeed(regionID,elemID,path){
+        var now=Math.round((new Date()).getTime() / 1000);
+        var url="http://api.smellpittsburgh.org/api/v2/smell_reports?client_ids="+regionID+"&start_time="+(now-604800);
+        constants.id=elemID;
+        constants.regionId=regionID;
+        constants.end=now-86400;
+        constants.path=path;
+        constants.numbDivsToLoad=load;
+
+        $.getJSON(url, function(data){
+            loadedSmells=data;
+            genDivs(data);
+        });
+    }
+
+    function genDivs(arr){
+        var html=[];
+        var count=0;
+        var start=arr.length-constants.numbDivsToLoad;
+        if(start<0){
+            start=0;
+        }
+        console.log(start+" "+arr.length)
+        for(var i=start;i<arr.length;i++){
+            var date= new Date(arr[i].observed_at*1000);
+            var strDate=date.getMonth()+1+"/"+date.getDate()+"/"+date.getFullYear();
+            var strTime="";
+            var hour=parseInt(date.getHours());
+            var sec=date.getSeconds();
+            var min=date.getMinutes();
+            var meridian="AM";
+            var smellRating=arr[i].smell_value;
+            var sympt=arr[i].feelings_symptoms;
+            var desc=arr[i].smell_description;
+            var img=constants.path+"smell_"+smellRating+".png";
+            if(sympt==null){
+                sympt="No data";
+            }
+            if(desc==null){
+                desc="No data";
+            }
+            if(hour>=12){
+                meridian="PM"
+            }
+            if(hour>12||hour==0){
+                hour=Math.abs(hour-12);
+            }
+            if(hour<10){
+                hour="0"+hour;
+            }
+            if(sec<10){
+                sec="0"+sec;
+            }
+            if(min<10){
+                min="0"+min;
+            }
+            strTime=hour+":"+min+":"+sec;
+            if(arr[i].observed_at>constants.end&&count<constants.numbDivsToLoad){
+            var div="<tr id='"+count+"'><td><img style='display:inline-block;padding: 0 15px; float: left;'src='"+img+"'></td><td><b>Date:</b> "+strDate+", "+strTime+" "+meridian+"<br><b>Smell Rating:</b>"+smellRating+"<br>"+
+            "<b>Symptoms:</b> "+sympt+"<br><b>Smell Description:</b> "+desc+"<hr/></td></tr>";
+            html.push(div);
+            count++;
+            }
+        }
+        appendDivs(html);
+    }
+
+    function appendDivs(arrOfDivs){
+        appendHelper(arrOfDivs);
+    }
+	
+    function loadX(i){
+        while(i>0){
+            loadMore();
+            i--;
+        }
+    }
+	
+    function appendHelper(arr){
+        $("#"+constants.id).replaceWith("<div id='"+constants.id+"'><table></table></div>");
+        var tab=$("#"+constants.id)[0].children[0];
+        tab.id="tab";
+        var elem = document.getElementById(constants.id);
+        elem.style="overflow-y: scroll;height:"+hi+";width:"+wid;
+        var marg=Math.floor((elem.offsetWidth)/4);
+        var button="<tr><td colspan=\"2\" style='text-align:center'><button onclick='loadMore()'style='width:50%;color:white;background-color:grey;border: 2px solid black;border-radius: 5px;'>Load more reports</button></td></tr>";        
+        console.log(arr.length+" "+constants.numbDivsToLoad)
+        if(arr.length<constants.numbDivsToLoad&&arr.length>load*3){
+           button="<tr><td colspan=\"2\"><hr/><h3 style='text-align:center'>There are no more recent smell reports</h3><hr/></td></tr>";
+        }
+        $("#tab").append(button);
+        $("#tab").append(arr.join(''));
+        //flex box
+        timedUpdate();
+        if(!isLoadMore){
+            elem.scrollTop=10000;
+
+        }else{
+            ajustScroll();
+        }
+    }
+	
+    function update(){
+        var elem = document.getElementById(constants.id);
+        if(elem.scrollTop<15){
+            var scrollRat=elem.scrollTop/elem.scrollHeight;
+            loadMore();           
+        }
+}
+var oldLoad=0;
+	function ajustScroll(){
+		var elem = document.getElementById(constants.id);
+		console.log(elem)
+		var elemID=10;
+		if(document.getElementById(elemID)==null){
+			elemID=9;
+		}
+		console.log(elemID)
+		var rowToScrollTo = document.getElementById(elemID);
+		elem.scrollTop=rowToScrollTo.offsetTop;
+	}
+
+    function loadMore(){
+        oldLoad=document.getElementById(constants.id).scrollTop;
+        constants.numbDivsToLoad+=load;
+        isLoadMore=true;
+        constants.end-=86400;
+        genDivs(loadedSmells)
+    }
+    function timedUpdate(){
+        window.setInterval(function() {
+            console.log("updating")
+        var now=Math.round((new Date()).getTime() / 1000);
+        var req="http://api.smellpittsburgh.org/api/v2/smell_reports?client_ids="+constants.regionId;
+        var url="http://api.smellpittsburgh.org/api/v2/smell_reports?client_ids="+constants.regionId+"&start_time="+(now-30);
+        $.getJSON(url,function(data){
+            if(data.length>0&&!(loadedSmells[loadedSmells.length-1]===data[0])){
+            $.getJSON(req, function(data2){
+            loadedSmells=data2;
+            genDivs(data2);
+        });
+            }
+        });
+    }, updateDelay);
+
+    }
+
+    </script>
+  </head>
+  <body>
+  <div id="reportFeed"></div>
+  </body>
+</html>
+
+
