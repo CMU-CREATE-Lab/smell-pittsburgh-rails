@@ -116,6 +116,12 @@ function init() {
 
   // Load data
   loadAndDrawCalendar();
+  
+  //load report feed
+$("#report-feed").on("click", function () {
+	  genFeed(1,"report-feed","/img/")
+  });
+
 
   // load map markers and draw timeline if we are in a region; otherwise just draw the timeline
   if (at_region_ids.length > 0) {
@@ -161,8 +167,7 @@ function initGoogleMapAndHomeButton() {
   ];
 
   //default to Pittsburgh
-  area = "PGH";
-  if (!init_latlng.lat && !init_latlng.lng) {
+   if (!init_latlng.lat && !init_latlng.lng) {
     init_latlng = default_latLng;
   }
   init_date = new Date(2016, 5, 4);

@@ -12,7 +12,6 @@
   // values from latLng or from the first region that contains the latLng
   var at_latitude = <%= @regions.empty? ? @latitude : @regions.first.latitude %>;
   var at_longitude = <%= @regions.empty? ? @longitude : @regions.first.longitude %>;
-
   // the reverse-geocoded zipcode for this lat/lng
   var at_zipcode = <%= @zipcode.nil? ? "null" : @zipcode %>;
 
@@ -31,6 +30,7 @@
   <%= javascript_include_tag "FlatBlockChart" %>
   <%= javascript_include_tag "CustomMapMarker" %>
   <%= javascript_include_tag "infobox" %>
+  <%= javascript_include_tag "feed" %>
 <% end %>
 
 <% content_for :body do %>
@@ -81,6 +81,7 @@
           <td colspan="2" class="aqi-td"></td>
         </tr>
       </table>
+	  <div id="report-feed" style="  padding-top: 4px;padding-left: 4px;padding-right: 4px;padding-bottom: 4px;bottom: 24px;border-radius: 23px;opacity: 0.75;"class="custom-button ui-icon-custom-feed noselect" )>  </div>
     </div>
     <div id="timeline-container" class="noselect"></div>
     <div id="calendar-dialog" title="Calendar" data-role="none">

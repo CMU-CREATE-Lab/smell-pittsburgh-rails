@@ -118,9 +118,96 @@
   padding-bottom: 4px;
 }
 
+#report-feed {
+  position: absolute;
+  font-size: 9px;
+  right: 9px;
+  bottom: 20px;
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.75);
+  border: 1px solid #777777;
+  border-radius: 2px;
+  width:30px;
+  height:30px;
+
+}
+#tab td{
+	padding-left:4px;
+}
+
+#stickyB{
+	width:100%;
+	height:26px;
+	position:absolute;
+	bottom:-1px;
+	right:-1px;
+	background-color:#EAEAEA;
+	border:solid grey 1px;
+}
+
+#stickyT{
+	width:100%;
+	height:10px;
+	position:absolute;
+	top:-6px;
+	right:0px
+}
+
+#newDiv{
+	text-align:center;
+	position:absolute;
+	top:-17px;
+	border-top-right-radius:5px;
+	border-top-left-radius:5px;
+	background-color:#EAEAEA;
+	border:solid grey 1px;
+	padding:1px;
+	color:#f44b42;
+	left:-1px;
+	height:13px;
+}
+
+#feed-header{
+	text-align:center;
+	width:100%;
+	background-color:#EAEAEA;
+	top:0px;
+	position:absolute;
+	bottom:22px;
+	border-bottom:solid grey 1px;
+	padding-top:1px;
+	padding-bottom:1px;
+	height:12px
+}
+
+#x-button{
+	position:absolute;
+	bottom:3px;
+	right:3px;
+	height:15px;
+	width:15px;
+	border: 1px solid grey;
+	text-align: center;
+	color:#f44b42;
+	vertical-align: middle;
+	line-height: 15px;
+	border-radius:13px
+}
+#load-button{
+	text-align:center;
+	width:100%;
+	color:white;
+	background-color:grey;
+	border: 1px solid black;
+	border-radius: 5px;
+}
+
 #legend-smell-value td {
   font-size: 10px;
   margin: 0;
+}
+#tab{
+	width:100%
 }
 
 #legend-smell-value .smell-color-td {
@@ -185,6 +272,14 @@
   border-radius: 2px;
   cursor: pointer;
 }
+
+.bigger::after{
+    content:"";
+    padding: 14px;  
+    position: absolute;
+    left: -8px;
+    top: -3px;
+} 
 
 .smell-color-1 {
   background-image: url("/img/smell_1.png");
@@ -272,6 +367,13 @@
 
 .ui-icon-custom-home {
   background-image: url(/img/home.png);
+  background-size: 20px 20px;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.ui-icon-custom-feed {
+  background-image: url(/img/feed.png);
   background-size: 20px 20px;
   background-repeat: no-repeat;
   background-position: center;
