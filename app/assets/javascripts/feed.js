@@ -4,13 +4,12 @@
 //~~~~~~~~~Global variables~~~~~~~~~~~~~~~~
 //veiw port
 //An object of widely used varuables that are mostly only configured at the beginning of the program
-//vw 
 var constants={
-    id:"",
-    path:"",
-    regionId:"",
+    id:"",//id of the element to turn into the feed div
+    path:"",//path to the needed images
+    regionId:"",//id of region to get reports from
     end:0,
-    numbDivsToLoad:0
+    numbDivsToLoad:0//the total maxium number of smell reports
 }
 
 var isLoadMore=false; //used to tell if this is the very first setup of the div or if one is loading more reports
@@ -19,13 +18,14 @@ var load=10; //the number of reports to load per click of load more
 var loadedSmells=[]; //array to store smell reports
 var oldLen=loadedSmells.length;//used to determin starting place for four loop
 var updateDelay=60*1000; //delay in seconds to check the database for more recent smell reports
-var wid="20vw";//width of container as a string with units
+var wid="97px";//width of container as a string with units
 var hi="50%";//height of container as a string with units
 var divAsStr="";//used to store original configuraion of div
 var addedID="2";//a string to create a known different id of the div to be placed inside the given div
 var oldLoad=0;//the number of reports previously displayed before load more was pressed
 var isSetUp=true;//set up the div in a special formate but only the first update when opened
-var apiURL="http://api.smellpittsburgh.org/api/v2/smell_reports?region_ids="; // the beginning of the api url for easy referance
+var apiRoot="http://api.smellpittsburgh.org";
+var apiURL=apiRoot+"/api/v2/smell_reports?region_ids="; // the beginning of the api url for easy referance
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         // example method call for pittsburgh genFeed(1,"reportFeed","./img/");
@@ -206,19 +206,19 @@ var saveUptTime=0;
 		// a sticky footer for the div
 		var sticky="<div id='stickyB'>"+x+"</div>";
         var newDiv="<div id='newDiv' onclick='scrollToTop()'>New!</div>"
-        var header="<div id='feed-header'>Recent Smell Reports</div>";
+        var header="<div id='feed-header'class='feed-header-responsive'>Recent Smell Reports</div>";
 
 		//Only format the div the first time opened (isSetup=true)
         if(isSetUp){
             //get the div we want to edit and replace it with a known format
-            $("#"+constants.id).replaceWith("<div id='"+constants.id+"'><div id='"+constants.id+""+addedID+"'><table></table></div></div>");
+            $("#"+constants.id).replaceWith("<div id='"+constants.id+"'class='report-feed-width'><div id='"+constants.id+""+addedID+"'><table></table></div></div>");
             //get the inner div
             var elem = document.getElementById(constants.id+""+addedID);
             //set up scrolling
-            elem.style="overflow-y: scroll;height:85%;width:100%;top:15px;position:absolute;";
+            elem.style="overflow-y: scroll;height:85%;width:100%;top:15px;margin-top:4px;position:absolute;";
 		    elem = document.getElementById(constants.id);
             //set div width and height
-		    elem.style="height:"+hi+";width:"+wid;
+		    elem.style="height:"+hi;//width:"+wid;
              $("#"+constants.id).append(header);
             //get the table from the above
             var tab=$("#"+constants.id+addedID)[0].children[0];
@@ -241,7 +241,7 @@ var saveUptTime=0;
             //if not set up the check if need to replace new or load more
             if(newReps){
                  //add new flag
-                $("#feed-header").replaceWith("<div id='feed-header'>Recent Smell Reports"+newDiv+"</div>");
+                $("#feed-header").replaceWith("<div id='feed-header'class='feed-header-responsive'>Recent Smell Reports"+newDiv+"</div>");
             }
             if(arr.length<constants.numbDivsToLoad-oldLen){
                 //switch load more button
@@ -277,7 +277,6 @@ var saveUptTime=0;
  *calls genDivs
  */
     function upt(){
-        console.log("updating")
         //local variables ----------------------------
         var now=new Date();//current time js date object
         var offset=updateDelay/1000;//updateDelay in seconds rather than miliseconds
@@ -297,9 +296,11 @@ var saveUptTime=0;
             //reverse the array so thy line up for the if checks
            data=data.reverse();
            // there are reports and the last reports arent the same
-           var repsSameTime=(loadedSmells[loadedSmells.length-1].observed_at===data[data.length-1].observed_at);
-           var descSame=(loadedSmells[loadedSmells.length-1].smell_description===data[data.length-1].smell_description);
-           areNewReps=data.length>0&&(!repsSameTime||(repsSameTime&&!descSame));
+            if(data.length>0){
+                var repsSameTime=(loadedSmells[loadedSmells.length-1].observed_at===data[data.length-1].observed_at);
+                var descSame=(loadedSmells[loadedSmells.length-1].smell_description===data[data.length-1].smell_description);
+                areNewReps=data.length>0&&(!repsSameTime||(repsSameTime&&!descSame));
+           }
             //second check incase two independant reports were sent at the same time
             if(areNewReps){
                 //requested all reports and repeate process with genDivs
@@ -310,6 +311,7 @@ var saveUptTime=0;
                     //conditions for genDIvs
                     isLoadMore=false;
                     newReps=true;
+                    loadedSmells=data2;
                     genDivs(data2);
                 });
             }
