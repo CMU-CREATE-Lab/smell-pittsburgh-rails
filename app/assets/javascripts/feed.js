@@ -202,7 +202,7 @@ var saveUptTime=0;
         }
         //onclick empty
 		//formate for the x minimizing button
-		var x="<div class='bigger'onclick='minimizeDiv()'id='x-button'><b>X</b></div>";
+		var x="<div title='close'class='bigger'onclick='minimizeDiv()'id='x-button'><b>X</b></div>";
 		// a sticky footer for the div
 		var sticky="<div id='stickyB'>"+x+"</div>";
         var newDiv="<div id='newDiv' onclick='scrollToTop()'>New!</div>"
@@ -215,11 +215,11 @@ var saveUptTime=0;
             //get the inner div
             var elem = document.getElementById(constants.id+""+addedID);
             //set up scrolling
-            elem.style="overflow-y: scroll;height:85%;width:100%;top:15px;margin-top:4px;position:absolute;";
+            elem.style="overflow-y: scroll;width:100%;";
 		    elem = document.getElementById(constants.id);
             //set div width and height
 		    elem.style="height:"+hi;//width:"+wid;
-             $("#"+constants.id).append(header);
+             $("#"+constants.id).prepend(header);
             //get the table from the above
             var tab=$("#"+constants.id+addedID)[0].children[0];
             tab.id="tab";
