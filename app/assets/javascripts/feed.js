@@ -24,7 +24,7 @@ var divAsStr="";//used to store original configuraion of div
 var addedID="2";//a string to create a known different id of the div to be placed inside the given div
 var oldLoad=0;//the number of reports previously displayed before load more was pressed
 var isSetUp=true;//set up the div in a special formate but only the first update when opened
-var apiRoot="http://api.smellpittsburgh.org";
+var apiRoot="";
 var apiURL=apiRoot+"/api/v2/smell_reports?region_ids="; // the beginning of the api url for easy referance
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
