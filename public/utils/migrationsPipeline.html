@@ -32,7 +32,7 @@
       }
     //array of the types of data that should be processed
       var interests=["PM25","PM10","SO2","PM2_5", "PM25B_UG_M3","PM25_2__UG_M3","PM25_UG_M3"];
-    //defualt region
+    //defualt region if
       var id=2;
     // lat lng bounds box
       var box;
@@ -42,14 +42,10 @@
   * calls reset and scrapZips
   */   
 function setUp(){
-  var req="http://api.smellpittsburgh.org/api/v2/regions";
-  $.getJSON(req, function(data){
-		id=data[data.length-1].id+1;
-		var s = document.getElementById('state').value;
-		var c = document.getElementById('county').value;
-		reset();
-		scrapZips(s,c);
-	});
+  var s = document.getElementById('state').value;
+  var c = document.getElementById('county').value;
+  reset();
+  scrapZips(s,c);
 }
 
 /**
@@ -98,7 +94,6 @@ function getLatLng(){
    $.getJSON(url, function(data){
       var page=""+data.contents+"";
       var hold=page.substring(page.indexOf(county.toUpperCase()+" County, "+stateCode.toUpperCase()+" Covers"));
-	  //the text containing relevant zipcodes
       var pert=hold.substring(0,hold.indexOf("demographics"));
 	 info.rawData=pert;
    findZips();
@@ -110,22 +105,20 @@ function getLatLng(){
    * as an array calls downloadRB or alert if there is an issue with inputs
    */
   function findZips(){
-  //string to be searched
     var str=info.rawData;
-	//string searching for (because it comes before all zipcodes)
     var look="zip-code-";
     var zips=[];
     while(str.indexOf(look)>-1){
-	//parse out zip codes and add to array
       str=str.substring(str.indexOf(look)+look.length);
       zips.push(str.substring(0,str.indexOf(".")));
     }
     info.zipArr=zips;
-	//if no zip codes were found error
     if(zips.length==0){
       alert("Data not found \ninputs may not be a valid county/state");
     }else{
-      downloadRB(makeZipRb(),"zip",getTimeStamp()+"_generate_"+info.countyName+info.state.toLocaleUpperCase()+"_region");
+      makeZipRb(function(retStr){
+        downloadRB(retStr,"zip",(parseInt(getTimeStamp()-2))+"_generate_"+info.countyName+info.state.toLowerCase()+"_region");
+      });
     }
   }
 
@@ -163,31 +156,34 @@ function getLatLng(){
 /**
  * returns string formated to match a ruby migration file for a region
  */
-  function makeZipRb(){
-    
-    var str1="class GenerateAchdRegion < ActiveRecord::Migration \n  def up\n    r = Region.new+\n    r.name = \""+info.countyName+" county\"";
-    str1+="\n    r.description = \""+info.countyName+" county zip codes\"";
-    str1+="\n    r.latitude ="+info.lat+"\n    r.longitude = "+info.long;
-    str1+="\n    r.zoom_level = 11";
-    str1+="\n    achd_zipcodes = [";
-    for(var i=0;i< info.zipArr.length;i++){
-      if(i==info.zipArr.length-1){
+  function makeZipRb(callback){
+    var countyCase=info.countyName.substring(0,1).toUpperCase()+info.countyName.substring(1).toLowerCase();
+    var str1="class Generate"+countyCase+""+info.state.toLowerCase()+"Region < ActiveRecord::Migration \n  def up\n    r = Region.new";
+    getRegionID(function(regID){
+      str1+="\n    r.id = "+regID;
+      str1+="\n    r.name = \""+info.countyName+" county\"";
+      str1+="\n    r.description = \""+info.countyName+" county zip codes\"";
+      str1+="\n    r.latitude ="+info.lat+"\n    r.longitude = "+info.long;
+      str1+="\n    r.zoom_level = 11";
+      str1+="\n    achd_zipcodes = [";
+      for(var i=0;i< info.zipArr.length;i++){
+        if(i==info.zipArr.length-1){
          str1+="\""+info.zipArr[i]+"\"";
-      }else{
+        }else{
          str1+="\""+info.zipArr[i]+"\",";
-      }
+        }
      
-    }
-    str1=str1.substring(0,str1.length);
-    str1+="]";
-    str1+="\n    r.zip_codes.push( achd_zipcodes.map{|i| ZipCode.find_or_create_by(:zip => i)} )";
-    str1+="\n    r.save!";
-    str1+="\n  end";
-    str1+="\n"+"end";
+      }
+      str1=str1.substring(0,str1.length);
+      str1+="]";
+      str1+="\n    r.zip_codes.push( achd_zipcodes.map{|i| ZipCode.find_or_create_by(:zip => i)} )";
+      str1+="\n    r.save!";
+      str1+="\n  end";
+      str1+="\n"+"end";
     
-    return str1;
-
-  }
+      callback(str1);
+    });
+}
 
   /**
    * takes a str (the file content) the type (zip or markers) and a file name
@@ -244,17 +240,16 @@ function getLatLng(){
    * calls downloadRB hasInterestData getSensorChannel and getRegionID
    */
   function formatSensors(arr){
-    str="class AddAchdMarkers < ActiveRecord::Migration";
+    var countyCase=info.countyName.substring(0,1).toUpperCase()+info.countyName.substring(1).toLowerCase();
+    str="class Add"+countyCase+""+info.state.toLowerCase()+"Markers < ActiveRecord::Migration";
     str+="\n  def up";
     str+="\n    markers = [";
     for(var k=0; k<arr.length;k++){
       if(hasInterestData(arr[k])){
         str+=getSensorChannel(arr[k]);
       }
-      if(i=arr.length-1){
-        str=str.substring(0,str.length-1);
-      }
     }
+	str=str.substring(0,str.length-1);
     str+="\n    ]";
     str+="\n   markers.each do |item|";
     str+="\n      m = MapMarker.new";
@@ -268,7 +263,7 @@ function getLatLng(){
       str+="\n    end";
       str+="\n  end";
       str+="\nend";
-      downloadRB(str,"markers",getTimeStamp()+"_add_"+info.countyName+info.state.toLocaleUpperCase()+"_markers")
+      downloadRB(str,"markers",getTimeStamp()+"_add_"+info.countyName+info.state.toLowerCase()+"_markers")
 
     });
     
@@ -282,15 +277,22 @@ function getLatLng(){
     var mStr="";
     mStr+="\n      [";
     mStr+="\n        {";
-    mStr+="\"name\":\""+sensor.name+"\",\"sensors\":{";
+    mStr+="\"name\":\""+sensor.name+"\",\"sensors\":[";
      for(var i=0;i<keys.length;i++){
       for(var j=0;j<interests.length;j++){
         if(keys[i].substring(0,interests[j].length)===interests[j]){
-          mStr+="\""+interests[j]+"\":{\"sources\":[{\"feed\":"+sensor.id+",\"channel\":\""+keys[i]+"\"}}";
+		  var feedname="\""+interests[j]+"\"";
+          mStr+="{"+feedname+":{\"sources\":[{\"feed\":"+sensor.id+",\"channel\":\""+keys[i]+"\"}]}},";
         }
       }
+
     }
-    mStr+="}},\n      "+info.lat+",\n      "+info.long+",\n      ],";  
+	 //if(mStr.substring(mStr.length-1,mStr.length).equals(",")){
+	 mStr=mStr.substring(0,mStr.length-1);//
+	// }
+    mStr+="]},";
+	mStr+="\n      "+info.lat+",\n      "+info.long+",\n      ]"; 
+	mStr+=",";	
     return mStr;  
   }
 
