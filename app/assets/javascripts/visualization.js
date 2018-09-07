@@ -5,7 +5,7 @@ var animate_smell_text = false; // This is for animating smell descriptions
 var show_voc_sensors = false; // This is for showing VOC sensors on the map
 
 // URL variables
-var aqi_root_url = "http://api.smellpittsburgh.org/api/v1/get_aqi?city=";
+var aqi_root_url = "https://api.smellpittsburgh.org/api/v1/get_aqi?city=";
 
 // Google map variables
 var map;
