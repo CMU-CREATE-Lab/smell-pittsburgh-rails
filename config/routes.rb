@@ -18,6 +18,7 @@ Rails.application.routes.draw do
 
 
   get "/visualization" => "visualization#index"
+  get "/visualization/v2" => "visualization#index"
   get "/summary" => "summary#index"
 
 end
