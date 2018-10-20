@@ -95,11 +95,19 @@ class AqiTracker < ActiveRecord::Base
 
   # Get the most recent AQI stored for a specific city
   def self.get_current_aqi(city)
-    zipcode = city["zipcode"]
-    if Rails.cache.read("current_aqi_#{zipcode}").blank?
+	zipcode = city["zipcode"]
+	if Rails.cache.read("current_aqi_#{zipcode}").blank?
+		return 0
+	end
+	return Rails.cache.read("current_aqi_#{zipcode}")[0]
+  end
+  
+  #Get the most recent AQI stored for a specific zipcode
+  def self.get_current_aqi_zip(zip)
+	if Rails.cache.read("current_aqi_"+zip).blank?
       return 0
     end
-    return Rails.cache.read("current_aqi_#{zipcode}")
+	return Rails.cache.read("current_aqi_"+zip)[0]
   end
 
 
@@ -118,10 +126,10 @@ class AqiTracker < ActiveRecord::Base
     zipcode = city["zipcode"]
     current_timestamp = get_current_timestamp(city)
     if current_timestamp < timestamp
-      Rails.cache.write("previous_aqi_#{zipcode}",get_current_aqi(city))
-      Rails.cache.write("previous_timestamp_#{zipcode}",current_timestamp)
-      Rails.cache.write("current_aqi_#{zipcode}",aqi)
-      Rails.cache.write("current_timestamp_#{zipcode}",timestamp)
+      Rails.cache.write("previous_aqi_#{zipcode}",[get_current_aqi(city),current_timestamp])
+      #Rails.cache.write("previous_timestamp_#{zipcode}",current_timestamp)
+      Rails.cache.write("current_aqi_#{zipcode}",[aqi,timestamp])
+      #Rails.cache.write("current_timestamp_#{zipcode}",timestamp)
       return true
     end
     return false
@@ -217,10 +225,10 @@ class AqiTracker < ActiveRecord::Base
 
   def self.get_current_timestamp(city)
     zipcode = city["zipcode"]
-    if Rails.cache.read("current_timestamp_#{zipcode}").blank?
+    if Rails.cache.read("current_aqi_#{zipcode}").blank?
       return 0
     end
-    return Rails.cache.read("current_timestamp_#{zipcode}")
+    return Rails.cache.read("current_aqi_#{zipcode}")[1]
   end
 
 
