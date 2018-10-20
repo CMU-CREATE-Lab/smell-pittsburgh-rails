@@ -348,14 +348,13 @@ class ApiController < ApplicationController
 
 
   # GET /api/v1/get_aqi
-  # zip or city
   # PARAMS:
-  # "city" : String
+  # "city" or "zipcode" : String
   def get_aqi
     @aqi = "null"
 	  if (params["zipcode"])
-      zipcode=params["zipcode"]
-      if(!(Rails.cache.exist?("current_aqi_#{zipcode}") and (((Rails.cache.read("current_aqi_#{zipcode}")[1]).to_i-Time.now.to_i).abs<60*60)))
+      zipcode = params["zipcode"]
+      if(!(Rails.cache.exist?("current_aqi_#{zipcode}") and (((Rails.cache.read("current_aqi_#{zipcode}")[1]).to_i-Time.now.to_i).abs < 60*60)))
 	      AirnowAqi.update_city_aqi({"name"=>"onlyZip","zipcode"=>params["zipcode"]})
       end
 	    val = AqiTracker.get_current_aqi_zip(params["zipcode"])

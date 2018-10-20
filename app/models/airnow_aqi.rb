@@ -22,31 +22,29 @@ class AirnowAqi < ActiveRecord::Base
         end
       end
     end
-	puts(aqi)
     return false if aqi < 0
     return AqiTracker.update_aqi_for_city(city,aqi,date)
   end
 
 
   def self.request_aqi_from_zipcode(zipcode)
-    response = `curl "#{self.AIRNOW_API_URL}/aq/observation/zipCode/current/?format=application/json&zipCode=#{zipcode}&distance=25&API_KEY=D2E287A6-80C4-4519-B7FE-878B51C37F1F"`
-    #begin
+    response = `curl "#{self.AIRNOW_API_URL}/aq/observation/zipCode/current/?format=application/json&zipCode=#{zipcode}&distance=25&API_KEY=#{AIRNOW_API_KEY}"`
+    begin
       json = JSON.parse(response)
       results = []
       json.each do |row|
         # YYYY-MM-DD HH:00 EST => Unix time
-        date = "#{row["DateObserved"]}#{row["HourObserved"]}:00 #{row["LocalTimeZone"]}".to_datetime.to_i
+        date = "#{row['DateObserved']}#{row['HourObserved']}:00 #{row['LocalTimeZone']}".to_datetime.to_i
         param = row["ParameterName"]
         value = row["AQI"]
-
         # add row
         results.push( { "date" => date, "param" => param, "value" => value} )
       end
       return results
-    #rescue
-      #Rails.logger.info("AirnowAqi.request_aqi_from_zipcode Failed with zipcode=#{zipcode}")
-      #return []
-    #end
+    rescue
+      Rails.logger.info("AirnowAqi.request_aqi_from_zipcode Failed with zipcode=#{zipcode}")
+      return []
+    end
   end
 
 end
