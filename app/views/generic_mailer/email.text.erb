@@ -1,0 +1,45 @@
+Dear <%= @agency_name %>,
+
+
+<% if @smell_report.smell_value == 1 %>
+I wanted to report that the air smells fine right now (<%= @smell_report.created_at.localtime.strftime("%I:%M %p %Z") %>) at <% if @street_address.blank? %>zipcode: <%= @zipcode %><% else %><%= @street_address %>, <%= @zipcode %><% end %> on <%= @smell_report.created_at.localtime.strftime("%d %B %Y") %>.
+<% else %>
+<% if @street_address.blank? %>
+I noticed an unusual smell at zipcode: <%= @zipcode %> on <%= @smell_report.created_at.localtime.strftime("%d %B %Y") %> at <%= @smell_report.created_at.localtime.strftime("%I:%M %p %Z") %>. I'd rate the smell <%= @smell_report.smell_value %> on a scale of 1 to 5, with 5 being the worst odor.
+<% else %>
+I noticed an unusual smell at <%= @street_address %>, <%= @zipcode %> on <%= @smell_report.created_at.localtime.strftime("%d %B %Y") %> at <%= @smell_report.created_at.localtime.strftime("%I:%M %p %Z") %>. I'd rate the smell <%= @smell_report.smell_value %> on a scale of 1 to 5, with 5 being the worst odor.
+<% end %>
+
+
+<% unless @smell_report.smell_description.blank? and @smell_report.feelings_symptoms.blank? %>
+Below are some things I noticed about this smell episode.
+<% unless @smell_report.smell_description.blank? %>
+<%= "Smell/Source Description: #{@smell_report.smell_description}" %>
+<% end %>
+<% unless @smell_report.feelings_symptoms.blank? %>
+<%= "My Symptoms: #{@smell_report.feelings_symptoms}" %>
+<% end %>
+
+
+<% end %>
+<% if @phone_number.blank? %>
+My contact information is <%= @reply_to %>.
+<% else %>
+My contact information is (email) <%= @reply_to %>, (phone): <%= @phone_number %>.
+<% end %>
+<% end %>
+
+
+<% unless @smell_report.additional_comments.blank? %>
+<%= @smell_report.additional_comments %>
+
+
+<% end%>
+Thank you,
+<%= @name %>
+<% unless @address.blank? %>
+<%= @address %>
+<% end %>
+
+
+This report was generated through the <%= @client.name %> app: <%= @client.website %>

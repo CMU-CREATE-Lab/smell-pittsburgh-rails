@@ -9,6 +9,8 @@ class Agency < ActiveRecord::Base
   # options["phone_number"]: String
   # options["address"]: String
   def create_and_submit_form(smell_report, options={})
+    agency_name = options[:agency_name].blank? ? "" : options[:agency_name]
+    agency_email = options[:agency_email].blank? ? "" : options[:agency_email]
     reply_email = options[:reply_email].blank? ? "" : options[:reply_email]
     name = options[:name].blank? ? "" : options[:name]
     phone_number = options[:phone_number].blank? ? "" : options[:phone_number]
@@ -31,8 +33,14 @@ class Agency < ActiveRecord::Base
         form.agency = self
         form.save!
 
-        # TODO generic mailer
-        email = AchdMailer.email(form,geo.street_address,geo.zip)
+        client = Client.find_by_id(smell_report.client_id)
+        if (options[:agency_name] and options[:agency_email])
+          email = GenericMailer.email(form,geo.street_address,geo.zip,agency_email,agency_name,client)
+        else
+          Rails.logger.info("Agency Form: No agency name or email specified")
+          return
+        end
+
         # do not send from dev/staging environments
         if Rails.env == "production"
           email.deliver!
