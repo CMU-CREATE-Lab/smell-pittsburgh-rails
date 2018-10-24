@@ -85,5 +85,6 @@ Rails.application.configure do
   AIRNOW_API_KEY = "DO-NOT-PUSH-ME"
   # the email address for who receives the ACHD Form mail
   ACHD_EMAIL_RECIPIENT = "DO-NOT-PUSH-ME"
-
+  # Google Maps API Key
+  GOOGLE_MAPS_API_KEY = "DO-NOT-PUSH-ME"
 end
