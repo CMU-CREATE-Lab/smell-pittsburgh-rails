@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180227153346) do
+ActiveRecord::Schema.define(version: 20180803000003) do
 
   create_table "agencies", force: :cascade do |t|
     t.string   "name",       limit: 255
@@ -51,6 +51,7 @@ ActiveRecord::Schema.define(version: 20180227153346) do
     t.text     "secret_token", limit: 65535
     t.datetime "created_at",                 null: false
     t.datetime "updated_at",                 null: false
+    t.string   "website",      limit: 255
   end
 
   create_table "map_markers", force: :cascade do |t|
