@@ -10,8 +10,9 @@ Rails.application.config.assets.version = '1.0'
 # application.js, application.css, and all non-JS/CSS in app/assets folder are already added.
 # Rails.application.config.assets.precompile += %w( search.js )
 Rails.application.config.assets.precompile += %w( CustomMapMarker.js )
-Rails.application.config.assets.precompile += %w( FlatBlockChart.js )
-Rails.application.config.assets.precompile += %w( FlatBlockChart.css )
+Rails.application.config.assets.precompile += %w( AnimateCustomMapMarker.js )
+Rails.application.config.assets.precompile += %w( TimelineHeatmap.js )
+Rails.application.config.assets.precompile += %w( TimelineHeatmap.css )
 Rails.application.config.assets.precompile += %w( googleAnalytics.js )
 Rails.application.config.assets.precompile += %w( summary.js )
 Rails.application.config.assets.precompile += %w( visualization.js )

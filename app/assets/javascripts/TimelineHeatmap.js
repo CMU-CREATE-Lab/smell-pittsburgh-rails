@@ -1,6 +1,6 @@
 /*************************************************************************
- * GitHub: https://github.com/yenchiah/flat-block-chart
- * Version: v2.2
+ * GitHub: https://github.com/yenchiah/timeline-heatmap
+ * Version: v2.3
  *************************************************************************/
 
 (function () {
@@ -10,7 +10,7 @@
   //
   // Create the class
   //
-  var FlatBlockChart = function (chart_container_id, settings) {
+  var TimelineHeatmap = function (chart_container_id, settings) {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
     // Variables
@@ -65,17 +65,20 @@
     var add_left_arrow = typeof settings["addLeftArrow"] === "undefined" ? false : settings["addLeftArrow"];
     var left_arrow_label = typeof settings["leftArrowLabel"] === "undefined" ? "" : settings["leftArrowLabel"];
 
+    // Prevent adding events to blocks with color value zero
+    var no_event_when_color_value_zero = typeof settings["noEventWhenColorValueZero"] === "undefined" ? false : settings["noEventWhenColorValueZero"];
+
     // Cache DOM elements
     var $chart_container = $("#" + chart_container_id);
-    var $flat_block_chart_value;
-    var $flat_block_chart_label;
-    var $flat_blocks_click_region = [];
+    var $timeline_heatmap_value;
+    var $timeline_heatmap_label;
+    var $blocks_click_region = [];
     var $arrow_block_container;
     var $arrow_label;
 
     // Parameters
-    var flat_block_chart_touched = false;
-    var flat_block_chart_touched_position = {};
+    var timeline_heatmap_touched = false;
+    var timeline_heatmap_touched_position = {};
     var selected_block_class = use_color_quantiles ? "selected-block-no-color" : "selected-block";
     var this_obj = this;
     var enable_left_arrow_event = true;
@@ -87,14 +90,14 @@
     function init() {
       var html = "";
 
-      html += "<table class='flat-block-chart'>";
-      html += "  <tr class='flat-block-chart-value'></tr>";
-      html += "  <tr class='flat-block-chart-label'></tr>";
+      html += "<table class='timeline-heatmap'>";
+      html += "  <tr class='timeline-heatmap-value'></tr>";
+      html += "  <tr class='timeline-heatmap-label'></tr>";
       html += "</table>";
       $chart_container.append($(html));
 
-      $flat_block_chart_value = $("#" + chart_container_id + " .flat-block-chart-value");
-      $flat_block_chart_label = $("#" + chart_container_id + " .flat-block-chart-label");
+      $timeline_heatmap_value = $("#" + chart_container_id + " .timeline-heatmap-value");
+      $timeline_heatmap_label = $("#" + chart_container_id + " .timeline-heatmap-label");
 
       // Plot the timeline
       plot(data);
@@ -125,10 +128,10 @@
       }
 
       // Move block
-      $flat_block_chart_value.prepend($arrow_block_container);
+      $timeline_heatmap_value.prepend($arrow_block_container);
 
       // Move label
-      $flat_block_chart_label.prepend($arrow_label);
+      $timeline_heatmap_label.prepend($arrow_label);
     }
 
     function plot(block_data) {
@@ -151,7 +154,7 @@
       }
 
       // Update click regions
-      $flat_blocks_click_region = $flat_block_chart_value.find(".flat-block-click-region");
+      $blocks_click_region = $timeline_heatmap_value.find(".block-click-region");
 
       // Add the left arrow on the timeline
       if (add_left_arrow) {
@@ -199,26 +202,31 @@
         }
         // Create block
         var style_str = "style='" + color_str + height_str + "' ";
-        var $block = $("<div class='flat-block' " + style_str + "></div>");
-        var $block_click_region = $("<div class='flat-block-click-region' " + data_str + "></div>");
+        var $block = $("<div class='block' " + style_str + "></div>");
+        var $block_click_region = $("<div class='block-click-region' " + data_str + "></div>");
         var $block_container = $("<td></td>");
         $block_container.append($block);
         $block_container.append($block_click_region);
-        addEvents($block_click_region);
+        if (no_event_when_color_value_zero && color_val == 0) {
+          // Do not add events to the block if its color value is zero and the flag is true
+          $block_click_region.addClass("cursor-default");
+        } else {
+          addEvents($block_click_region);
+        }
         // Create label
         var $label = $("<td>" + pt[data_index_for_labels] + "</td>");
         // Add to collections
         chart_value_elements.push($block_container);
         chart_label_elements.push($label);
       }
-      $flat_block_chart_value.prepend(chart_value_elements);
-      $flat_block_chart_label.prepend(chart_label_elements);
+      $timeline_heatmap_value.prepend(chart_value_elements);
+      $timeline_heatmap_label.prepend(chart_label_elements);
     }
 
     function addEvents($block_click_region) {
       $block_click_region.on("click touchend", function (e) {
-        if (e.type == "click") flat_block_chart_touched = true;
-        if (flat_block_chart_touched) {
+        if (e.type == "click") timeline_heatmap_touched = true;
+        if (timeline_heatmap_touched) {
           var $this = $(this);
           selectBlock($this, false);
           // Callback event
@@ -229,13 +237,13 @@
       });
 
       $block_click_region.on('touchstart', function (e) {
-        flat_block_chart_touched_position = {x: e.originalEvent.touches[0].pageX, y: e.originalEvent.touches[0].pageY};
-        flat_block_chart_touched = true;
+        timeline_heatmap_touched_position = {x: e.originalEvent.touches[0].pageX, y: e.originalEvent.touches[0].pageY};
+        timeline_heatmap_touched = true;
       });
 
       $block_click_region.on('touchmove', function (e) {
-        if (Math.abs(flat_block_chart_touched_position.x - e.originalEvent.touches[0].pageX) >= 2 || Math.abs(flat_block_chart_touched_position.y - e.originalEvent.touches[0].pageY) >= 2) {
-          flat_block_chart_touched = false;
+        if (Math.abs(timeline_heatmap_touched_position.x - e.originalEvent.touches[0].pageX) >= 2 || Math.abs(timeline_heatmap_touched_position.y - e.originalEvent.touches[0].pageY) >= 2) {
+          timeline_heatmap_touched = false;
         }
       });
     }
@@ -302,9 +310,9 @@
     }
 
     function removeBlocks() {
-      $flat_block_chart_value.empty();
-      $flat_block_chart_label.empty();
-      $flat_blocks_click_region = [];
+      $timeline_heatmap_value.empty();
+      $timeline_heatmap_label.empty();
+      $blocks_click_region = [];
       $arrow_block_container = undefined;
       $arrow_label = undefined;
     }
@@ -314,14 +322,14 @@
     // Privileged methods
     //
     var clearBlockSelection = function () {
-      if ($flat_blocks_click_region.hasClass(selected_block_class)) {
-        $flat_blocks_click_region.removeClass(selected_block_class);
+      if ($blocks_click_region.hasClass(selected_block_class)) {
+        $blocks_click_region.removeClass(selected_block_class);
       }
     };
     this.clearBlockSelection = clearBlockSelection;
 
     var selectBlockByIndex = function (index) {
-      selectBlock($($flat_blocks_click_region.filter("div[data-index=" + index + "]")[0]), true);
+      selectBlock($($blocks_click_region.filter("div[data-index=" + index + "]")[0]), true);
     };
     this.selectBlockByIndex = selectBlockByIndex;
 
@@ -353,7 +361,7 @@
     this.getSelectedBlock = getSelectedBlock;
 
     var getNumberOfBlocks = function () {
-      return $flat_blocks_click_region.length;
+      return $blocks_click_region.length;
     };
     this.getNumberOfBlocks = getNumberOfBlocks;
 
@@ -363,7 +371,7 @@
     this.selectFirstBlock = selectFirstBlock;
 
     var getBlockDataByIndex = function (index) {
-      return $flat_blocks_click_region.filter("div[data-index=" + index + "]").data();
+      return $blocks_click_region.filter("div[data-index=" + index + "]").data();
     };
     this.getBlockDataByIndex = getBlockDataByIndex;
 
@@ -417,9 +425,9 @@
   // Register to window
   //
   if (window.edaplotjs) {
-    window.edaplotjs.FlatBlockChart = FlatBlockChart;
+    window.edaplotjs.TimelineHeatmap = TimelineHeatmap;
   } else {
     window.edaplotjs = {};
-    window.edaplotjs.FlatBlockChart = FlatBlockChart;
+    window.edaplotjs.TimelineHeatmap = TimelineHeatmap;
   }
 })();

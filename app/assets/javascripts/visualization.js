@@ -736,7 +736,7 @@ function createTimeline(data) {
     },
     leftArrowLabel: "More"
   };
-  timeline = new edaplotjs.FlatBlockChart("timeline-container", chart_settings);
+  timeline = new edaplotjs.TimelineHeatmap("timeline-container", chart_settings);
 
   // Add horizontal scrolling to the timeline
   // Needed because Android <= 4.4 won't scroll without this
