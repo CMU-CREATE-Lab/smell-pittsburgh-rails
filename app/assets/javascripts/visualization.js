@@ -9,7 +9,7 @@ var aqi_root_url = "https://api.smellpittsburgh.org/api/v1/get_aqi?city=";
 
 // Google map variables
 var map;
-var area;
+var app; // indicating the applications, e.g., SMC means smell my city, BA means bay area
 var init_latlng = {};
 var default_latLng = {"lat": at_latitude, "lng": at_longitude};
 var init_date;
@@ -49,69 +49,13 @@ var sensors_list = [];
 function init() {
   // Check if enabling staging features or not
   if (show_voc_sensors) {
-    $(".voc-legend-row").show();
-    sensors_list.push({
-      name: "Lloyd Ave at Chestnut St Outdoors AWAIR",
-      sensors: {
-        VOC: {
-          sources: [{
-            feed: 11079,
-            channel: "voc"
-          }]
-        }
-      },
-      latitude: 40.427418,
-      longitude: -79.882734
-    });
-    sensors_list.push({
-      name: "Dawson St at Frazier St AWAIR",
-      sensors: {
-        VOC: {
-          sources: [{
-            feed: 7715,
-            channel: "voc"
-          }]
-        }
-      },
-      latitude: 40.429782,
-      longitude: -79.954246
-    });
-    sensors_list.push({
-      name: "Ludwick St at Landview Rd AWAIR",
-      sensors: {
-        VOC: {
-          sources: [{
-            feed: 7713,
-            channel: "voc"
-          }]
-        }
-      },
-      latitude: 40.421608,
-      longitude: -79.925038
-    });
-    sensors_list.push({
-      name: "Monroe Ave at Upston St AWAIR",
-      sensors: {
-        VOC: {
-          sources: [{
-            feed: 7768,
-            channel: "voc"
-          }]
-        }
-      },
-      latitude: 40.344799,
-      longitude: -79.875582
-    });
+    showVocSensors();
   }
 
-  // we used to handle latLng on hashchange, but since this wasn't needed we let it get handled in the rails controller
-  //$(window).on('hashchange', function(){
-  //  var hash = window.location.hash.slice(1).split("&");
-  //}).trigger('hashchange');
-
   // Create the page
-  initGoogleMapAndHomeButton();
-  initCalendarButtonAndDialog();
+  initGoogleMap();
+  initControl();
+  initCalendar();
   initAnimationUI();
 
   // Load data
@@ -142,7 +86,64 @@ function init() {
   });
 }
 
-function initGoogleMapAndHomeButton() {
+// This is a testing feature
+function showVocSensors() {
+  $(".voc-legend-row").show();
+  sensors_list.push({
+    name: "Lloyd Ave at Chestnut St Outdoors AWAIR",
+    sensors: {
+      VOC: {
+        sources: [{
+          feed: 11079,
+          channel: "voc"
+        }]
+      }
+    },
+    latitude: 40.427418,
+    longitude: -79.882734
+  });
+  sensors_list.push({
+    name: "Dawson St at Frazier St AWAIR",
+    sensors: {
+      VOC: {
+        sources: [{
+          feed: 7715,
+          channel: "voc"
+        }]
+      }
+    },
+    latitude: 40.429782,
+    longitude: -79.954246
+  });
+  sensors_list.push({
+    name: "Ludwick St at Landview Rd AWAIR",
+    sensors: {
+      VOC: {
+        sources: [{
+          feed: 7713,
+          channel: "voc"
+        }]
+      }
+    },
+    latitude: 40.421608,
+    longitude: -79.925038
+  });
+  sensors_list.push({
+    name: "Monroe Ave at Upston St AWAIR",
+    sensors: {
+      VOC: {
+        sources: [{
+          feed: 7768,
+          channel: "voc"
+        }]
+      }
+    },
+    latitude: 40.344799,
+    longitude: -79.875582
+  });
+}
+
+function initGoogleMap() {
   // Set Google map style
   var styleArray = [
     {
@@ -177,10 +178,10 @@ function initGoogleMapAndHomeButton() {
   for (var i = 0; i < query.length; i++) {
     var queryVar = query[i];
     if (queryVar.indexOf("user_hash") != -1 && queryVar.match(/[A-Z]{2,}/)) {
-      area = queryVar.match(/[A-Z]{2,}/)[0];
+      app = queryVar.match(/[A-Z]{2,}/)[0];
     }
   }
-  if (area == "BA") {
+  if (app == "BA") {
     init_latlng = {"lat": 38.004472, "lng": -122.260693};
     init_date = new Date(2017, 0, 1);
   }
@@ -229,7 +230,9 @@ function initGoogleMapAndHomeButton() {
   infowindow_VOC.addListener("domready", function () {
     styleInfoWindowCloseButton();
   });
+}
 
+function initControl() {
   // Add event to the home button
   $("#home-btn").on("click", function () {
     map.setCenter(init_latlng);
@@ -262,7 +265,7 @@ function styleInfoWindowCloseButton() {
   });
 }
 
-function initCalendarButtonAndDialog() {
+function initCalendar() {
   $calendar = $("#calendar");
   $calendar_dialog = $("#calendar-dialog");
   $dialog_ok_button = $("#dialog-ok-button");
@@ -959,7 +962,7 @@ function getSensorType(info) {
 
 function showOrHideAQI(is_current_day) {
   // Show current Pittsburgh AQI if on current day and user is in Pittsburgh
-  if (is_current_day && area == "PGH") {
+  if (is_current_day && app == "PGH") {
     $.getJSON(aqi_root_url + "Pittsburgh", function (response) {
       if (response) {
         $(".aqi-td").text(response);
