@@ -37,57 +37,37 @@
 
 #terrain-btn {
   position: absolute;
-  font-size: 11px;
   left: 9px;
   top: 121px;
-  width: 45px;
-  height: 45px;
-  border-radius: 23px;
   opacity: 0.75;
 }
 
 #calendar-btn {
   position: absolute;
-  font-size: 11px;
   left: 9px;
   top: 65px;
-  width: 45px;
-  height: 45px;
-  border-radius: 23px;
   opacity: 0.75;
 }
 
 #home-btn {
   position: absolute;
-  font-size: 11px;
   left: 9px;
   top: 9px;
-  width: 45px;
-  height: 45px;
-  border-radius: 23px;
   opacity: 0.75;
 }
 
 #playback-btn {
   position: absolute;
-  font-size: 11px;
   left: 9px;
   bottom: 25px;
-  width: 45px;
-  height: 45px;
-  border-radius: 23px;
   opacity: 0.75;
 }
 
 #stop-btn {
   position: absolute;
-  font-size: 11px;
   left: 9px;
   bottom: 81px;
-  width: 45px;
-  height: 45px;
   display: none;
-  border-radius: 23px;
   opacity: 0.75;
 }
 
@@ -250,66 +230,37 @@
   background-image: url("/img/wind_arrow.png");
 }
 
-.custom-button {
-  background-color: white;
-  color: black;
+.custom-button-flat {
   font-family: 'Open Sans', Helvetica, Arial, sans-serif;
+  text-align: center;
+  font-size: 16px;
+  line-height: 16px;
   outline: none;
-  border: 1px solid #777777;
-  border-radius: 2px;
+  border-radius: 48px;
   cursor: pointer;
-}
-
-.custom-button:focus {
   box-shadow: none;
-  -webkit-box-shadow: none;
+  transition: background-color 0.1s, box-shadow 0.1s, border 0.1s;
+  text-decoration: none;
+  color: black;
+  border: 1px solid #777777;
   background-color: white;
+  padding: 13px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  box-sizing: border-box;
 }
 
-.custom-button:active {
-  background-color: rgb(210, 210, 210);
+.custom-button-flat img {
+  width: 20px;
+  height: 20px;
 }
 
-.ui-icon-custom-home {
-  background-image: url(/img/home.png);
-  background-size: 20px 20px;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-
-.ui-icon-custom-calendar {
-  background-image: url(/img/calendar.png);
-  background-size: 20px 20px;
-  background-repeat: no-repeat;
-  background-position: center center;
-}
-
-.ui-icon-custom-terrain {
-  background-image: url(/img/terrain.png);
-  background-size: 23px 23px;
-  background-repeat: no-repeat;
-  background-position: center center;
-}
-
-.ui-icon-custom-play {
-  background-image: url(/img/play.png);
-  background-size: 20px 20px;
-  background-repeat: no-repeat;
-  background-position: center center;
-}
-
-.ui-icon-custom-pause {
-  background-image: url(/img/pause.png);
-  background-size: 20px 20px;
-  background-repeat: no-repeat;
-  background-position: center center;
-}
-
-.ui-icon-custom-stop {
-  background-image: url(/img/stop.png);
-  background-size: 20px 20px;
-  background-repeat: no-repeat;
-  background-position: center center;
+.custom-button-flat span {
+  margin-left: 6px;
 }
 
 .custom-td-button {
@@ -416,12 +367,12 @@
   background-color: #ffffff;
 }
 
-.flat-block-chart .selected-block-no-color {
+.timeline-heatmap .selected-block-no-color {
   box-shadow: 0px 0px 0px 5px rgb(0, 154, 255) inset !important;
   background-color: rgba(0, 0, 0, 0) !important;
 }
 
-.flat-block-chart .flat-block-chart-value {
+.timeline-heatmap .flat-block-chart-value {
   background-color: white !important;
 }
 

@@ -10,8 +10,7 @@ var aqi_root_url = "https://api.smellpittsburgh.org/api/v1/get_aqi?city=";
 // Google map variables
 var map;
 var app; // indicating the applications, e.g., SMC means smell my city, BA means bay area
-var init_latlng = {};
-var default_latLng = {"lat": at_latitude, "lng": at_longitude};
+var init_latlng = {"lat": at_latitude, "lng": at_longitude};
 var init_date;
 var init_zoom_desktop = at_zoom + 1;
 var init_zoom_mobile = at_zoom;
@@ -32,7 +31,9 @@ var $playback_txt;
 var animation_labels;
 
 // Calendar variables
-var month_names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+var month_names = [
+  "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
+];
 var $calendar_dialog;
 var $calendar;
 var $dialog_ok_button;
@@ -64,7 +65,7 @@ function init() {
   // Load report feed
   // TODO: Finish work on the smell report feed
   //$("#report-feed").on("click", function () {
-    //genFeed(1,"report-feed","/img/")
+  //genFeed(1,"report-feed","/img/")
   //});
 
   // load map markers and draw timeline if we are in a region; otherwise just draw the timeline
@@ -167,10 +168,6 @@ function initGoogleMap() {
     }
   ];
 
-  //default to Pittsburgh
-  if (!init_latlng.lat && !init_latlng.lng) {
-    init_latlng = default_latLng;
-  }
   init_date = new Date(2016, 5, 4);
 
   //get user location
@@ -233,6 +230,12 @@ function initGoogleMap() {
 }
 
 function initControl() {
+  // TODO: this should come from the query string
+  var city_name = "Pittsburgh";
+  
+  // Add city name to the home button
+  $("#home-btn span").text(city_name);
+
   // Add event to the home button
   $("#home-btn").on("click", function () {
     map.setCenter(init_latlng);
@@ -638,7 +641,7 @@ function drawCalendar(data) {
 }
 
 function formatDataForTimeline(data, pad_to_date_obj) {
-  var batch_3d = []; // 3D batch data for the flat-block-chart library
+  var batch_3d = []; // 3D batch data
   var batch_2d = []; // the inner small 2D batch data for batch_3d
   var sorted_day_str = Object.keys(data).sort();
   var last_month;
@@ -710,13 +713,13 @@ function createTimeline(data) {
       obj.selectLastBlock();
     },
     data: data,
-	useColorQuantiles:true,
-	//changes colorBin based on even division of data
-	// 40 would not work as far to many days are over 40
-	// like the whole bar would be black
-	//colors are made to be similar to existing chart
-	colorBin:[0,16,32,46,77,183],
-	colorRange:["#ededed","#dbdbdb","#afafaf","#848383","#545454","#000000"],
+    useColorQuantiles:true,
+    //changes colorBin based on even division of data
+    // 40 would not work as far to many days are over 40
+    // like the whole bar would be black
+    //colors are made to be similar to existing chart
+    colorBin:[0,16,32,46,77,183],
+    colorRange:["#ededed","#dbdbdb","#afafaf","#848383","#545454","#000000"],
     columnNames: ["label", "value", "epochtime_milisec"],
     dataIndexForLabels: 0,
     dataIndexForValues: 1,
@@ -1221,10 +1224,7 @@ function startAnimation(epochtime_milisec) {
   infowindow_smell.close();
   infowindow_VOC.close();
   infowindow_PM25.close();
-  if ($playback_button.hasClass("ui-icon-custom-play")) {
-    $playback_button.removeClass("ui-icon-custom-play");
-    $playback_button.addClass("ui-icon-custom-pause");
-  }
+  $playback_button.find("img").prop("src", "/img/pause.png");
   $playback_txt.show();
   $stop_button.show();
 
@@ -1367,10 +1367,7 @@ function pauseAnimation() {
   isPaused = true;
 
   // Handle UI
-  if ($playback_button.hasClass("ui-icon-custom-pause")) {
-    $playback_button.removeClass("ui-icon-custom-pause");
-    $playback_button.addClass("ui-icon-custom-play");
-  }
+  $playback_button.find("img").prop("src", "/img/play.png");
 }
 
 function resumeAnimation() {
@@ -1378,10 +1375,7 @@ function resumeAnimation() {
   isPaused = false;
 
   // Handle UI
-  if ($playback_button.hasClass("ui-icon-custom-play")) {
-    $playback_button.removeClass("ui-icon-custom-play");
-    $playback_button.addClass("ui-icon-custom-pause");
-  }
+  $playback_button.find("img").prop("src", "/img/pause.png");
 }
 
 function stopAnimation(epochtime_milisec, previous_epochtime_milisec) {
@@ -1391,10 +1385,7 @@ function stopAnimation(epochtime_milisec, previous_epochtime_milisec) {
   isPaused = false;
 
   // Handle UI
-  if ($playback_button.hasClass("ui-icon-custom-pause")) {
-    $playback_button.removeClass("ui-icon-custom-pause");
-    $playback_button.addClass("ui-icon-custom-play");
-  }
+  $playback_button.find("img").prop("src", "/img/play.png");
   $playback_txt.text("");
   $playback_txt.hide();
   $stop_button.hide();
