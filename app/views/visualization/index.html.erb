@@ -3,6 +3,7 @@
   <%= stylesheet_link_tag "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" %>
   <%= stylesheet_link_tag "https://fonts.googleapis.com/css?family=Open+Sans:400,700" %>
   <%= stylesheet_link_tag "https://fonts.googleapis.com/css?family=Raleway:400,700" %>
+  <%= stylesheet_link_tag "controls" %>
   <%= stylesheet_link_tag "visualization" %>
   <%= stylesheet_link_tag "TimelineHeatmap" %>
   <%# stylesheet_link_tag "feed" %>
@@ -39,11 +40,11 @@
   <div id="page" data-role="page" class="noselect">
     <div id="map-container">
       <div id="map"></div>
-      <button id="home-btn" title="Home view" class="custom-button-flat noselect"><img src="/img/home.png"><span>My Place</span></button>
-      <button id="calendar-btn" title="Calendar" class="custom-button-flat noselect"><img src="/img/calendar.png"></button>
-      <button id="terrain-btn" title="Terrain mode" class="custom-button-flat noselect"><img src="/img/terrain.png"></button>
-      <button id="playback-btn" title="Playback animation" class="custom-button-flat noselect"><img src="/img/play.png"></button>
-      <button id="stop-btn" title="Stop animation" class="custom-button-flat noselect"><img src="/img/stop.png"></button>
+      <button id="home-btn" title="Home" class="custom-button-flat"><img src="/img/home.png"><span>My Place</span></button>
+      <button id="calendar-btn" title="Calendar" class="custom-button-flat"><img src="/img/calendar.png"></button>
+      <button id="terrain-btn" title="Terrain mode" class="custom-button-flat"><img src="/img/terrain.png"></button>
+      <button id="playback-btn" title="Playback animation" class="custom-button-flat"><img src="/img/play.png"></button>
+      <button id="stop-btn" title="Stop animation" class="custom-button-flat"><img src="/img/stop.png"></button>
       <div id="playback-txt"></div>
       <table id="legend-smell-value">
         <tr>
