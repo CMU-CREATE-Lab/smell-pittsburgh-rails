@@ -277,7 +277,7 @@ function initCalendar() {
     draggable: false,
     modal: true,
     width: 260,
-    dialogClass: "custom-dialog noselect",
+    dialogClass: "custom-dialog-flat",
     closeText: '<i class=\"fa fa-times\"></i>'
   });
   $calendar.on("change", function () {

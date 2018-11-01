@@ -1,0 +1,72 @@
+.custom-dialog-flat {
+  font-family: 'Open Sans', Helvetica, Arial, sans-serif !important;
+  font-size: 16px !important;
+  background-color: white !important;
+  border-radius: 3px !important;
+  border: 1px solid #777777 !important;
+  padding-top: 8px !important;
+  padding-bottom: 10px !important;
+  padding-left: 12px !important;
+  padding-right: 10px !important;
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Chrome/Safari/Opera */
+  -khtml-user-select: none; /* Konqueror */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently not supported by any browser */
+}
+
+.custom-dialog-flat .ui-button {
+  outline: none !important;
+}
+
+.custom-dialog-flat .ui-dialog-titlebar {
+  background-color: white !important;
+  background-image: none !important;
+  border-bottom-left-radius: 0px !important;
+  border-bottom-right-radius: 0px !important;
+  border-top-left-radius: 3px !important;
+  border-top-right-radius: 3px !important;
+  border: 0px !important;
+  color: #2E2F30 !important;
+  padding-top: 15px !important;
+  padding-bottom: 10px !important;
+}
+
+.custom-dialog-flat .ui-dialog-title {
+  text-align: center !important;
+  margin-left: 10px !important;
+  font-size: 18px !important;
+}
+
+.custom-dialog-flat .ui-dialog-titlebar-close {
+  font-size: 22px;
+  top: 22px;
+  right: 15px;
+}
+
+.custom-dialog-flat .ui-dialog-titlebar-close.ui-state-default {
+  background: none;
+  border: none;
+  height: auto;
+}
+
+.custom-dialog-flat .ui-dialog-titlebar-close .ui-button-text {
+  padding: 0;
+  text-indent: 0;
+}
+
+.custom-dialog-flat .ui-dialog-titlebar-close .ui-icon-closethick {
+  background: none;
+}
+
+.custom-dialog-flat .ui-dialog-buttonpane {
+  border-width: 0 !important;
+  padding-top: 0 !important;
+}
+
+.ui-widget-overlay {
+  opacity: 0.6;
+  background-image: none;
+  background-color: black;
+}
