@@ -9,7 +9,7 @@ var aqi_root_url = "https://api.smellpittsburgh.org/api/v1/get_aqi?city=";
 
 // Google map variables
 var map;
-var app; // indicating the applications, e.g., SMC means smell my city, BA means bay area
+var app; // applications, e.g., "SMC" means smell my city, "BA" means bay area, "PGH" means smell pgh
 var init_latlng = {"lat": at_latitude, "lng": at_longitude};
 var init_date;
 var init_zoom_desktop = at_zoom + 1;
@@ -37,6 +37,10 @@ var month_names = [
 var $calendar_dialog;
 var $calendar;
 
+// Home variables (for selecting a mode)
+var $home_dialog;
+var $home;
+
 // Timeline variables
 var timeline;
 
@@ -57,11 +61,13 @@ function init() {
 
   // Create the page
   initGoogleMap();
-  initControl();
-  initCalendar();
+  initTerrainBtn();
+  initHomeBtn();
+  initCalendarBtn();
   initAnimationUI();
 
   // Load data
+  loadAndDrawHome();
   loadAndDrawCalendar();
 
   // Load report feed
@@ -231,20 +237,7 @@ function initGoogleMap() {
   });
 }
 
-function initControl() {
-  // TODO: this should come from the query string
-  var city_name = "Pittsburgh";
-
-  // Add city name to the home button
-  $("#home-btn span").text(city_name);
-
-  // Add event to the home button
-  $("#home-btn").on("click", function () {
-    map.setCenter(init_latlng);
-    map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
-  });
-
-  // Add event to the terrain button
+function initTerrainBtn() {
   $("#terrain-btn").on("click", function () {
     var $this = $(this);
     var label = {
@@ -262,6 +255,34 @@ function initControl() {
   });
 }
 
+function initHomeBtn() {
+  //app = "SMC"; // TODO: this is for debugging
+  var city_name = "Pittsburgh"; // TODO: this should come from the query string
+
+  // Add city name to the home button
+  $("#home-btn span").text(city_name);
+
+  // Create the home dialog
+  $home = $("#home");
+  $home_dialog = widgets.createCustomDialog({
+    selector: "#home-dialog",
+    cancel_callback: function () {
+      map.setCenter(init_latlng);
+      map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
+    }
+  });
+
+  // Add event to the home button
+  $("#home-btn").on("click", function () {
+    if (app == "SMC") {
+      $home_dialog.dialog("open");
+    } else {
+      map.setCenter(init_latlng);
+      map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
+    }
+  });
+}
+
 function styleInfoWindowCloseButton() {
   $(".gm-style-iw").next().css({
     "-ms-transform": "scale(1.3, 1.3)",
@@ -270,7 +291,7 @@ function styleInfoWindowCloseButton() {
   });
 }
 
-function initCalendar() {
+function initCalendarBtn() {
   $calendar = $("#calendar");
   $calendar_dialog = widgets.createCustomDialog({
     selector: "#calendar-dialog"
@@ -377,6 +398,10 @@ function loadMapMarkers(region_id) {
       loadAndCreateTimeline();
     }
   });
+}
+
+function loadAndDrawHome() {
+  // TODO: load city names from http://api.smellpittsburgh.org/api/v2/regions
 }
 
 function loadAndDrawCalendar() {

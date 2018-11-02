@@ -35,13 +35,14 @@
 
       // Create a button for taking actions (e.g., confirm that users get the message)
       // The default text for the button is "Confirm"
-      var has_action = (typeof settings["action_callback"] === "function");
+      var has_action_callback = (typeof settings["action_callback"] === "function");
       var action_text = safeGet(settings["action_text"], "Confirm");
 
       // Create a button for cancellation
       // The default text for the button is "Cancel" when there is an action button
       // The default text for the button is "Ok" when there is no action button
-      var cancel_text = has_action ? "Cancel" : "Ok";
+      var has_cancel_callback = (typeof settings["cancel_callback"] === "function");
+      var cancel_text = has_action_callback ? "Cancel" : "Ok";
       cancel_text = safeGet(settings["cancel_text"], cancel_text);
 
       // Hide the cancel button or not
@@ -55,8 +56,7 @@
       var $selector = $(safeGet(settings["selector"], "<div></div>"));
 
       // Specify the width of the dialog
-      // If no width, the default value will be 250
-      var width = safeGet(settings["width"], 250);
+      var width = safeGet(settings["width"], 260);
 
       // Specify buttons
       var buttons = {};
@@ -66,10 +66,11 @@
           text: cancel_text,
           click: function () {
             $(this).dialog("close");
+            if (has_cancel_callback) settings["cancel_callback"]();
           }
         }
       }
-      if (has_action) {
+      if (has_action_callback) {
         buttons["Action"] = {
           class: "ui-action-button",
           text: action_text,

@@ -128,7 +128,7 @@
   display: none;
 }
 
-#calendar {
+.custom-dialog-flat .ui-dialog-content select {
   font-family: 'Open Sans', Helvetica, Arial, sans-serif;
   font-size: 15px;
   width: 100%;
