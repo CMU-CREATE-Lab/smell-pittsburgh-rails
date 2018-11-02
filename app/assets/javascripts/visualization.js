@@ -36,7 +36,6 @@ var month_names = [
 ];
 var $calendar_dialog;
 var $calendar;
-var $dialog_ok_button;
 
 // Timeline variables
 var timeline;
@@ -46,6 +45,9 @@ var sensors_cache = {};
 var infowindow_PM25;
 var infowindow_VOC;
 var sensors_list = [];
+
+// Widgets
+var widgets = new edaplotjs.Widgets();
 
 function init() {
   // Check if enabling staging features or not
@@ -232,7 +234,7 @@ function initGoogleMap() {
 function initControl() {
   // TODO: this should come from the query string
   var city_name = "Pittsburgh";
-  
+
   // Add city name to the home button
   $("#home-btn span").text(city_name);
 
@@ -270,15 +272,8 @@ function styleInfoWindowCloseButton() {
 
 function initCalendar() {
   $calendar = $("#calendar");
-  $calendar_dialog = $("#calendar-dialog");
-  $dialog_ok_button = $("#dialog-ok-button");
-  $calendar_dialog.dialog({
-    autoOpen: false,
-    draggable: false,
-    modal: true,
-    width: 260,
-    dialogClass: "custom-dialog-flat",
-    closeText: '<i class=\"fa fa-times\"></i>'
+  $calendar_dialog = widgets.createCustomDialog({
+    selector: "#calendar-dialog"
   });
   $calendar.on("change", function () {
     $calendar_dialog.dialog("close");
@@ -329,12 +324,8 @@ function initCalendar() {
     // Have selector go back to showing default option
     $(this).prop('selectedIndex', 0);
   });
-  $dialog_ok_button.on("click", function () {
-    $calendar_dialog.dialog("close");
-  });
   $("#calendar-btn").on("click", function () {
     $calendar_dialog.dialog("open");
-    $dialog_ok_button.focus();
   });
 }
 
@@ -713,13 +704,13 @@ function createTimeline(data) {
       obj.selectLastBlock();
     },
     data: data,
-    useColorQuantiles:true,
+    useColorQuantiles: true,
     //changes colorBin based on even division of data
     // 40 would not work as far to many days are over 40
     // like the whole bar would be black
     //colors are made to be similar to existing chart
-    colorBin:[0,16,32,46,77,183],
-    colorRange:["#ededed","#dbdbdb","#afafaf","#848383","#545454","#000000"],
+    colorBin: [0, 16, 32, 46, 77, 183],
+    colorRange: ["#ededed", "#dbdbdb", "#afafaf", "#848383", "#545454", "#000000"],
     columnNames: ["label", "value", "epochtime_milisec"],
     dataIndexForLabels: 0,
     dataIndexForValues: 1,

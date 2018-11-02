@@ -44,30 +44,31 @@
       var cancel_text = has_action ? "Cancel" : "Ok";
       cancel_text = safeGet(settings["cancel_text"], cancel_text);
 
-      // Specify the style
-      // If "flat", using the flat style (for mobile applications)
-      var style_class = safeGet(settings["style"]) == "flat" ? "custom-dialog-flat" : "custom-dialog";
+      // Hide the cancel button or not
+      var show_cancel_btn = safeGet(settings["show_cancel_btn"], true);
 
-      // Specify the parent of the dialog
-      var $parent = safeGet(settings["parent"], $(body));
+      // Specify the style
+      var style_class = "custom-dialog-flat";
 
       // Specify the selector of the dialog
       // If no selector, a <div></div> will be created
       var $selector = $(safeGet(settings["selector"], "<div></div>"));
 
       // Specify the width of the dialog
-      // If no width, the default value will be 280
-      var width = safeGet(settings["width"], 280);
+      // If no width, the default value will be 250
+      var width = safeGet(settings["width"], 250);
 
-      var buttons = {
-        "Cancel": {
+      // Specify buttons
+      var buttons = {};
+      if (show_cancel_btn) {
+        buttons["Cancel"] = {
           class: "ui-cancel-button",
           text: cancel_text,
           click: function () {
             $(this).dialog("close");
           }
         }
-      };
+      }
       if (has_action) {
         buttons["Action"] = {
           class: "ui-action-button",
@@ -78,21 +79,29 @@
           }
         }
       }
-      var $dialog = $selector.dialog({
-        appendTo: $parent,
+
+      // Create dialog
+      var dialog_settings = {
         autoOpen: false,
         resizable: false,
         height: "auto",
         draggable: false,
         width: width,
         modal: true,
-        position: {my: "center", at: "center", of: $parent},
         classes: {"ui-dialog": style_class}, // this is for jquery 1.12 and after
         dialogClass: style_class, // this is for before jquery 1.12
-        buttons: buttons
-      });
+        buttons: buttons,
+        closeText: '×'
+      };
+      // Specify the parent of the dialog, need to be a jQuery object
+      if (typeof settings["parent"] !== "undefined") {
+        dialog_settings["appendTo"] = settings["parent"];
+        dialog_settings["position"] = {my: "center", at: "center", of: settings["parent"]};
+      }
+      var $dialog = $selector.dialog(dialog_settings);
       return $dialog;
-    }
+    };
+    this.createCustomDialog = createCustomDialog;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //

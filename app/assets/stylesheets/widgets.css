@@ -1,13 +1,10 @@
 .custom-dialog-flat {
-  font-family: 'Open Sans', Helvetica, Arial, sans-serif !important;
-  font-size: 16px !important;
-  background-color: white !important;
-  border-radius: 3px !important;
-  border: 1px solid #777777 !important;
-  padding-top: 8px !important;
-  padding-bottom: 10px !important;
-  padding-left: 12px !important;
-  padding-right: 10px !important;
+  font-size: 16px;
+  font-family: 'Open Sans', Helvetica, Arial, sans-serif;
+  background: white;
+  padding: 0;
+  margin: 0;
+  border-radius: 2px;
   -webkit-touch-callout: none; /* iOS Safari */
   -webkit-user-select: none; /* Chrome/Safari/Opera */
   -khtml-user-select: none; /* Konqueror */
@@ -16,53 +13,88 @@
   user-select: none; /* Non-prefixed version, currently not supported by any browser */
 }
 
-.custom-dialog-flat .ui-button {
-  outline: none !important;
+.custom-dialog-flat .ui-dialog-content {
+  padding: 0 1.2em 0 1.2em;
+}
+
+.custom-dialog-flat .ui-dialog-content p {
+  margin: 0.6em 0;
+}
+
+.custom-dialog-flat .ui-dialog-content p:first-child {
+  margin-top: 0;
+}
+
+.custom-dialog-flat .ui-dialog-content p:last-child {
+  margin-bottom: 0;
 }
 
 .custom-dialog-flat .ui-dialog-titlebar {
-  background-color: white !important;
-  background-image: none !important;
-  border-bottom-left-radius: 0px !important;
-  border-bottom-right-radius: 0px !important;
-  border-top-left-radius: 3px !important;
-  border-top-right-radius: 3px !important;
-  border: 0px !important;
-  color: #2E2F30 !important;
-  padding-top: 15px !important;
-  padding-bottom: 10px !important;
+  background-color: white;
+  background-image: none;
+  border: 0;
+  border-radius: 0px;
+  color: #2E2F30;
+  padding: 1.2em 1.2em 1.2em 1.2em;
 }
 
-.custom-dialog-flat .ui-dialog-title {
-  text-align: center !important;
-  margin-left: 10px !important;
-  font-size: 18px !important;
+.custom-dialog-flat .ui-dialog-titlebar .ui-dialog-title {
+  text-align: center;
+  margin-left: 10px;
+  font-size: 18px;
 }
 
-.custom-dialog-flat .ui-dialog-titlebar-close {
-  font-size: 22px;
-  top: 22px;
-  right: 15px;
+.custom-dialog-flat .ui-dialog-titlebar .ui-dialog-titlebar-close {
+  background: white none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  right: 1.2em;
+  top: 1.2em;
 }
 
-.custom-dialog-flat .ui-dialog-titlebar-close.ui-state-default {
+.custom-dialog-flat .ui-dialog-titlebar .ui-dialog-titlebar-close.ui-state-default {
   background: none;
   border: none;
   height: auto;
 }
 
-.custom-dialog-flat .ui-dialog-titlebar-close .ui-button-text {
+.custom-dialog-flat .ui-dialog-titlebar .ui-dialog-titlebar-close .ui-button-text {
   padding: 0;
   text-indent: 0;
+  font-family: sans-serif;
+  line-height: 1;
+  font-size: 25px;
+  font-weight: 700;
 }
 
-.custom-dialog-flat .ui-dialog-titlebar-close .ui-icon-closethick {
+.custom-dialog-flat .ui-dialog-titlebar .ui-dialog-titlebar-close .ui-icon-closethick {
   background: none;
 }
 
 .custom-dialog-flat .ui-dialog-buttonpane {
-  border-width: 0 !important;
-  padding-top: 0 !important;
+  border-width: 0;
+  margin: 0;
+  padding: 1.2em 1.2em 1.2em 1.2em;
+}
+
+.custom-dialog-flat .ui-dialog-buttonpane .ui-button {
+  border: 1px solid #7d7d7d;
+  background: #7d7d7d none;
+  color: white;
+  border-radius: 2px;
+  margin: 0 0 0 0.7em;
+  outline: none;
+}
+
+.custom-dialog-flat .ui-dialog-buttonpane .ui-button:first-child {
+  margin-left: 0;
+}
+
+.custom-dialog-flat .ui-dialog-buttonpane .ui-button.ui-action-button {
+  background-color: #dc3545;
+  border: 1px solid #dc3545;
 }
 
 .ui-widget-overlay {
