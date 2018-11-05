@@ -138,14 +138,6 @@
   cursor: pointer;
 }
 
-.custom-dialog-flat .ui-dialog-buttonset {
-  width: 100%;
-}
-
-.custom-dialog-flat .ui-dialog-buttonset .ui-cancel-button {
-  width: 100%;
-}
-
 .smell-color-1 {
   background-image: url("/img/smell_1.png");
 }

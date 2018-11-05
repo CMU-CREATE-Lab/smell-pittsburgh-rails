@@ -1,6 +1,10 @@
 /*************************************************************************
- * Widgets for building interactive web applications
- * Version: v1.0
+ * GitHub: https://github.com/yenchiah/project-website-template
+ * Version: v2.0
+ * This JS file has widgets for building interactive web applications
+ * Use this file with widgets.css
+ * If you want to keep this template updated, avoid modifying this file
+ * Instead, add your own JavaScript in the index.js
  *************************************************************************/
 
 (function () {
@@ -58,6 +62,9 @@
       // Specify the width of the dialog
       var width = safeGet(settings["width"], 260);
 
+      // Specify if full width buttons
+      var full_width_button = safeGet(settings["full_width_button"], false);
+
       // Specify buttons
       var buttons = {};
       if (show_cancel_btn) {
@@ -69,6 +76,9 @@
             if (has_cancel_callback) settings["cancel_callback"]();
           }
         }
+        if(full_width_button) {
+          buttons["Cancel"]["class"] += " full-width";
+        }
       }
       if (has_action_callback) {
         buttons["Action"] = {
@@ -78,6 +88,9 @@
             $(this).dialog("close");
             settings["action_callback"]();
           }
+        }
+        if(full_width_button) {
+          buttons["Action"]["class"] += " full-width";
         }
       }
 
@@ -92,7 +105,7 @@
         classes: {"ui-dialog": style_class}, // this is for jquery 1.12 and after
         dialogClass: style_class, // this is for before jquery 1.12
         buttons: buttons,
-        closeText: '×'
+        closeText: ""
       };
       // Specify the parent of the dialog, need to be a jQuery object
       if (typeof settings["parent"] !== "undefined") {
@@ -100,9 +113,62 @@
         dialog_settings["position"] = {my: "center", at: "center", of: settings["parent"]};
       }
       var $dialog = $selector.dialog(dialog_settings);
+      $dialog.closest(".ui-dialog").find(".ui-dialog-titlebar-close").empty().append("<i class='fa fa-times fa-lg'></i>");
       return $dialog;
     };
     this.createCustomDialog = createCustomDialog;
+
+    function setCustomDropdown($ui, settings) {
+      var items = settings["items"]; // the text that will appear for each item
+      var init_index = settings["init_index"];
+      var init_text = settings["init_text"];
+      var on_item_click_callback = settings["on_item_click_callback"];
+      var on_item_create_callback = settings["on_item_create_callback"];
+      var $menu = $ui.find("div").empty();
+      var $button_text = $ui.find("a > span").text("");
+      var $selected_item;
+      // Set initial button text
+      if (typeof init_text !== "undefined") {
+        $button_text.text(init_text);
+      } else {
+        if (typeof init_index !== "undefined" && typeof items !== "undefined") {
+          $button_text.text(items[init_index]);
+        }
+      }
+      // Set button event
+      // Note that the button is designed to use focusout and focus to determine its state
+      // "focusout" indicates that the menu is currently opened and should be closed
+      // "focus" indicates that the menu is currently closed and should be opened
+      $ui.find("a").off("focusout").on("focusout", function () {
+        // Find which item is hovered, and then simulate the click
+        if (typeof $selected_item !== "undefined") {
+          $button_text.text($selected_item.text()); // update the text on the button
+          if (typeof on_item_click_callback === "function") on_item_click_callback($selected_item, $selected_item.index());
+          $selected_item = undefined;
+        }
+        if ($menu.is(":visible")) $menu.addClass("force-hide"); // close the menu
+      }).off("focus").on("focus", function () {
+        if (!$menu.is(":visible")) $menu.removeClass("force-hide"); // open the menu
+      });
+      // Add events for menu items
+      for (var i = 0; i < items.length; i++) {
+        var $item = $("<a href=\"javascript:void(0)\">" + items[i] + "</a>");
+        // We need to let the focusout button event know which item is selected
+        // Note that we cannot use the click event to find this,
+        // because as soon as the item is clicked,
+        // the focusout event of the button is triggered,
+        // this closes the menu and we never get the click event from the items
+        $item.on("mouseover", function () {
+          $selected_item = $(this);
+        }).on("mouseout", function () {
+          $selected_item = undefined;
+        });
+        $menu.append($item);
+        if (typeof on_item_create_callback === "function") on_item_create_callback($item, i);
+      }
+      return $ui;
+    }
+    this.setCustomDropdown = setCustomDropdown;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //

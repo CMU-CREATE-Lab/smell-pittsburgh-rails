@@ -266,6 +266,7 @@ function initHomeBtn() {
   $home = $("#home");
   $home_dialog = widgets.createCustomDialog({
     selector: "#home-dialog",
+    full_width_button: true,
     cancel_callback: function () {
       map.setCenter(init_latlng);
       map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
@@ -294,7 +295,8 @@ function styleInfoWindowCloseButton() {
 function initCalendarBtn() {
   $calendar = $("#calendar");
   $calendar_dialog = widgets.createCustomDialog({
-    selector: "#calendar-dialog"
+    selector: "#calendar-dialog",
+    full_width_button: true
   });
   $calendar.on("change", function () {
     $calendar_dialog.dialog("close");
