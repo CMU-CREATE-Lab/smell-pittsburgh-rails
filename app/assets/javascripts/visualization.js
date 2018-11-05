@@ -256,7 +256,7 @@ function initTerrainBtn() {
 }
 
 function initHomeBtn() {
-  //app = "SMC"; // TODO: this is for debugging
+  app = "SMC"; // TODO: this is for debugging
   var city_name = "Pittsburgh"; // TODO: this should come from the query string
 
   // Add city name to the home button

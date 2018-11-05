@@ -1,6 +1,6 @@
 /*************************************************************************
  * GitHub: https://github.com/yenchiah/timeline-heatmap
- * Version: v2.3
+ * Version: v2.3.1
  *************************************************************************/
 
 (function () {
@@ -34,10 +34,10 @@
     var column_names = settings["columnNames"];
 
     // The column index in the data matrix for showing labels under each block
-    var data_index_for_labels = typeof settings["dataIndexForLabels"] === "undefined" ? 0 : settings["dataIndexForLabels"];
+    var data_index_for_labels = safeGet(settings["dataIndexForLabels"], 0);
 
     // The column index in the data matrix for coding the color of each block
-    var data_index_for_colors = typeof settings["dataIndexForColors"] === "undefined" ? 1 : settings["dataIndexForColors"];
+    var data_index_for_colors = safeGet(settings["dataIndexForColors"], 1);
 
     // The column index in the data matrix for coding the height of each block (optional field)
     var data_index_for_heights = settings["dataIndexForHeights"];
@@ -52,21 +52,24 @@
     var create_event_callback = settings["create"];
 
     // The bin and range of the color that will be used to render the blocks
-    var use_color_quantiles = typeof settings["useColorQuantiles"] === "undefined" ? false : settings["useColorQuantiles"];
-    var color_bin = typeof settings["colorBin"] === "undefined" ? [1, 2, 2.5, 3, 3.5] : settings["colorBin"];
-    var color_range = typeof settings["colorRange"] === "undefined" ? ["#dcdcdc", "#52b947", "#f3ec19", "#f57e20", "#ed1f24", "#991b4f"] : settings["colorRange"];
+    var use_color_quantiles = safeGet(settings["useColorQuantiles"], false);
+    var color_bin = safeGet(settings["colorBin"], [1, 2, 2.5, 3, 3.5]);
+    var color_range = safeGet(settings["colorRange"], ["#dcdcdc", "#52b947", "#f3ec19", "#f57e20", "#ed1f24", "#991b4f"]);
 
     // The bin and range of the height that will be used to render the blocks
-    var height_bin = typeof settings["heightBin"] === "undefined" ? [10, 20] : settings["heightBin"];
-    var height_range = typeof settings["heightRange"] === "undefined" ? ["33%", "66%", "100%"] : settings["heightRange"];
+    var height_bin = safeGet(settings["heightBin"], [10, 20]);
+    var height_range = safeGet(settings["heightRange"], ["33%", "66%", "100%"]);
 
     // Add an arrow on the left of the timeline for appending new data
     // If this setting is a function, when the arrow is clicked, the function will be triggered
-    var add_left_arrow = typeof settings["addLeftArrow"] === "undefined" ? false : settings["addLeftArrow"];
-    var left_arrow_label = typeof settings["leftArrowLabel"] === "undefined" ? "" : settings["leftArrowLabel"];
+    var add_left_arrow = safeGet(settings["addLeftArrow"], false);
+    var left_arrow_label = safeGet(settings["leftArrowLabel"], "");
 
     // Prevent adding events to blocks with color value zero
-    var no_event_when_color_value_zero = typeof settings["noEventWhenColorValueZero"] === "undefined" ? false : settings["noEventWhenColorValueZero"];
+    var no_event_when_color_value_zero = safeGet(settings["noEventWhenColorValueZero"], false);
+
+    // No color for the selected block
+    var no_color_for_selected_block = safeGet(settings["noColorForSelectedBlock"], false);
 
     // Cache DOM elements
     var $chart_container = $("#" + chart_container_id);
@@ -79,7 +82,7 @@
     // Parameters
     var timeline_heatmap_touched = false;
     var timeline_heatmap_touched_position = {};
-    var selected_block_class = use_color_quantiles ? "selected-block-no-color" : "selected-block";
+    var selected_block_class = no_color_for_selected_block ? "selected-block-no-color" : "selected-block";
     var this_obj = this;
     var enable_left_arrow_event = true;
 
@@ -315,6 +318,12 @@
       $blocks_click_region = [];
       $arrow_block_container = undefined;
       $arrow_label = undefined;
+    }
+
+    // Safely get the value from a variable, return a default value if undefined
+    function safeGet(v, default_val) {
+      if (typeof default_val === "undefined") default_val = "";
+      return (typeof v === "undefined") ? default_val : v;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
