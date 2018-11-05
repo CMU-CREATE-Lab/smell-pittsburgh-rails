@@ -6,6 +6,7 @@ Rails.application.initialize!
 
 CLIENT_ID_SMELLPGH = 1
 CLIENT_ID_BA = 2
+CLIENT_ID_SMELLMYCITY = 3
 
 #
 # IMPORTANT!
