@@ -38,6 +38,12 @@
     var dwell_sec = 2;
     var dwell_increments = dwell_sec * frames_per_sec * increments_per_frame;
 
+    // An array of smell markers created with CustomMapMarker.js
+    var smell_markers;
+
+    // A table (2D array) of sensor markers created with CustomMapMarker.js
+    var sensor_marker_table;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
     // Private methods
@@ -47,18 +53,32 @@
     }
 
     function showMarker(marker, map) {
-      if (typeof map === "undefined") return;
+      if (typeof map === "undefined" || typeof marker === "undefined") return;
       marker.setMap(map);
     }
 
     function hideMarker(marker, map) {
-      if (typeof map === "undefined") return;
+      if (typeof map === "undefined" || typeof marker === "undefined") return;
       marker.setMap(null);
       marker.reset();
     }
 
+    function hideMarkerArray(marker_array, map) {
+      if (typeof map === "undefined" || typeof marker_array === "undefined") return;
+      for (var i = 0; i < marker_array.length; i++) {
+        hideMarker(marker_array[i], map);
+      }
+    }
+
+    function hideMarkerTable(marker_table, map) {
+      if (typeof map === "undefined" || typeof marker_table === "undefined") return;
+      for (var i = 0; i < marker_table.length; i++) {
+        hideMarkerArray(marker_table[i], map);
+      }
+    }
+
     function showText(marker, map) {
-      if (typeof map === "undefined") return;
+      if (typeof map === "undefined" || typeof marker === "undefined") return;
 
       // Get smell data
       var marker_data = marker.getData();
@@ -153,19 +173,15 @@
     // Privileged methods
     //
     var startAnimation = function (settings) {
+      var map = settings["map"]; // the map for showing the marker
+      if (typeof map === "undefined") return;
+
       if (isPlaying) return;
       isPlaying = true;
       isPaused = false;
 
-      // An array of markers created by using the CustomMapMarker.js class
-      var smell_markers = safeGet(settings["smell_markers"], []);
-
-      // An array of markers created by using the CustomMapMarker.js class
-      var sensor_marker_table = safeGet(settings["sensor_marker_table"], []);
-
-      // The map for showing the marker
-      // Use canvas if the map is not defined
-      var map = settings["map"];
+      smell_markers = safeGet(settings["smell_markers"], []);
+      sensor_marker_table = safeGet(settings["sensor_marker_table"], []);
 
       if (animate_interval != null || (smell_markers.length == 0 && sensor_marker_table[0].length == 0)) return;
 
@@ -178,7 +194,6 @@
       if (typeof before_play === "function") {
         before_play();
       }
-
       var resetAnimation = function () {
         isDwelling = false;
         smell_idx = 0;
@@ -260,6 +275,8 @@
           // This condition means we have animated all smell reports and sensors in one day
           // So we need to reset parameters for the next animation
           resetAnimation();
+          hideMarkerArray(smell_markers, map);
+          hideMarkerTable(sensor_marker_table, map);
           if (typeof reset_play === "function") {
             reset_play(animation_labels[label_idx]["text"]);
           }
@@ -296,6 +313,8 @@
         clearInterval(animate_interval);
         animate_interval = null;
       }
+      hideMarkerArray(smell_markers, map);
+      hideMarkerTable(sensor_marker_table, map);
       if (typeof after_stop === "function") {
         after_stop();
       }

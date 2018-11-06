@@ -252,7 +252,7 @@ function initTerrainBtn() {
 }
 
 function initHomeBtn() {
-  app = "SMC"; // TODO: this is for debugging
+  //app = "SMC"; // TODO: this is for debugging
   var city_name = "Pittsburgh"; // TODO: this should come from the query string
 
   // Add city name to the home button
@@ -402,8 +402,6 @@ function initAnimationUI() {
     },
     reset_play: function (animation_text) {
       $playback_txt.text(animation_text);
-      hideSmellMarkersByTime(current_epochtime_milisec);
-      hideSensorMarkerTableByTime(current_epochtime_milisec);
     },
     after_pause: function () {
       $playback_button.find("img").prop("src", "/img/play.png");
@@ -416,9 +414,7 @@ function initAnimationUI() {
       $playback_txt.text("");
       $playback_txt.hide();
       $stop_button.hide();
-      hideSmellMarkersByTime(current_epochtime_milisec);
       showSmellMarkersByTime(current_epochtime_milisec);
-      hideSensorMarkerTableByTime(current_epochtime_milisec);
       showSensorMarkersByTime(current_epochtime_milisec);
     }
   });
@@ -1036,15 +1032,6 @@ function showOrHideAQI(is_current_day) {
     });
   } else {
     $(".aqi-tr").hide();
-  }
-}
-
-function hideSensorMarkerTableByTime(epochtime_milisec) {
-  var r = sensors_cache[epochtime_milisec];
-  if (typeof r == "undefined") return;
-  var current_marker_table = r["marker_table"];
-  for (var i = 0; i < current_marker_table.length; i++) {
-    hideMarkers(current_marker_table[i]);
   }
 }
 
