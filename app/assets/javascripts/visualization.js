@@ -448,6 +448,7 @@ function loadAndUpdateTimeLine(start_time, end_time) {
 }
 
 function loadAndCreateTimeline() {
+  // Create the timeline
   var T = getInitialTimeRange();
   loadTimelineData(T["start_time"], T["end_time"], function (data) {
     if (!isDictEmpty(data)) {
