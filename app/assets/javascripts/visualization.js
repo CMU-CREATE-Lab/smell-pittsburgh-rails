@@ -8,16 +8,35 @@ var show_voc_sensors = false; // This is for showing VOC sensors on the map
 var aqi_root_url = "https://api.smellpittsburgh.org/api/v1/get_aqi?city=";
 
 // Google map variables
-var map;
-var app; // applications, e.g., "SMC" means smell my city, "BA" means bay area, "PGH" means smell pgh
-var init_latlng = {"lat": at_latitude, "lng": at_longitude};
-var init_date;
-var init_zoom_desktop = at_zoom + 1;
-var init_zoom_mobile = at_zoom;
+var map; // google map object
+var app; // "SMC" means smell my city, "BA" means bay area, "PGH" means smell pgh
+var city_name; // passed from the app
+var app_id = app_id_smellmycity; // passed from index.html.erb
+var current_home = "My Place";
+
+// Desired initial location
+var desired_latlng = {"lat": at_latitude, "lng": at_longitude}; // initially is the current user location
+var desired_zoom_mobile = 12; // initialized for the current user location
+var desired_zoom_desktop = desired_zoom_mobile + 1;
+
+// Desired location for Pittsburgh
+var pittsburgh_latlng = {"lat": 40.45, "lng": -79.93};
+var pittsburgh_zoom_mobile = 11;
+var pittsburgh_zoom_desktop = pittsburgh_zoom_mobile + 1;
+
+// Desired location for Bay Area
+var ba_latlng = {"lat": 38.004472, "lng": -122.260693};
+var ba_zoom_mobile = 11;
+var ba_zoom_desktop = ba_zoom_mobile + 1;
+
+// Desired location for the US
+var all_data_latlng = {"lat": 40.610271, "lng": -101.413473};
+var all_data_zoom_mobile = 3;
+var all_data_zoom_desktop = all_data_zoom_mobile + 1;
 
 // Smell reports variables
 var smell_reports_cache = {};
-var current_epochtime_milisec;
+var current_epochtime_milisec = new Date().getTime();
 var infowindow_smell;
 
 // Animation variables
@@ -31,11 +50,12 @@ var month_names = [
   "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
 ];
 var $calendar_dialog;
-var $calendar;
+var $calendar_select;
 
 // Home variables (for selecting a mode)
 var $home_dialog;
-var $home;
+var $home_select;
+var $home_text;
 
 // Timeline variables
 var timeline;
@@ -50,10 +70,11 @@ var sensors_list = [];
 var widgets = new edaplotjs.Widgets();
 
 function init() {
+  // Set data coming from the query string
+  setQueryStringData();
+
   // Check if enabling staging features or not
-  if (show_voc_sensors) {
-    showVocSensors();
-  }
+  if (show_voc_sensors) showVocSensors();
 
   // Create the page
   initGoogleMap();
@@ -63,7 +84,7 @@ function init() {
   initAnimationUI();
 
   // Load data
-  loadAndDrawHome();
+  if (app == "SMC") loadAndDrawHome();
   loadAndDrawCalendar();
 
   // Load report feed
@@ -89,6 +110,43 @@ function init() {
   $('body').on("click", "a", function (e) {
     e.preventDefault();
   });
+}
+
+// Safely get the value from a variable, return a default value if undefined
+function safeGet(v, default_val) {
+  if (typeof default_val === "undefined") default_val = "";
+  return (typeof v === "undefined") ? default_val : v;
+}
+
+function setQueryStringData() {
+  var query = window.location.search.slice(1).split("&");
+  for (var i = 0; i < query.length; i++) {
+    var queryVar = decodeURI(query[i]);
+    if (queryVar.indexOf("user_hash") != -1) {
+      var matched = queryVar.split("=")[1].match(/[A-Z]{2,}/);
+      if (matched) app = matched[0];
+    }
+    if (queryVar.indexOf("city_name") != -1) {
+      var matched = queryVar.split("=")[1].match(/[A-Za-z\s]+/);
+      if (matched) city_name = matched[0]
+    }
+  }
+
+  // We need to set the lat lng according to the app type
+  // Smell My City uses the desired_latlng passed by index.html.erb
+  // , which is the current location of the user
+  app = safeGet(app, "PGH");
+  if (app == "BA") {
+    desired_latlng = ba_latlng;
+    desired_zoom_mobile = ba_zoom_mobile;
+    desired_zoom_desktop = ba_zoom_desktop;
+    app_id = app_id_ba;
+  } else if (app == "PGH") {
+    desired_latlng = pittsburgh_latlng;
+    desired_zoom_mobile = pittsburgh_zoom_mobile;
+    desired_zoom_desktop = pittsburgh_zoom_desktop;
+    app_id = app_id_smellpgh;
+  }
 }
 
 // This is a testing feature
@@ -172,26 +230,11 @@ function initGoogleMap() {
     }
   ];
 
-  init_date = new Date(2016, 5, 4);
-
-  //get user location
-  var query = window.location.search.slice(1).split("&");
-  for (var i = 0; i < query.length; i++) {
-    var queryVar = query[i];
-    if (queryVar.indexOf("user_hash") != -1 && queryVar.match(/[A-Z]{2,}/)) {
-      app = queryVar.match(/[A-Z]{2,}/)[0];
-    }
-  }
-  if (app == "BA") {
-    init_latlng = {"lat": 38.004472, "lng": -122.260693};
-    init_date = new Date(2017, 0, 1);
-  }
-
   // Set Google map
   map = new google.maps.Map(document.getElementById("map"), {
-    center: init_latlng,
+    center: desired_latlng,
     styles: styleArray,
-    zoom: isMobile() ? init_zoom_mobile : init_zoom_desktop,
+    zoom: isMobile() ? desired_zoom_mobile : desired_zoom_desktop,
     disableDefaultUI: true,
     clickableIcons: false,
     mapTypeId: google.maps.MapTypeId.ROADMAP,
@@ -252,20 +295,28 @@ function initTerrainBtn() {
 }
 
 function initHomeBtn() {
-  //app = "SMC"; // TODO: this is for debugging
-  var city_name = "Pittsburgh"; // TODO: this should come from the query string
-
   // Add city name to the home button
-  $("#home-btn span").text(city_name);
+  if (app == "PGH") {
+    // This is smell pgh
+    current_home = "Pittsburgh";
+  } else if (app == "BA") {
+    // This is bay area
+    current_home = "Bay Area";
+  } else {
+    // This is smell my city
+    // has_regions comes from the index.html.erb
+    // city_name comes from the query string from the app
+    current_home = has_regions ? city_name : current_home;
+  }
+  $home_text = $("#home-btn span").text(current_home);
 
   // Create the home dialog
-  $home = $("#home");
   $home_dialog = widgets.createCustomDialog({
     selector: "#home-dialog",
     full_width_button: true,
     cancel_callback: function () {
-      map.setCenter(init_latlng);
-      map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
+      map.setCenter(desired_latlng);
+      map.setZoom(isMobile() ? desired_zoom_mobile : desired_zoom_desktop);
     }
   });
 
@@ -274,8 +325,8 @@ function initHomeBtn() {
     if (app == "SMC") {
       $home_dialog.dialog("open");
     } else {
-      map.setCenter(init_latlng);
-      map.setZoom(isMobile() ? init_zoom_mobile : init_zoom_desktop);
+      map.setCenter(desired_latlng);
+      map.setZoom(isMobile() ? desired_zoom_mobile : desired_zoom_desktop);
     }
   });
 }
@@ -289,59 +340,9 @@ function styleInfoWindowCloseButton() {
 }
 
 function initCalendarBtn() {
-  $calendar = $("#calendar");
   $calendar_dialog = widgets.createCustomDialog({
     selector: "#calendar-dialog",
     full_width_button: true
-  });
-  $calendar.on("change", function () {
-    $calendar_dialog.dialog("close");
-    var $selected = $calendar.find(":selected");
-    var last_block_data = timeline.getLastBlockData();
-    var last_block_month = (new Date(last_block_data["epochtime_milisec"])).getMonth();
-    if ($selected.val() == -1) {
-      // This means that user selects "today"
-      var selected_month = $selected.data("month");
-      if (selected_month - 1 != last_block_month) {
-        // Only load a new timeline when the desired month does not contain the last block
-        loadInitialTimeLine();
-      } else {
-        // Otherwise, just select the last block
-        timeline.clearBlockSelection();
-        timeline.selectLastBlock();
-      }
-    } else {
-      var start_date_obj = new Date($selected.data("year"), $selected.data("month") - 1);
-      var start_time = start_date_obj.getTime();
-      if (start_date_obj.getMonth() == (new Date()).getMonth()) {
-        // Only load a new timeline when the desired month does not contain the last block
-        if (start_date_obj.getMonth() != last_block_month) {
-          // If the desired month is the current month, load the initial timeline
-          loadInitialTimeLine();
-        } else {
-          // Otherwise, just select the last block
-          timeline.clearBlockSelection();
-          timeline.selectLastBlock();
-        }
-      } else {
-        // Only load a new timeline when the desired month does not contain the last block
-        if (start_date_obj.getMonth() != last_block_month) {
-          var end_date_obj = firstDayOfNextMonth(start_date_obj);
-          var end_time = end_date_obj.getTime();
-          loadAndUpdateTimeLine(start_time, end_time);
-        } else {
-          // Otherwise, just select the last block
-          timeline.clearBlockSelection();
-          timeline.selectLastBlock();
-        }
-      }
-      var label = {
-        "dimension5": start_time.toString()
-      };
-      addGoogleAnalyticEvent("calendar", "click", label);
-    }
-    // Have selector go back to showing default option
-    $(this).prop('selectedIndex', 0);
   });
   $("#calendar-btn").on("click", function () {
     $calendar_dialog.dialog("open");
@@ -359,10 +360,10 @@ function initAnimationUI() {
     };
     if (animator.isPlaying()) {
       if (animator.isPaused()) {
-        animator.resumeAnimation(); //debug
+        animator.resumeAnimation();
         addGoogleAnalyticEvent("resume-animation", "click", label);
       } else {
-        animator.pauseAnimation(); //debug
+        animator.pauseAnimation();
         addGoogleAnalyticEvent("pause-animation", "click", label);
       }
     } else {
@@ -437,13 +438,22 @@ function loadMapMarkers(region_id) {
 }
 
 function loadAndDrawHome() {
-  // TODO: load city names from http://api.smellpittsburgh.org/api/v2/regions
+  $.ajax({
+    //"url": "http://api.smellpittsburgh.org/api/v2/cities",
+    "url": "http://api.smellpittsburgh.org/api/v2/regions",
+    "success": function (data) {
+      // This data contains a predfined list of city names and lat, lng, zoom
+      drawHome(formatDataForHome(data));
+    },
+    "error": function (response) {
+      console.log("server error:", response);
+    }
+  });
 }
 
 function loadAndDrawCalendar() {
   $.ajax({
     "url": generateURLForSmellReports({
-      "client_ids": "1",
       "region_ids": at_region_ids.join(","),
       "group_by": "month",
       "aggregate": "true"
@@ -494,7 +504,6 @@ function loadAndCreateTimeline() {
 function loadTimelineData(start_time, end_time, callback) {
   $.ajax({
     "url": generateURLForSmellReports({
-      "client_ids": "1",
       "region_ids": at_region_ids.join(","),
       "group_by": "day",
       "aggregate": "true",
@@ -625,7 +634,7 @@ function hideMarkers(markers) {
 function generateSmellPghURL(domain, path, parameters) {
   var api_paras = "";
   var parameter_list = [];
-
+  parameters["client_ids"] = app_id;
   if (typeof parameters == "object") {
     var list = Object.keys(parameters);
     list.forEach(function (i) {
@@ -676,6 +685,53 @@ function histSmellReport(r) {
   return histogram;
 }
 
+function formatDataForHome(data) {
+  // Get city name from data[i]["name"]
+  // Get lat from data[i]["latitude"]
+  // Get lng from data[i]["longitude"]
+  // Get mobile zoom from data[i]["zoom_level"]
+  // Desktop zoom = mobile zoom + 1
+  return ["Pittsburgh", "Louisville", "My Place", "All Data"];
+}
+
+function drawHome(data) {
+  $home_select = $("#home");
+  for (var i = 0; i < data.length; i++) {
+    $home_select.append($('<option value="' + data[i] + '">' + data[i] + '</option>'));
+  }
+
+  // Add event
+  $home_select.on("change", function () {
+    $home_dialog.dialog("close");
+    var $selected = $home_select.find(":selected");
+    var desired_home = $selected.val();
+    if (current_home == desired_home) return;
+    current_home = desired_home;
+    $home_text.text(desired_home);
+    if (desired_home == "All Data") {
+      map.setCenter(all_data_latlng);
+      map.setZoom(isMobile() ? all_data_zoom_mobile : all_data_zoom_desktop);
+    } else if (desired_home == "My Place") {
+      map.setCenter(desired_latlng);
+      map.setZoom(isMobile() ? desired_zoom_mobile : desired_zoom_desktop);
+    } else {
+      // TODO: set desired_latlng, desired_zoom_mobile, and desired_zoom_desktop based on the home location
+      // desired_zoom_desktop = ?
+      // desired_zoom_mobile = ?
+      // desired_latlng = ?
+      // read the lat lng zoom from the data attribute
+    }
+    // TODO: reload the timeline, smell reports, and calendar
+    // Add google analytics event
+    var label = {
+      "dimension5": current_epochtime_milisec.toString()
+    };
+    addGoogleAnalyticEvent("home", "click", label);
+    // Have selector go back to showing default option
+    $(this).prop('selectedIndex', 0);
+  });
+}
+
 function formatDataForCalendar(data) {
   // converts v2 results to look like v1 results (to pass into drawCalendar function)
   var month = [];
@@ -695,12 +751,64 @@ function formatDataForCalendar(data) {
 function drawCalendar(data) {
   var month_arr = data.month;
   var today = new Date();
-  $calendar.append($('<option value="' + -1 + '" data-year="' + today.getFullYear() + '" data-month="' + (today.getMonth() + 1) + '">Today</option>'));
+  $calendar_select = $("#calendar");
+  $calendar_select.append($('<option value="' + -1 + '" data-year="' + today.getFullYear() + '" data-month="' + (today.getMonth() + 1) + '">Today</option>'));
   for (var i = month_arr.length - 1; i >= 0; i--) {
     var year = month_arr[i][0];
     var month = month_arr[i][1];
-    $calendar.append($('<option value="' + i + '" data-year="' + year + '" data-month="' + month + '">' + month_names[month - 1] + ' ' + year + '</option>'));
+    $calendar_select.append($('<option value="' + i + '" data-year="' + year + '" data-month="' + month + '">' + month_names[month - 1] + ' ' + year + '</option>'));
   }
+
+  // Add event
+  $calendar_select.on("change", function () {
+    $calendar_dialog.dialog("close");
+    var $selected = $calendar_select.find(":selected");
+    var last_block_data = timeline.getLastBlockData();
+    var last_block_month = (new Date(last_block_data["epochtime_milisec"])).getMonth();
+    if ($selected.val() == -1) {
+      // This means that user selects "today"
+      var selected_month = $selected.data("month");
+      if (selected_month - 1 != last_block_month) {
+        // Only load a new timeline when the desired month does not contain the last block
+        loadInitialTimeLine();
+      } else {
+        // Otherwise, just select the last block
+        timeline.clearBlockSelection();
+        timeline.selectLastBlock();
+      }
+    } else {
+      var start_date_obj = new Date($selected.data("year"), $selected.data("month") - 1);
+      var start_time = start_date_obj.getTime();
+      if (start_date_obj.getMonth() == (new Date()).getMonth()) {
+        // Only load a new timeline when the desired month does not contain the last block
+        if (start_date_obj.getMonth() != last_block_month) {
+          // If the desired month is the current month, load the initial timeline
+          loadInitialTimeLine();
+        } else {
+          // Otherwise, just select the last block
+          timeline.clearBlockSelection();
+          timeline.selectLastBlock();
+        }
+      } else {
+        // Only load a new timeline when the desired month does not contain the last block
+        if (start_date_obj.getMonth() != last_block_month) {
+          var end_date_obj = firstDayOfNextMonth(start_date_obj);
+          var end_time = end_date_obj.getTime();
+          loadAndUpdateTimeLine(start_time, end_time);
+        } else {
+          // Otherwise, just select the last block
+          timeline.clearBlockSelection();
+          timeline.selectLastBlock();
+        }
+      }
+      var label = {
+        "dimension5": start_time.toString()
+      };
+      addGoogleAnalyticEvent("calendar", "click", label);
+    }
+    // Have selector go back to showing default option
+    $(this).prop('selectedIndex', 0);
+  });
 }
 
 function formatDataForTimeline(data, pad_to_date_obj) {

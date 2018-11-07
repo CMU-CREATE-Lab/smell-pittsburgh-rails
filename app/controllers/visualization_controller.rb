@@ -10,6 +10,7 @@ class VisualizationController < ApplicationController
     @longitude = pgh.longitude
     @zoom = pgh.zoom_level
     if latLng.size == 2
+      # latLng is the GPS user location, passed from the app
       @latitude = latLng[0]
       @longitude = latLng[1]
       # request reverse geocode object

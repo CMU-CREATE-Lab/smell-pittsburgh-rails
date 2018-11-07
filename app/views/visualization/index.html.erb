@@ -17,9 +17,14 @@
   var at_longitude = <%= @regions.empty? ? @longitude : @regions.first.longitude %>;
   // the reverse-geocoded zipcode for this lat/lng
   var at_zipcode = <%= @zipcode.nil? ? "null" : @zipcode %>;
-
+  // if having defined regions or not
+  var has_regions = <%= @regions.empty? %>;
   // the zoom level to use for the map
   var at_zoom = <%= @regions.empty? ? @zoom : @regions.first.zoom_level %>;
+  // the client id (indicating smell pgh, bay area, or smell my city)
+  var app_id_smellpgh = <%= CLIENT_ID_SMELLPGH %>;
+  var app_id_ba = <%= CLIENT_ID_BA %>;
+  var app_id_smellmycity = <%= CLIENT_ID_SMELLMYCITY %>;
 
   // List of regions and their associated ids
   var at_region_ids = <%= @regions.map(&:id).to_json %>;
@@ -42,7 +47,7 @@
   <div id="page" data-role="page" class="noselect">
     <div id="map-container">
       <div id="map"></div>
-      <button id="home-btn" title="Home" class="custom-button-flat"><img src="/img/home.png"><span>My Place</span></button>
+      <button id="home-btn" title="Home" class="custom-button-flat"><img src="/img/home.png"><span></span></button>
       <button id="calendar-btn" title="Calendar" class="custom-button-flat"><img src="/img/calendar.png"></button>
       <button id="terrain-btn" title="Terrain mode" class="custom-button-flat"><img src="/img/terrain.png"></button>
       <button id="playback-btn" title="Playback animation" class="custom-button-flat"><img src="/img/play.png"></button>
@@ -96,7 +101,7 @@
         <option selected>Select...</option>
       </select>
     </div>
-    <div id="home-dialog" title="Home" data-role="none">
+    <div id="home-dialog" title="Region" data-role="none">
       <p>Select a region or use your location for the home screen:</p>
       <select id="home" data-role="none">
         <option selected>Select...</option>

@@ -180,6 +180,10 @@
   display: none;
 }
 
+#home-dialog, #calendar-dialog {
+  display: none;
+}
+
 .custom-dialog-flat .ui-dialog-content select {
   font-family: 'Open Sans', Helvetica, Arial, sans-serif;
   font-size: 15px;
