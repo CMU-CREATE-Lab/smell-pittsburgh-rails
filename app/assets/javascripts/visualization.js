@@ -14,10 +14,10 @@ var city_name; // passed from the app
 var app_id = app_id_smellmycity; // passed from index.html.erb
 var current_home = "My Place";
 
-// Desired initial location
-var desired_latlng = {"lat": at_latitude, "lng": at_longitude}; // initially is the current user location
-var desired_zoom_mobile = 12; // initialized for the current user location
-var desired_zoom_desktop = desired_zoom_mobile + 1;
+// User location
+var user_latlng = {"lat": at_latitude, "lng": at_longitude};
+var user_zoom_mobile = at_zoom;
+var user_zoom_desktop = at_zoom + 1;
 
 // Desired location for Pittsburgh
 var pittsburgh_latlng = {"lat": 40.45, "lng": -79.93};
@@ -33,6 +33,11 @@ var ba_zoom_desktop = ba_zoom_mobile + 1;
 var all_data_latlng = {"lat": 40.610271, "lng": -101.413473};
 var all_data_zoom_mobile = 3;
 var all_data_zoom_desktop = all_data_zoom_mobile + 1;
+
+// Desired location
+var desired_latlng = user_latlng; // initially is the current user location
+var desired_zoom_mobile = user_zoom_mobile; // initialized for the current user location
+var desired_zoom_desktop = user_zoom_desktop;
 
 // Smell reports variables
 var smell_reports_cache = {};
@@ -133,19 +138,21 @@ function setQueryStringData() {
   }
 
   // We need to set the lat lng according to the app type
-  // Smell My City uses the desired_latlng passed by index.html.erb
+  // Smell My City uses the desired_latlng passed by index.html.erb as default
   // , which is the current location of the user
   app = safeGet(app, "PGH");
   if (app == "BA") {
-    desired_latlng = ba_latlng;
-    desired_zoom_mobile = ba_zoom_mobile;
-    desired_zoom_desktop = ba_zoom_desktop;
+    setMobileLatLngZoom(ba_latlng, ba_zoom_mobile);
     app_id = app_id_ba;
   } else if (app == "PGH") {
-    desired_latlng = pittsburgh_latlng;
-    desired_zoom_mobile = pittsburgh_zoom_mobile;
-    desired_zoom_desktop = pittsburgh_zoom_desktop;
+    setMobileLatLngZoom(pittsburgh_latlng, pittsburgh_zoom_mobile);
     app_id = app_id_smellpgh;
+  } else {
+    // this is smell my city
+    // if (has_regions) need to set the following
+    // desired_latlng = ?
+    // desired_zoom_mobile = ?
+    // desired_zoom_desktop = ?
   }
 }
 
@@ -315,8 +322,7 @@ function initHomeBtn() {
     selector: "#home-dialog",
     full_width_button: true,
     cancel_callback: function () {
-      map.setCenter(desired_latlng);
-      map.setZoom(isMobile() ? desired_zoom_mobile : desired_zoom_desktop);
+      centerMap();
     }
   });
 
@@ -325,8 +331,7 @@ function initHomeBtn() {
     if (app == "SMC") {
       $home_dialog.dialog("open");
     } else {
-      map.setCenter(desired_latlng);
-      map.setZoom(isMobile() ? desired_zoom_mobile : desired_zoom_desktop);
+      centerMap();
     }
   });
 }
@@ -691,14 +696,20 @@ function formatDataForHome(data) {
   // Get lng from data[i]["longitude"]
   // Get mobile zoom from data[i]["zoom_level"]
   // Desktop zoom = mobile zoom + 1
-  return ["Pittsburgh", "Louisville", "My Place", "All Data"];
+  return [
+    {"name": "Pittsburgh", "lat": 40.45, "lng": -79.93, "zoom": 11},
+    {"name": "Louisville", "lat": 38.27, "lng": -85.75, "zoom": 11}
+  ];
 }
 
 function drawHome(data) {
   $home_select = $("#home");
   for (var i = 0; i < data.length; i++) {
-    $home_select.append($('<option value="' + data[i] + '">' + data[i] + '</option>'));
+    var d = data[i];
+    $home_select.append($('<option value="' + d["name"] + '" data-lat="' + d["lat"] + '" data-lng="' + d["lng"] + '" data-zoom="' + d["zoom"] + '">' + d["name"] + '</option>'));
   }
+  $home_select.append($('<option value="My Place">My Place</option>'));
+  $home_select.append($('<option value="All Data">All Data</option>'));
 
   // Add event
   $home_select.on("change", function () {
@@ -709,18 +720,13 @@ function drawHome(data) {
     current_home = desired_home;
     $home_text.text(desired_home);
     if (desired_home == "All Data") {
-      map.setCenter(all_data_latlng);
-      map.setZoom(isMobile() ? all_data_zoom_mobile : all_data_zoom_desktop);
+      setMobileLatLngZoom(all_data_latlng, all_data_zoom_mobile);
     } else if (desired_home == "My Place") {
-      map.setCenter(desired_latlng);
-      map.setZoom(isMobile() ? desired_zoom_mobile : desired_zoom_desktop);
+      setMobileLatLngZoom(user_latlng, user_zoom_mobile);
     } else {
-      // TODO: set desired_latlng, desired_zoom_mobile, and desired_zoom_desktop based on the home location
-      // desired_zoom_desktop = ?
-      // desired_zoom_mobile = ?
-      // desired_latlng = ?
-      // read the lat lng zoom from the data attribute
+      setMobileLatLngZoom({"lat": $selected.data("lat"), "lng": $selected.data("lng")}, $selected.data("zoom"));
     }
+    centerMap();
     // TODO: reload the timeline, smell reports, and calendar
     // Add google analytics event
     var label = {
@@ -730,6 +736,17 @@ function drawHome(data) {
     // Have selector go back to showing default option
     $(this).prop('selectedIndex', 0);
   });
+}
+
+function setMobileLatLngZoom(latlng, zoom) {
+  desired_latlng = latlng;
+  desired_zoom_mobile = zoom;
+  desired_zoom_desktop = zoom + 1;
+}
+
+function centerMap() {
+  map.setCenter(desired_latlng);
+  map.setZoom(isMobile() ? desired_zoom_mobile : desired_zoom_desktop);
 }
 
 function formatDataForCalendar(data) {

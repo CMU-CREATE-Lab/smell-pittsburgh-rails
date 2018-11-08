@@ -18,7 +18,7 @@
   // the reverse-geocoded zipcode for this lat/lng
   var at_zipcode = <%= @zipcode.nil? ? "null" : @zipcode %>;
   // if having defined regions or not
-  var has_regions = <%= @regions.empty? %>;
+  var has_regions = <%= not @regions.empty? %>;
   // the zoom level to use for the map
   var at_zoom = <%= @regions.empty? ? @zoom : @regions.first.zoom_level %>;
   // the client id (indicating smell pgh, bay area, or smell my city)
@@ -47,7 +47,7 @@
   <div id="page" data-role="page" class="noselect">
     <div id="map-container">
       <div id="map"></div>
-      <button id="home-btn" title="Home" class="custom-button-flat"><img src="/img/home.png"><span></span></button>
+      <button id="home-btn" title="Home" class="custom-button-flat"><img src="/img/home.png"><span>My Place</span></button>
       <button id="calendar-btn" title="Calendar" class="custom-button-flat"><img src="/img/calendar.png"></button>
       <button id="terrain-btn" title="Terrain mode" class="custom-button-flat"><img src="/img/terrain.png"></button>
       <button id="playback-btn" title="Playback animation" class="custom-button-flat"><img src="/img/play.png"></button>
