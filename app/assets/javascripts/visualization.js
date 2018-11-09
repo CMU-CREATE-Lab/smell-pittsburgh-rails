@@ -89,22 +89,13 @@ function init() {
   initAnimationUI();
 
   // Load data
-  if (app == "SMC") loadAndDrawHome();
-  loadAndDrawCalendar();
+  loadData();
 
   // Load report feed
   // TODO: Finish work on the smell report feed
   //$("#report-feed").on("click", function () {
   //genFeed(1,"report-feed","/img/")
   //});
-
-  // load map markers and draw timeline if we are in a region; otherwise just draw the timeline
-  if (at_region_ids.length > 0) {
-    // also makes call to loadAndCreateTimeline
-    loadMapMarkers(at_region_ids[0]);
-  } else {
-    loadAndCreateTimeline();
-  }
 
   // Disable vertical bouncing effect on mobile browsers
   $(document).on("scrollstart", function (e) {
@@ -115,6 +106,20 @@ function init() {
   $('body').on("click", "a", function (e) {
     e.preventDefault();
   });
+}
+
+function loadData() {
+  // Load city list and calendar list
+  if (app == "SMC") loadAndDrawHome();
+  loadAndDrawCalendar();
+
+  // load map markers and draw timeline if we are in a region; otherwise just draw the timeline
+  if (at_region_ids.length > 0) {
+    // also makes call to loadAndCreateTimeline
+    loadMapMarkers(at_region_ids[0]);
+  } else {
+    loadAndCreateTimeline();
+  }
 }
 
 // Safely get the value from a variable, return a default value if undefined
@@ -148,7 +153,7 @@ function setQueryStringData() {
     setMobileLatLngZoom(pittsburgh_latlng, pittsburgh_zoom_mobile);
     app_id = app_id_smellpgh;
   } else {
-    // this is smell my city
+    // TODO: this is smell my city
     // if (has_regions) need to set the following
     // desired_latlng = ?
     // desired_zoom_mobile = ?
