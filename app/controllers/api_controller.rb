@@ -375,6 +375,11 @@ class ApiController < ApplicationController
   end
 
 
+  def cities_index
+    render :json => City.all.to_json(:except => [:description])
+  end
+
+
   def regions_show
     if Region.exists? params[:id]
       @region = Region.find params[:id]
@@ -385,17 +390,26 @@ class ApiController < ApplicationController
   end
 
 
+  def cities_show
+    if City.exists? params[:id]
+      @city = Region.find params[:id]
+      render :json => @city.to_json(:except => [:description])
+    else
+      render :json => { :error => "City does not exist." }, :status => 404
+    end
+  end
+
+
   def clients_index
     render :json => Client.all.to_json(:only => [:id, :name, :created_at])
   end
 
-
-  def regions_map_markers
-    if Region.exists? params[:id]
-      @region = Region.find params[:id]
-      render :json => @region.map_markers.map(&:to_api).to_json
+  def cities_map_markers
+    if City.exists? params[:id]
+      @city = City.find params[:id]
+      render :json => @city.map_markers.map(&:to_api).to_json
     else
-      render :json => { :error => "Region does not exist." }, :status => 404
+      render :json => { :error => "City does not exist." }, :status => 404
     end
   end
 
@@ -406,6 +420,16 @@ class ApiController < ApplicationController
       render :json => @region.zip_codes.map(&:zip).to_json
     else
       render :json => { :error => "Region does not exist." }, :status => 404
+    end
+  end
+
+
+  def cities_zip_codes
+    if City.exists? params[:id]
+      @city = City.find params[:id]
+      render :json => @city.zip_codes.map(&:zip).to_json
+    else
+      render :json => { :error => "City does not exist." }, :status => 404
     end
   end
 
@@ -566,6 +590,7 @@ class ApiController < ApplicationController
   # end_time: Integer (default: now)
   # client_ids: List of Client IDs
   # region_ids: List of Region IDs
+  # city_ids: List of City IDs
   # smell_value: List of smell values (default: "1,2,3,4,5")
   # latlng_bbox: lat/long coordinates, top-left to bottom-right
   # group_by: {zipcode|month|day}
@@ -581,6 +606,7 @@ class ApiController < ApplicationController
 
     client_ids = params["client_ids"].nil? ? [] : params["client_ids"].split(",").map(&:to_i)
     region_ids = params["region_ids"].nil? ? [] : params["region_ids"].split(",").map(&:to_i)
+    city_ids = params["city_ids"].nil? ? [] : params["city_ids"].split(",").map(&:to_i)
     smell_values = params["smell_value"].blank? ? [] : params["smell_value"].split(",").map(&:to_i)
     latlng_bbox = params["latlng_bbox"].blank? ? [] : params["latlng_bbox"].split(",").map(&:to_f)
     group_by = ["zipcode","month","day"].index(params["group_by"]).nil? ? "" : params["group_by"]
@@ -594,10 +620,12 @@ class ApiController < ApplicationController
     time_range[1] = end_time.to_i if end_time
 
     #
-    # 1. zip_codes/regions
+    # 1. zip_codes/regions/cities; regions take precedence
     zip_codes = zipcodes.map{|i| ZipCode.where(:zip => i).first}.delete_if(&:nil?).uniq
-    unless region_ids.empty?
+    if not region_ids.empty?
       zip_codes = (zip_codes + region_ids.map{ |i| Region.find(i) if Region.exists?(i) }.delete_if(&:nil?).map(&:zip_codes).flatten).uniq
+    elsif not city_ids.empty?
+      zip_codes = (zip_codes + city_ids.map{ |i| City.find(i) if City.exists?(i) }.delete_if(&:nil?).map(&:zip_codes).flatten).uniq
     end
     results = zip_codes.empty? ? [SmellReport.all] : zip_codes.map(&:smell_reports)
     #

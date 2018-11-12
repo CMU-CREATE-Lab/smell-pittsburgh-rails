@@ -11,6 +11,12 @@ Rails.application.routes.draw do
   get "/api/v2/regions/:id" => "api#regions_show"
   get "/api/v2/regions/:id/map_markers" => "api#regions_map_markers"
   get "/api/v2/regions/:id/zip_codes" => "api#regions_zip_codes"
+
+  get "/api/v2/cities" => "api#cities_index"
+  get "/api/v2/cities/:id" => "api#cities_show"
+  get "/api/v2/cities/:id/map_markers" => "api#cities_map_markers"
+  get "/api/v2/cities/:id/zip_codes" => "api#cities_zip_codes"
+
   get "/api/v2/zip_codes" => "api#zip_codes"
   get "/api/v2/clients" => "api#clients_index"
   get "/api/v2/smell_reports" => "api#smell_reports_index_api2"

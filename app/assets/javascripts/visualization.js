@@ -10,9 +10,13 @@ var aqi_root_url = "https://api.smellpittsburgh.org/api/v1/get_aqi?city=";
 // Google map variables
 var map; // google map object
 var app; // "SMC" means smell my city, "BA" means bay area, "PGH" means smell pgh
-var city_name; // passed from the app
+var participating_city_name = at_city ? at_city['name'] : ""; // A city that is participating with the Smell City program
 var app_id = app_id_smellmycity; // passed from index.html.erb
-var current_home = "My Place";
+var current_home = "My Location";
+var city_ids = [];
+if (at_city) {
+  city_ids = [at_city['id']];
+}
 
 // User location
 var user_latlng = {"lat": at_latitude, "lng": at_longitude};
@@ -94,7 +98,7 @@ function init() {
   // Load report feed
   // TODO: Finish work on the smell report feed
   //$("#report-feed").on("click", function () {
-  //genFeed(1,"report-feed","/img/")
+  //  genFeed(1,"report-feed","/img/")
   //});
 
   // Disable vertical bouncing effect on mobile browsers
@@ -110,13 +114,13 @@ function init() {
 
 function loadData() {
   // Load city list and calendar list
-  if (app == "SMC") loadAndDrawHome();
+  if (app == "SMC") drawHome(formatDataForHome(at_participating_cities));
   loadAndDrawCalendar();
 
-  // load map markers and draw timeline if we are in a region; otherwise just draw the timeline
-  if (at_region_ids.length > 0) {
+  // load map markers and draw timeline if we are in a participating city; otherwise just draw the timeline
+  if (at_city) {
     // also makes call to loadAndCreateTimeline
-    loadMapMarkers(at_region_ids[0]);
+    loadMapMarkers(at_city['id']);
   } else {
     loadAndCreateTimeline();
   }
@@ -136,15 +140,11 @@ function setQueryStringData() {
       var matched = queryVar.split("=")[1].match(/[A-Z]{2,}/);
       if (matched) app = matched[0];
     }
-    if (queryVar.indexOf("city_name") != -1) {
-      var matched = queryVar.split("=")[1].match(/[A-Za-z\s]+/);
-      if (matched) city_name = matched[0]
-    }
   }
 
   // We need to set the lat lng according to the app type
-  // Smell My City uses the desired_latlng passed by index.html.erb as default
-  // , which is the current location of the user
+  // Smell My City uses the desired_latlng passed by index.html.erb as default,
+  // which is the current location of the user
   app = safeGet(app, "PGH");
   if (app == "BA") {
     setMobileLatLngZoom(ba_latlng, ba_zoom_mobile);
@@ -153,11 +153,14 @@ function setQueryStringData() {
     setMobileLatLngZoom(pittsburgh_latlng, pittsburgh_zoom_mobile);
     app_id = app_id_smellpgh;
   } else {
-    // TODO: this is smell my city
-    // if (has_regions) need to set the following
-    // desired_latlng = ?
-    // desired_zoom_mobile = ?
-    // desired_zoom_desktop = ?
+    // This is smell my city
+    app_id = app_id_smellmycity;
+    if (at_city) {
+      desired_latlng = {"lat": at_city['latitude'], "lng": at_city['longitude']};
+      desired_zoom_mobile = at_city.zoom_level;
+      desired_zoom_desktop = at_city.zoom_level + 1;
+      setMobileLatLngZoom(desired_latlng, desired_zoom_mobile);
+    }
   }
 }
 
@@ -316,9 +319,8 @@ function initHomeBtn() {
     current_home = "Bay Area";
   } else {
     // This is smell my city
-    // has_regions comes from the index.html.erb
-    // city_name comes from the query string from the app
-    current_home = has_regions ? city_name : current_home;
+    // If a participating city name was matched use it
+    current_home = participating_city_name ? participating_city_name : current_home;
   }
   $home_text = $("#home-btn span").text(current_home);
 
@@ -431,9 +433,9 @@ function initAnimationUI() {
   });
 }
 
-function loadMapMarkers(region_id) {
+function loadMapMarkers(city_id) {
   $.ajax({
-    "url": generateURLForMapMarkers(region_id),
+    "url": generateURLForMapMarkers(city_id),
     "success": function (data) {
       for (var i = 0; i < data.length; i++) {
         sensors_list.push(data[i]);
@@ -447,24 +449,10 @@ function loadMapMarkers(region_id) {
   });
 }
 
-function loadAndDrawHome() {
-  $.ajax({
-    //"url": "http://api.smellpittsburgh.org/api/v2/cities",
-    "url": "http://api.smellpittsburgh.org/api/v2/regions",
-    "success": function (data) {
-      // This data contains a predfined list of city names and lat, lng, zoom
-      drawHome(formatDataForHome(data));
-    },
-    "error": function (response) {
-      console.log("server error:", response);
-    }
-  });
-}
-
 function loadAndDrawCalendar() {
   $.ajax({
     "url": generateURLForSmellReports({
-      "region_ids": at_region_ids.join(","),
+      "city_ids": city_ids.join(","),
       "group_by": "month",
       "aggregate": "true"
     }),
@@ -514,7 +502,7 @@ function loadAndCreateTimeline() {
 function loadTimelineData(start_time, end_time, callback) {
   $.ajax({
     "url": generateURLForSmellReports({
-      "region_ids": at_region_ids.join(","),
+      "city_ids": city_ids.join(","),
       "group_by": "day",
       "aggregate": "true",
       "smell_values": "3,4,5",
@@ -644,7 +632,9 @@ function hideMarkers(markers) {
 function generateSmellPghURL(domain, path, parameters) {
   var api_paras = "";
   var parameter_list = [];
-  parameters["client_ids"] = app_id;
+  if (app_id != app_id_smellmycity) {
+    parameters["client_ids"] = app_id;
+  }
   if (typeof parameters == "object") {
     var list = Object.keys(parameters);
     list.forEach(function (i) {
@@ -664,8 +654,8 @@ function generateURLForSmellReports(parameters) {
   return generateSmellPghURL(window.location.origin, "/api/v2/smell_reports", parameters);
 }
 
-function generateURLForMapMarkers(region_id) {
-  return generateSmellPghURL(window.location.origin, "/api/v2/regions/" + region_id + "/map_markers", {});
+function generateURLForMapMarkers(city_id) {
+  return generateSmellPghURL(window.location.origin, "/api/v2/cities/" + city_id + "/map_markers", {});
 }
 
 function histSmellReport(r) {
@@ -701,19 +691,20 @@ function formatDataForHome(data) {
   // Get lng from data[i]["longitude"]
   // Get mobile zoom from data[i]["zoom_level"]
   // Desktop zoom = mobile zoom + 1
-  return [
-    {"name": "Pittsburgh", "lat": 40.45, "lng": -79.93, "zoom": 11},
-    {"name": "Louisville", "lat": 38.27, "lng": -85.75, "zoom": 11}
-  ];
+  var cities = [];
+  for (var i = 0; i < data.length; i++) {
+    cities.push({"id": data[i]['id'], "name": data[i]['name'], "lat": data[i]['latitude'], "lng": data[i]['longitude'], "zoom": data[i]['zoom_level']});
+  }
+  return cities;
 }
 
 function drawHome(data) {
   $home_select = $("#home");
   for (var i = 0; i < data.length; i++) {
     var d = data[i];
-    $home_select.append($('<option value="' + d["name"] + '" data-lat="' + d["lat"] + '" data-lng="' + d["lng"] + '" data-zoom="' + d["zoom"] + '">' + d["name"] + '</option>'));
+    $home_select.append($('<option value="' + d["name"] + '" data-id="' + d["id"] + '"data-lat="' + d["lat"] + '" data-lng="' + d["lng"] + '" data-zoom="' + d["zoom"] + '">' + d["name"] + '</option>'));
   }
-  $home_select.append($('<option value="My Place">My Place</option>'));
+  $home_select.append($('<option value="My Last Location">My Last Location</option>'));
   $home_select.append($('<option value="All Data">All Data</option>'));
 
   // Add event
@@ -726,13 +717,18 @@ function drawHome(data) {
     $home_text.text(desired_home);
     if (desired_home == "All Data") {
       setMobileLatLngZoom(all_data_latlng, all_data_zoom_mobile);
-    } else if (desired_home == "My Place") {
+      city_ids = at_participating_cities.map(function(city) { return city.id; });
+    } else if (desired_home == "My Last Location") {
       setMobileLatLngZoom(user_latlng, user_zoom_mobile);
+      // TODO
+      // Pass latlng_bbox rather than city_ids
+      // latlng_bbox (top-left to bottom-right)
     } else {
       setMobileLatLngZoom({"lat": $selected.data("lat"), "lng": $selected.data("lng")}, $selected.data("zoom"));
+      city_ids = [$selected.data("id")];
     }
     centerMap();
-    // TODO: reload the timeline, smell reports, and calendar
+
     // Add google analytics event
     var label = {
       "dimension5": current_epochtime_milisec.toString()

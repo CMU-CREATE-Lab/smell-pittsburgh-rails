@@ -12,22 +12,19 @@
 
 <% content_for :js do %>
   <script>
-  // values from latLng or from the first region that contains the latLng
-  var at_latitude = <%= @regions.empty? ? @latitude : @regions.first.latitude %>;
-  var at_longitude = <%= @regions.empty? ? @longitude : @regions.first.longitude %>;
-  // the reverse-geocoded zipcode for this lat/lng
-  var at_zipcode = <%= @zipcode.nil? ? "null" : @zipcode %>;
-  // if having defined regions or not
-  var has_regions = <%= not @regions.empty? %>;
+  // // values from latLng or from a city that contains the latLng
+  var at_latitude = <%= @city.blank? ? @latitude : @city.latitude %>;
+  var at_longitude = <%= @city.blank? ? @longitude : @city.longitude %>;
   // the zoom level to use for the map
-  var at_zoom = <%= @regions.empty? ? @zoom : @regions.first.zoom_level %>;
+  var at_zoom = <%= @city.blank? ? @zoom : @city.zoom_level %>;
   // the client id (indicating smell pgh, bay area, or smell my city)
   var app_id_smellpgh = <%= CLIENT_ID_SMELLPGH %>;
   var app_id_ba = <%= CLIENT_ID_BA %>;
   var app_id_smellmycity = <%= CLIENT_ID_SMELLMYCITY %>;
-
-  // List of regions and their associated ids
-  var at_region_ids = <%= @regions.map(&:id).to_json %>;
+  // List of cities participating in Smell My City
+  var at_participating_cities = <%= @cities.to_json.to_s.html_safe %>;
+  // Matched city, if it is a participating city
+  var at_city = <%= @city.to_json.to_s.html_safe %>;
   </script>
   <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js" %>
   <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js" %>
@@ -47,7 +44,7 @@
   <div id="page" data-role="page" class="noselect">
     <div id="map-container">
       <div id="map"></div>
-      <button id="home-btn" title="Home" class="custom-button-flat"><img src="/img/home.png"><span>My Place</span></button>
+      <button id="home-btn" title="Home" class="custom-button-flat"><img src="/img/home.png"><span>My Location</span></button>
       <button id="calendar-btn" title="Calendar" class="custom-button-flat"><img src="/img/calendar.png"></button>
       <button id="terrain-btn" title="Terrain mode" class="custom-button-flat"><img src="/img/terrain.png"></button>
       <button id="playback-btn" title="Playback animation" class="custom-button-flat"><img src="/img/play.png"></button>
@@ -102,7 +99,7 @@
       </select>
     </div>
     <div id="home-dialog" title="Region" data-role="none">
-      <p>Select a region or use your location for the home screen:</p>
+      <p>Select a region to explore:</p>
       <select id="home" data-role="none">
         <option selected>Select...</option>
       </select>
