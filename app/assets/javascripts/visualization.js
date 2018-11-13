@@ -1,55 +1,61 @@
 "use strict";
 
 // Staging testing features
-var animate_smell_text = false; // This is for animating smell descriptions
-var show_voc_sensors = false; // This is for showing VOC sensors on the map
+var animate_smell_text = false; // for animating smell descriptions
+var show_voc_sensors = false; // for showing VOC sensors on the map
 
 // URL variables
 var aqi_root_url = "https://api.smellpittsburgh.org/api/v1/get_aqi?city=";
 
 // Google map variables
 var map; // google map object
+
+// Application variables
 var app; // "SMC" means smell my city, "BA" means bay area, "PGH" means smell pgh
-var participating_city_name = at_city ? at_city['name'] : ""; // A city that is participating with the Smell City program
-var app_id = app_id_smellmycity; // passed from index.html.erb
-var city_ids = [];
+var app_id; // passed from index.html.erb
+
+// Current participating city (based on current user location)
+var user_city_ids;
+var user_city_latlng;
+var user_city_zoom_mobile;
+var user_city_name;
 if (at_city) {
-  city_ids = [at_city['id']];
+  user_city_ids = [at_city["id"]];
+  user_city_latlng = {"lat": at_city["latitude"], "lng": at_city["longitude"]};
+  user_city_zoom_mobile = at_city.zoom_level;
+  user_city_name = at_city["name"];
 }
 
-// User location
+// Current user location
 var user_latlng = {"lat": at_latitude, "lng": at_longitude};
 var user_zoom_mobile = at_zoom;
-var user_zoom_desktop = at_zoom + 1;
 var user_home = "My Location";
 
 // Desired location for Pittsburgh
 var pittsburgh_latlng = {"lat": 40.45, "lng": -79.93};
 var pittsburgh_zoom_mobile = 11;
-var pittsburgh_zoom_desktop = pittsburgh_zoom_mobile + 1;
 var pittsburgh_home = "Pittsburgh";
 
 // Desired location for Bay Area
 var ba_latlng = {"lat": 38.004472, "lng": -122.260693};
 var ba_zoom_mobile = 11;
-var ba_zoom_desktop = ba_zoom_mobile + 1;
 var ba_home = "Bay Area";
 
 // Desired location for the US
 var all_data_latlng = {"lat": 40.610271, "lng": -101.413473};
 var all_data_zoom_mobile = 3;
-var all_data_zoom_desktop = all_data_zoom_mobile + 1;
 var all_data_home = "All Data";
 
 // Desired location
-var desired_latlng = user_latlng; // initially is the current user location
-var desired_zoom_mobile = user_zoom_mobile; // initialized for the current user location
-var desired_zoom_desktop = user_zoom_desktop;
-var desired_home = user_home;
+var desired_latlng;
+var desired_zoom_mobile;
+var desired_zoom_desktop;
+var desired_home;
+var desired_city_ids;
 
 // Smell reports variables
-var smell_reports_cache = {};
-var current_epochtime_milisec = new Date().getTime();
+var smell_reports_cache;
+var current_epochtime_milisec;
 var infowindow_smell;
 
 // Animation variables
@@ -74,36 +80,19 @@ var $home_text;
 var timeline;
 
 // Sensor variables
-var sensors_cache = {};
+var sensors_cache;
 var infowindow_PM25;
 var infowindow_VOC;
-var sensors_list = [];
+var sensors_list;
 
 // Widgets
 var widgets = new edaplotjs.Widgets();
 
 function init() {
-  // Set data coming from the query string
-  setQueryStringData();
-
-  // Check if enabling staging features or not
-  if (show_voc_sensors) showVocSensors();
-
-  // Create the page
-  initGoogleMap();
-  initTerrainBtn();
-  initHomeBtn();
-  initCalendarBtn();
-  initAnimationUI();
-
-  // Load data
-  loadData();
-
-  // Load report feed
-  // TODO: Finish work on the smell report feed
-  //$("#report-feed").on("click", function () {
-  //  genFeed(1,"report-feed","/img/")
-  //});
+  setQueryStringData(); // set data coming from the query string
+  setMode(); // set the mode based on the query string data
+  initUI(); // initialize the user interface
+  loadDataAndSetUI(); // load data from the server and set the UI
 
   // Disable vertical bouncing effect on mobile browsers
   $(document).on("scrollstart", function (e) {
@@ -111,29 +100,9 @@ function init() {
   });
 
   // Disable all href tags to prevent accidental link clicking on the map
-  $('body').on("click", "a", function (e) {
+  $("body").on("click", "a", function (e) {
     e.preventDefault();
   });
-}
-
-function loadData() {
-  // Load city list and calendar list
-  if (app == "SMC") drawHome(formatDataForHome(at_participating_cities));
-  loadAndDrawCalendar();
-
-  // load map markers and draw timeline if we are in a participating city; otherwise just draw the timeline
-  if (at_city) {
-    // also makes call to loadAndCreateTimeline
-    loadMapMarkers(at_city['id']);
-  } else {
-    loadAndCreateTimeline();
-  }
-}
-
-// Safely get the value from a variable, return a default value if undefined
-function safeGet(v, default_val) {
-  if (typeof default_val === "undefined") default_val = "";
-  return (typeof v === "undefined") ? default_val : v;
 }
 
 function setQueryStringData() {
@@ -145,31 +114,114 @@ function setQueryStringData() {
       if (matched) app = matched[0];
     }
   }
-
-  // We need to set the lat lng according to the app type
-  // Smell My City uses the desired_latlng passed by index.html.erb as default,
-  // which is the current location of the user
   app = safeGet(app, "PGH");
+}
+
+function setMode(mode) {
+  hideSmellMarkersByTime(current_epochtime_milisec);
+  hideSensorMarkersByTime(current_epochtime_milisec);
+  current_epochtime_milisec = new Date().getTime();
+  smell_reports_cache = {};
+  desired_city_ids = [];
+  sensors_cache = {};
+  sensors_list = [];
+  if (show_voc_sensors) addVocSensors();
   if (app == "BA") {
-    setLatLngZoom(ba_latlng, ba_zoom_mobile);
-    app_id = app_id_ba;
+    setToBayArea();
   } else if (app == "PGH") {
-    setLatLngZoom(pittsburgh_latlng, pittsburgh_zoom_mobile);
-    app_id = app_id_smellpgh;
-  } else {
-    // This is smell my city
-    app_id = app_id_smellmycity;
-    if (at_city) {
-      desired_latlng = {"lat": at_city['latitude'], "lng": at_city['longitude']};
-      desired_zoom_mobile = at_city.zoom_level;
-      desired_zoom_desktop = at_city.zoom_level + 1;
-      setLatLngZoom(desired_latlng, desired_zoom_mobile);
-    }
+    setToSmellPgh();
+  } else if (app == "SMC") {
+    setToSmellMyCity(mode);
   }
 }
 
+function initUI() {
+  initGoogleMap();
+  initTerrainBtn();
+  initHomeBtn();
+  initCalendarBtn();
+  initAnimationUI();
+}
+
+function loadDataAndSetUI() {
+  $home_text.text(desired_home);
+
+  // Load calendar list
+  loadAndDrawCalendar();
+
+  // Check if we are in a participating city
+  if (user_city_ids) {
+    // Load sensor list of the city first
+    // loadSensorList() also calls loadAndCreateTimeline()
+    loadSensorList(user_city_ids);
+  } else {
+    loadAndCreateTimeline();
+  }
+
+  // Load report feed
+  // TODO: Finish work on the smell report feed
+  //$("#report-feed").on("click", function () {
+  //  genFeed(1,"report-feed","/img/")
+  //});
+}
+
+// This is Bay Area
+function setToBayArea() {
+  app_id = app_id_ba;
+  setDesiredLatLngZoomHome(ba_latlng, ba_zoom_mobile, ba_home);
+}
+
+// This is Smell Pittsburgh
+function setToSmellPgh() {
+  app_id = app_id_smellpgh;
+  setDesiredLatLngZoomHome(pittsburgh_latlng, pittsburgh_zoom_mobile, pittsburgh_home);
+}
+
+// This is Smell My City
+function setToSmellMyCity(mode) {
+  app_id = app_id_smellmycity;
+  // If there is a participating city
+  if (at_city) {
+    mode = safeGet(mode, "city"); // default to the mode of participating cities
+  } else {
+    mode = safeGet(mode, "user"); // default to the mode of user location
+  }
+  // Check mode
+  if (mode == "all") {
+    // Want to show all data
+    setDesiredLatLngZoomHome(all_data_latlng, all_data_zoom_mobile, all_data_home);
+    desired_city_ids = at_participating_cities.map(function (city) {return city.id;});
+  } else if (mode == "user") {
+    // Want to show only the data near the current user location
+    setDesiredLatLngZoomHome(user_latlng, user_zoom_mobile, user_home);
+    desired_city_ids = [];
+    // TODO: Pass latlng_bbox rather than city_ids
+    // latlng_bbox (top-left to bottom-right)
+    // http://localhost:3000/api/v2/smell_reports?latlng_bbox=30,-99,40,-88
+    // top-left is (30, -99), bottom-right is (40,-88)
+  } else if (mode == "city") {
+    // Want to show the data of the participating city (if any) at the user location
+    setDesiredLatLngZoomHome(user_city_latlng, user_city_zoom_mobile, user_city_name);
+    desired_city_ids = user_city_ids;
+  }
+}
+
+function setUserCityLatLngZoomHomeId(latlng, zoom, home, ids) {
+  user_city_latlng = latlng;
+  user_city_zoom_mobile = zoom;
+  user_city_name = home;
+  user_city_ids = ids;
+}
+
+function setDesiredLatLngZoomHome(latlng, zoom, home) {
+  desired_latlng = latlng;
+  desired_zoom_mobile = zoom;
+  desired_zoom_desktop = zoom + 1;
+  desired_home = home;
+}
+
 // This is a testing feature
-function showVocSensors() {
+function addVocSensors() {
   $(".voc-legend-row").show();
   sensors_list.push({
     name: "Lloyd Ave at Chestnut St Outdoors AWAIR",
@@ -262,10 +314,10 @@ function initGoogleMap() {
 
   // Update marker size when users zoom the map
   map.addListener("zoom_changed", function () {
-    var current_markers = smell_reports_cache[current_epochtime_milisec]["markers"];
-    var current_zoom_level = map.getZoom();
+    var c = safeGet(smell_reports_cache[current_epochtime_milisec], {});
+    var current_markers = safeGet(c["markers"], []);
     for (var i = 0; i < current_markers.length; i++) {
-      current_markers[i].updateIconByZoomLevel(current_zoom_level);
+      current_markers[i].updateIconByZoomLevel(map.getZoom());
     }
   });
 
@@ -314,19 +366,12 @@ function initTerrainBtn() {
 }
 
 function initHomeBtn() {
-  // Add city name to the home button
-  if (app == "PGH") {
-    // This is smell pgh
-    desired_home = pittsburgh_home;
-  } else if (app == "BA") {
-    // This is bay area
-    desired_home = ba_home;
-  } else {
-    // This is smell my city
-    // If a participating city name was matched use it
-    desired_home = participating_city_name ? participating_city_name : desired_home;
+  $home_text = $("#home-btn span");
+
+  // Load city list
+  if (app == "SMC") {
+    drawHome(formatDataForHome(at_participating_cities));
   }
-  $home_text = $("#home-btn span").text(desired_home);
 
   // Create the home dialog
   $home_dialog = widgets.createCustomDialog({
@@ -437,7 +482,7 @@ function initAnimationUI() {
   });
 }
 
-function loadMapMarkers(city_id) {
+function loadSensorList(city_id) {
   $.ajax({
     "url": generateURLForMapMarkers(city_id),
     "success": function (data) {
@@ -456,7 +501,7 @@ function loadMapMarkers(city_id) {
 function loadAndDrawCalendar() {
   $.ajax({
     "url": generateURLForSmellReports({
-      "city_ids": city_ids.join(","),
+      "city_ids": desired_city_ids.join(","),
       "group_by": "month",
       "aggregate": "true"
     }),
@@ -497,16 +542,14 @@ function loadAndCreateTimeline() {
   // Create the timeline
   var T = getInitialTimeRange();
   loadTimelineData(T["start_time"], T["end_time"], function (data) {
-    if (!isDictEmpty(data)) {
-      createTimeline(formatDataForTimeline(data, new Date(T["end_time"])));
-    }
+    createTimeline(formatDataForTimeline(data, new Date(T["end_time"])));
   });
 }
 
 function loadTimelineData(start_time, end_time, callback) {
   $.ajax({
     "url": generateURLForSmellReports({
-      "city_ids": city_ids.join(","),
+      "city_ids": desired_city_ids.join(","),
       "group_by": "day",
       "aggregate": "true",
       "smell_values": "3,4,5",
@@ -534,15 +577,18 @@ function firstDayOfPreviousMonth(date_obj) {
   return new Date(date_obj.getFullYear(), date_obj.getMonth() - 1, 1);
 }
 
-function showSmellMarkersByTime(epochtime_milisec) {
-  if (typeof epochtime_milisec == "undefined") return;
+// Get the first day of the current month
+function firstDayOfCurrentMonth(date_obj) {
+  return new Date(date_obj.getFullYear(), date_obj.getMonth(), 1);
+}
 
+function showSmellMarkersByTime(epochtime_milisec) {
+  if (typeof epochtime_milisec === "undefined") return;
   // Check if data exists in the cache
   // If not, load data from the server
   var r = smell_reports_cache[epochtime_milisec];
-  if (typeof r != "undefined") {
-    var markers = r["markers"];
-    showMarkers(markers);
+  if (typeof r !== "undefined") {
+    showMarkers(r["markers"]);
   } else {
     smell_reports_cache[epochtime_milisec] = {"markers": []};
     loadAndCreateSmellMarkers(epochtime_milisec);
@@ -550,6 +596,7 @@ function showSmellMarkersByTime(epochtime_milisec) {
 }
 
 function showMarkers(markers) {
+  markers = safeGet(markers, []);
   for (var i = 0; i < markers.length; i++) {
     if (typeof markers[i] !== "undefined") {
       markers[i].setMap(map);
@@ -565,6 +612,7 @@ function loadAndCreateSmellMarkers(epochtime_milisec) {
   var end_time = start_time + 86399; // one day after the starting time
   $.ajax({
     "url": generateURLForSmellReports({
+      "city_ids": desired_city_ids.join(","),
       "start_time": start_time,
       "end_time": end_time
     }),
@@ -619,12 +667,14 @@ function handleSmellMarkerClicked(marker) {
 }
 
 function hideSmellMarkersByTime(epochtime_milisec) {
+  if (typeof epochtime_milisec === "undefined") return;
   var r = smell_reports_cache[epochtime_milisec];
   if (typeof r == "undefined") return;
   hideMarkers(r["markers"]);
 }
 
 function hideMarkers(markers) {
+  markers = safeGet(markers, []);
   for (var i = 0; i < markers.length; i++) {
     if (typeof markers[i] !== "undefined") {
       markers[i].setMap(null);
@@ -650,7 +700,6 @@ function generateSmellPghURL(domain, path, parameters) {
   } else {
     console.log("parameters is not an object");
   }
-
   return domain + path + api_paras;
 }
 
@@ -704,6 +753,8 @@ function formatDataForHome(data) {
 
 function drawHome(data) {
   $home_select = $("#home");
+  $home_select.empty();
+  $home_select.append($("<option selected>Select...</option>"));
   for (var i = 0; i < data.length; i++) {
     var d = data[i];
     $home_select.append($('<option value="' + d["name"] + '" data-id="' + d["id"] + '"data-lat="' + d["lat"] + '" data-lng="' + d["lng"] + '" data-zoom="' + d["zoom"] + '">' + d["name"] + '</option>'));
@@ -716,39 +767,27 @@ function drawHome(data) {
     $home_dialog.dialog("close");
     var $selected = $home_select.find(":selected");
     var selected_home = $selected.val();
-    if (desired_home == selected_home) return;
-    desired_home = selected_home;
-    $home_text.text(selected_home);
-    if (selected_home == all_data_home) {
-      setLatLngZoom(all_data_latlng, all_data_zoom_mobile);
-      city_ids = at_participating_cities.map(function (city) {return city.id;});
-    } else if (selected_home == user_home) {
-      setLatLngZoom(user_latlng, user_zoom_mobile);
-      // TODO
-      // Pass latlng_bbox rather than city_ids
-      // latlng_bbox (top-left to bottom-right)
-      // http://localhost:3000/api/v2/smell_reports?latlng_bbox=30,-99,40,-88
-      // top-left is (30, -99), bottom-right is (40,-88)
-    } else {
-      setLatLngZoom({"lat": $selected.data("lat"), "lng": $selected.data("lng")}, $selected.data("zoom"));
-      city_ids = [$selected.data("id")];
+    if (selected_home != desired_home) {
+      if (selected_home == all_data_home) {
+        // User wants to see all data
+        setMode("all");
+      } else if (selected_home == user_home) {
+        // User wants to see the data near the current location
+        setMode("user");
+      } else {
+        // User wants to see the data of a participating city
+        var selected_city_latlng = {"lat": $selected.data("lat"), "lng": $selected.data("lng")};
+        var selected_city_mobile_zoom = $selected.data("zoom");
+        var selected_city_ids = [$selected.data("id")];
+        setUserCityLatLngZoomHomeId(selected_city_latlng, selected_city_mobile_zoom, selected_home, selected_city_ids);
+        setMode("city");
+      }
+      loadDataAndSetUI();
     }
     centerMap();
-    // TODO: reload the UI correctly
-    // Add google analytics event
-    var label = {
-      "dimension5": current_epochtime_milisec.toString()
-    };
-    addGoogleAnalyticEvent("home", "click", label);
-    // Have selector go back to showing default option
-    $(this).prop('selectedIndex', 0);
+    addGoogleAnalyticEvent("home", "click", {"dimension5": current_epochtime_milisec.toString()});
+    $(this).prop("selectedIndex", 0);
   });
-}
-
-function setLatLngZoom(latlng, zoom) {
-  desired_latlng = latlng;
-  desired_zoom_mobile = zoom;
-  desired_zoom_desktop = zoom + 1;
 }
 
 function centerMap() {
@@ -776,6 +815,8 @@ function drawCalendar(data) {
   var month_arr = data.month;
   var today = new Date();
   $calendar_select = $("#calendar");
+  $calendar_select.empty();
+  $calendar_select.append($("<option selected>Select...</option>"));
   $calendar_select.append($('<option value="' + -1 + '" data-year="' + today.getFullYear() + '" data-month="' + (today.getMonth() + 1) + '">Today</option>'));
   for (var i = month_arr.length - 1; i >= 0; i--) {
     var year = month_arr[i][0];
@@ -788,7 +829,10 @@ function drawCalendar(data) {
     $calendar_dialog.dialog("close");
     var $selected = $calendar_select.find(":selected");
     var last_block_data = timeline.getLastBlockData();
-    var last_block_month = (new Date(last_block_data["epochtime_milisec"])).getMonth();
+    var last_block_month;
+    if (typeof last_block_data !== "undefined") {
+      last_block_month = (new Date(last_block_data["epochtime_milisec"])).getMonth();
+    }
     if ($selected.val() == -1) {
       // This means that user selects "today"
       var selected_month = $selected.data("month");
@@ -825,13 +869,10 @@ function drawCalendar(data) {
           timeline.selectLastBlock();
         }
       }
-      var label = {
-        "dimension5": start_time.toString()
-      };
-      addGoogleAnalyticEvent("calendar", "click", label);
+      addGoogleAnalyticEvent("calendar", "click", {"dimension5": start_time.toString()});
     }
     // Have selector go back to showing default option
-    $(this).prop('selectedIndex', 0);
+    $(this).prop("selectedIndex", 0);
   });
 }
 
@@ -862,6 +903,7 @@ function formatDataForTimeline(data, pad_to_date_obj) {
     var day_obj_time = day_obj.getTime();
     batch_2d.push([label, count, day_obj_time]);
     // Check if we need to pad missing days of the future
+    // TODO: there is a bug for padding days, we also need to pad the past
     var next_day_obj;
     if (i < sorted_day_str.length - 1) {
       next_day_obj = dateStringToObject(sorted_day_str[i + 1]);
@@ -893,8 +935,9 @@ function getDiffDays(d1, d2) {
   return Math.ceil((d2_time - d1_time) / 86400000);
 }
 
+// Use the TimelineHeatmap charting library to draw the timeline
 function createTimeline(data) {
-  // Use the charting library to draw the timeline
+  var $timeline_container = $("#timeline-container").empty();
   var chart_settings = {
     click: function ($e) {
       handleTimelineButtonClicked(parseInt($e.data("epochtime_milisec")));
@@ -921,7 +964,9 @@ function createTimeline(data) {
     addLeftArrow: function (obj) {
       obj.setLeftArrowOpacity(0.3);
       obj.disableLeftArrow();
-      var end_time = obj.getFirstBlockData()["epochtime_milisec"];
+      var first_block_data = safeGet(obj.getFirstBlockData(), {});
+      var end_time = safeGet(first_block_data["epochtime_milisec"], new Date().getTime());
+      end_time = firstDayOfCurrentMonth(new Date(end_time)).getTime();
       var start_time = firstDayOfPreviousMonth(new Date(end_time)).getTime();
       loadTimelineData(start_time, end_time, function (data) {
         if (!isDictEmpty(data)) {
@@ -941,7 +986,7 @@ function createTimeline(data) {
 
   // Add horizontal scrolling to the timeline
   // Needed because Android <= 4.4 won't scroll without this
-  addTouchHorizontalScroll($("#timeline-container"));
+  addTouchHorizontalScroll($timeline_container);
 }
 
 function handleTimelineButtonClicked(epochtime_milisec) {
@@ -1168,6 +1213,7 @@ function showOrHideAQI(is_current_day) {
 }
 
 function hideSensorMarkersByTime(epochtime_milisec) {
+  if (typeof epochtime_milisec === "undefined") return;
   var r = sensors_cache[epochtime_milisec];
   if (typeof r == "undefined") return;
   hideMarkers(r["markers"]);
@@ -1380,6 +1426,12 @@ function aggregateSensorData(data, info) {
   data_cp["data"].unshift(pt);
 
   return data_cp;
+}
+
+// Safely get the value from a variable, return a default value if undefined
+function safeGet(v, default_val) {
+  if (typeof default_val === "undefined") default_val = "";
+  return (typeof v === "undefined") ? default_val : v;
 }
 
 $(function () {

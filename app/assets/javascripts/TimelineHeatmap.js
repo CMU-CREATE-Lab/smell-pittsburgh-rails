@@ -1,6 +1,6 @@
 /*************************************************************************
  * GitHub: https://github.com/yenchiah/timeline-heatmap
- * Version: v2.3.1
+ * Version: v2.3.2
  *************************************************************************/
 
 (function () {
@@ -138,21 +138,23 @@
     }
 
     function plot(block_data) {
-      var current_num_blocks = getNumberOfBlocks();
-
-      // Check if data is 2D or 3D
-      var is_data_matrix_2d = typeof block_data[0][0] != "object";
-      if (is_data_matrix_2d) {
-        // The entire 2D data matrix is a batch
-        plotOneBatch(block_data, block_data.length + current_num_blocks);
-      } else {
-        // Each 2D matrix in the 3D data matrix is a batch
-        // We want to add index to the blocks reversely
-        // The right-most block has index 0
-        var previous_index = current_num_blocks;
-        for (var i = block_data.length - 1; i >= 0; i--) {
-          previous_index += block_data[i].length;
-          plotOneBatch(block_data[i], previous_index);
+      block_data = safeGet(block_data, []);
+      if (block_data.length != 0) {
+        var current_num_blocks = getNumberOfBlocks();
+        // Check if data is 2D or 3D
+        var is_data_matrix_2d = typeof block_data[0][0] != "object";
+        if (is_data_matrix_2d) {
+          // The entire 2D data matrix is a batch
+          plotOneBatch(block_data, block_data.length + current_num_blocks);
+        } else {
+          // Each 2D matrix in the 3D data matrix is a batch
+          // We want to add index to the blocks reversely
+          // The right-most block has index 0
+          var previous_index = current_num_blocks;
+          for (var i = block_data.length - 1; i >= 0; i--) {
+            previous_index += block_data[i].length;
+            plotOneBatch(block_data[i], previous_index);
+          }
         }
       }
 
@@ -271,7 +273,7 @@
     }
 
     function selectBlock($ele, auto_scroll) {
-      if ($ele && !$ele.hasClass(selected_block_class)) {
+      if ($ele && $ele.length > 0 && !$ele.hasClass(selected_block_class)) {
         clearBlockSelection();
         $ele.addClass(selected_block_class);
         if (auto_scroll) {

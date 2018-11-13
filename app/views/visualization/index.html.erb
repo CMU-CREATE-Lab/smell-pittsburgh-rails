@@ -44,7 +44,7 @@
   <div id="page" data-role="page" class="noselect">
     <div id="map-container">
       <div id="map"></div>
-      <button id="home-btn" title="Home" class="custom-button-flat"><img src="/img/home.png"><span>My Location</span></button>
+      <button id="home-btn" title="Home" class="custom-button-flat"><img src="/img/home.png"><span></span></button>
       <button id="calendar-btn" title="Calendar" class="custom-button-flat"><img src="/img/calendar.png"></button>
       <button id="terrain-btn" title="Terrain mode" class="custom-button-flat"><img src="/img/terrain.png"></button>
       <button id="playback-btn" title="Playback animation" class="custom-button-flat"><img src="/img/play.png"></button>
@@ -94,15 +94,11 @@
     <div id="timeline-handle" class="noselect"></i><span>Daily Smell Ratings</span></div>
     <div id="calendar-dialog" title="Calendar" data-role="none">
       <p>Select a date to jump to in the bottom timeline:</p>
-      <select id="calendar" data-role="none">
-        <option selected>Select...</option>
-      </select>
+      <select id="calendar" data-role="none"></select>
     </div>
     <div id="home-dialog" title="Region" data-role="none">
       <p>Select a region to explore:</p>
-      <select id="home" data-role="none">
-        <option selected>Select...</option>
-      </select>
+      <select id="home" data-role="none"></select>
     </div>
   </div>
 <% end %>
