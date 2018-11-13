@@ -228,23 +228,18 @@ class InitialSmellReportsForJeffersonCounty < ActiveRecord::Migration
       ]
 
       reports.each do |report|
-        smell_report = SmellReport.new
-        smell_report.user_hash = "SMC_tester"
-        smell_report.real_latitude = report['Latitude']
-        smell_report.real_longitude = report['Longitude']
-        smell_report.smell_value = report['Smell Value']
-        smell_report.smell_description = report['Smell Description']
-        smell_report.feelings_symptoms = report['Symptoms']
-        smell_report.observed_at = report['Observed At']
-
-        perturb_coordinates = SmellReport.perturbLatLng(report['Latitude'],report['Longitude'])
-        smell_report.latitude = perturb_coordinates['lat']
-        smell_report.longitude = perturb_coordinates['lng']
-
         geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{report['Latitude']}, #{report['Longitude']}" )
-        smell_report.zip_code_id = ZipCode.find_or_create_by(zip: geo.zip).id
-
-        smell_report.save
+        smell_report = SmellReport.create({
+          :client_id => 3,
+          :user_hash => "SMC_tester",
+          :latitude => report['Latitude'],
+          :longitude => report['Longitude'],
+          :smell_value => report['Smell Value'],
+          :smell_description => report['Smell Description'],
+          :feelings_symptoms => report['Symptoms'],
+          :observed_at => report['Observed At'],
+          :zip_code_id => ZipCode.find_or_create_by(zip: geo.zip).id
+        })
         sleep(1)
       end
   end
