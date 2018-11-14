@@ -12,12 +12,12 @@ class AddJeffersonkyMarkers < ActiveRecord::Migration
       -85.6767705,
       ],
       [
-        {"name":"New Albany AirNow","sensors":[{"PM2_5":{"sources":[{"feed":2822,"channel":"PM2_5"}]}},{"PM2_5":{"sources":[{"feed":2822,"channel":"PM2_5_daily_max"}]}},{"PM2_5":{"sources":[{"feed":2822,"channel":"PM2_5_daily_mean"}]}},{"PM2_5":{"sources":[{"feed":2822,"channel":"PM2_5_daily_median"}]}},{"SO2":{"sources":[{"feed":2822,"channel":"SO2"}]}}]},
+        {"name":"New Albany AirNow","sensors":[{"PM25":{"sources":[{"feed":2822,"channel":"PM2_5"}]}},{"PM2_5":{"sources":[{"feed":2822,"channel":"PM2_5_daily_max"}]}},{"PM2_5":{"sources":[{"feed":2822,"channel":"PM2_5_daily_mean"}]}},{"PM2_5":{"sources":[{"feed":2822,"channel":"PM2_5_daily_median"}]}},{"SO2":{"sources":[{"feed":2822,"channel":"SO2"}]}}]},
       38.188805,
       -85.6767705,
       ],
       [
-        {"name":"PALouisville PurpleAir","sensors":[{"PM2_5":{"sources":[{"feed":16935,"channel":"PM2_5"}]}}]},
+        {"name":"PALouisville PurpleAir","sensors":[{"PM25":{"sources":[{"feed":16935,"channel":"PM2_5"}]}}]},
       38.188805,
       -85.6767705,
       ],
@@ -27,12 +27,12 @@ class AddJeffersonkyMarkers < ActiveRecord::Migration
       -85.6767705,
       ],
       [
-        {"name":"PALouisville B PurpleAir","sensors":[{"PM2_5":{"sources":[{"feed":16936,"channel":"PM2_5"}]}}]},
+        {"name":"PALouisville B PurpleAir","sensors":[{"PM25":{"sources":[{"feed":16936,"channel":"PM2_5"}]}}]},
       38.188805,
       -85.6767705,
       ],
       [
-        {"name":"Carrithers Middle School AirNow","sensors":[{"PM2_5":{"sources":[{"feed":15690,"channel":"PM2_5"}]}}]},
+        {"name":"Carrithers Middle School AirNow","sensors":[{"PM25":{"sources":[{"feed":15690,"channel":"PM2_5"}]}}]},
       38.188805,
       -85.6767705,
       ],
@@ -47,7 +47,7 @@ class AddJeffersonkyMarkers < ActiveRecord::Migration
       -85.6767705,
       ],
       [
-        {"name":"BATES AirNow","sensors":[{"PM2_5":{"sources":[{"feed":2918,"channel":"PM2_5"}]}},{"PM2_5":{"sources":[{"feed":2918,"channel":"PM2_5_daily_max"}]}},{"PM2_5":{"sources":[{"feed":2918,"channel":"PM2_5_daily_mean"}]}},{"PM2_5":{"sources":[{"feed":2918,"channel":"PM2_5_daily_median"}]}}]},
+        {"name":"BATES AirNow","sensors":[{"PM25":{"sources":[{"feed":2918,"channel":"PM2_5"}]}},{"PM2_5":{"sources":[{"feed":2918,"channel":"PM2_5_daily_max"}]}},{"PM2_5":{"sources":[{"feed":2918,"channel":"PM2_5_daily_mean"}]}},{"PM2_5":{"sources":[{"feed":2918,"channel":"PM2_5_daily_median"}]}}]},
       38.188805,
       -85.6767705,
       ]
