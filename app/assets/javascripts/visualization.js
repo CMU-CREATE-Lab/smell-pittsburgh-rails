@@ -13,6 +13,7 @@ var map; // google map object
 // Application variables
 var app; // "SMC" means smell my city, "BA" means bay area, "PGH" means smell pgh
 var app_id; // passed from index.html.erb
+var mode; // "user", "all", "city", see setMode() function for details
 
 // Current participating city (based on current user location)
 var user_city_ids;
@@ -157,7 +158,8 @@ function setUserLatLngBoundingBox() {
   });
 }
 
-function setMode(mode) {
+function setMode(desired_mode) {
+  mode = desired_mode;
   hideSmellMarkersByTime(current_epochtime_milisec);
   hideSensorMarkersByTime(current_epochtime_milisec);
   current_epochtime_milisec = new Date().getTime();
@@ -183,10 +185,10 @@ function loadDataAndSetUI() {
   loadAndDrawCalendar();
 
   // Check if we are in a participating city
-  if (user_city_ids) {
+  if (typeof desired_city_ids !== "undefined" && mode != "all") {
     // Load sensor list of the city first
     // loadSensorList() also calls loadAndCreateTimeline()
-    loadSensorList(user_city_ids);
+    loadSensorList(desired_city_ids[0]);
   } else {
     loadAndCreateTimeline();
   }
@@ -225,7 +227,7 @@ function setToSmellMyCity(mode) {
     setDesiredLatLngZoomHome(all_data_latlng, all_data_zoom_mobile, all_data_home);
     desired_city_ids = at_participating_cities.map(function (city) {return city.id;});
     desired_latlng_bbox = undefined;
-    clearLatLngBoundOnMap(user_latlng_polygon);
+    clearPolygonMaskOnMap(user_latlng_polygon);
   } else if (mode == "user") {
     // Want to show only the data near the current user location
     setDesiredLatLngZoomHome(user_latlng, user_zoom_mobile, user_home);
