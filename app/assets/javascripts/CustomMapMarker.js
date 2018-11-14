@@ -1,6 +1,10 @@
 /*************************************************************************
  * This class is developed by Yen-Chia Hsu
  * Dependencies: jQuery and Google Maps JavaScript API
+ * Currently only support three sensor formats:
+ * "wind_direction" will be blue arrows
+ * "PM25" will be circles
+ * "VOC" will be squares
  *************************************************************************/
 
 (function () {

@@ -22,6 +22,13 @@ function dateStringToObject(str) {
   return new Date(year, month - 1, day);
 }
 
+function dataObjectToString(date_obj) {
+  var year = date_obj.getFullYear();
+  var month = date_obj.getMonth() + 1;
+  var day = date_obj.getDate();
+  return year + "-" + month + "-" + day;
+}
+
 function isMobile() {
   var useragent = navigator.userAgent;
   return useragent.indexOf("iPhone") != -1 || useragent.indexOf("Android") != -1;
@@ -61,4 +68,19 @@ function unique(array) {
 // Is dictionary empty
 function isDictEmpty(dict) {
   return Object.keys(dict).length === 0;
+}
+
+// Get the end day of the current month
+function firstDayOfNextMonth(date_obj) {
+  return new Date(date_obj.getFullYear(), date_obj.getMonth() + 1, 1);
+}
+
+// Get the first day of the previous month
+function firstDayOfPreviousMonth(date_obj) {
+  return new Date(date_obj.getFullYear(), date_obj.getMonth() - 1, 1);
+}
+
+// Get the first day of the current month
+function firstDayOfCurrentMonth(date_obj) {
+  return new Date(date_obj.getFullYear(), date_obj.getMonth(), 1);
 }

@@ -567,21 +567,6 @@ function loadTimelineData(start_time, end_time, callback) {
   });
 }
 
-// Get the end day of the current month
-function firstDayOfNextMonth(date_obj) {
-  return new Date(date_obj.getFullYear(), date_obj.getMonth() + 1, 1);
-}
-
-// Get the first day of the previous month
-function firstDayOfPreviousMonth(date_obj) {
-  return new Date(date_obj.getFullYear(), date_obj.getMonth() - 1, 1);
-}
-
-// Get the first day of the current month
-function firstDayOfCurrentMonth(date_obj) {
-  return new Date(date_obj.getFullYear(), date_obj.getMonth(), 1);
-}
-
 function showSmellMarkersByTime(epochtime_milisec) {
   if (typeof epochtime_milisec === "undefined") return;
   // Check if data exists in the cache
@@ -881,11 +866,29 @@ function formatDataForTimeline(data, pad_to_date_obj) {
   var batch_2d = []; // the inner small 2D batch data for batch_3d
   var sorted_day_str = Object.keys(data).sort();
   var last_month;
+
+  // If no data, need to add the current day to the list
+  if (sorted_day_str.length == 0) {
+    sorted_day_str = [dataObjectToString(new Date())];
+  }
+
+  // If the first one is not the first day of the month, we need to insert it
+  if (sorted_day_str.length > 0) {
+    var first_str_split = sorted_day_str[0].split("-");
+    var first_day = parseInt(first_str_split[2]);
+    if (first_day != 1) {
+      var first_year = parseInt(first_str_split[0]);
+      var first_month = parseInt(first_str_split[1]);
+      var k = first_year + "-" + first_month + "-01";
+      sorted_day_str.unshift(k);
+    }
+  }
+
   for (var i = 0; i < sorted_day_str.length; i++) {
     // Get current day and count
     var day_str = sorted_day_str[i];
     var day_obj = dateStringToObject(day_str);
-    var count = parseInt(data[day_str]);
+    var count = parseInt(safeGet(data[day_str], 0));
     // Check if we need to push the 2D array to 3D, and empty the 2D array
     var month = day_obj.getMonth();
     if (typeof last_month === "undefined") {
@@ -903,7 +906,6 @@ function formatDataForTimeline(data, pad_to_date_obj) {
     var day_obj_time = day_obj.getTime();
     batch_2d.push([label, count, day_obj_time]);
     // Check if we need to pad missing days of the future
-    // TODO: there is a bug for padding days, we also need to pad the past
     var next_day_obj;
     if (i < sorted_day_str.length - 1) {
       next_day_obj = dateStringToObject(sorted_day_str[i + 1]);
@@ -1075,6 +1077,7 @@ function createAndShowSensorMarker(data, epochtime_milisec, is_current_day, info
 
 function parseSensorMarkerData(data, is_current_day, info, i) {
   var sensor_type = getSensorType(info);
+  if (typeof sensor_type === "undefined") return undefined;
   var marker_data = {
     "is_current_day": is_current_day,
     "name": info["name"],
@@ -1178,6 +1181,7 @@ function createMarkerTableFromSensorData(data, epochtime_milisec, info, i) {
 }
 
 function createSensorMarkerForAnimation(marker_data, epochtime_milisec, info, i, j) {
+  if (typeof marker_data === "undefined") return;
   return new CustomMapMarker({
     "type": getSensorType(info),
     "data": marker_data,
@@ -1228,7 +1232,7 @@ function generateSensorDataUrlList(epochtime_milisec, info) {
   var sensors = info["sensors"];
   var feeds_to_channels = {};
   for (var k in sensors) {
-    var sources = sensors[k]["sources"];
+    var sources = safeGet(sensors[k]["sources"], []);
     for (var i = 0; i < sources.length; i++) {
       var s = sources[i];
       var feed = s["feed"];
@@ -1307,11 +1311,11 @@ function formatAndMergeSensorData(responses, info, method) {
   ////////////////////////////////////////////////////////////////
   var sensors_to_channels = {};
   for (var sensor_name in info["sensors"]) {
-    var s = info["sensors"][sensor_name];
+    var s = safeGet(safeGet(info["sensors"][sensor_name], {})["sources"], []);
     // Get the unique set of channel names
     var channel_names = [];
-    for (var i = 0; i < s["sources"].length; i++) {
-      channel_names.push(s["sources"][i]["channel"]);
+    for (var i = 0; i < s.length; i++) {
+      channel_names.push(s[i]["channel"]);
     }
     if (channel_names.length > 1) {
       channel_names = Array.from(new Set(channel_names));
@@ -1377,9 +1381,7 @@ function rollSensorData(data, info) {
         }
       } else {
         // No need for back filling, we only need to store data
-        if (typeof cache[name] === "undefined") {
-          cache[name] = {};
-        }
+        cache[name] = safeGet(cache[name], {});
         cache[name]["time"] = d["time"];
         cache[name]["value"] = d[name];
       }
