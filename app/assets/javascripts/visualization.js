@@ -30,6 +30,8 @@ if (at_city) {
 var user_latlng = {"lat": at_latitude, "lng": at_longitude};
 var user_zoom_mobile = at_zoom;
 var user_home = "My Location";
+var user_latlng_bbox; // for requesting data within a latlng bounding box
+var user_latlng_polygon; // for drawing the polygon on the Google map for "My Location"
 
 // Desired location for Pittsburgh
 var pittsburgh_latlng = {"lat": 40.45, "lng": -79.93};
@@ -52,6 +54,7 @@ var desired_zoom_mobile;
 var desired_zoom_desktop;
 var desired_home;
 var desired_city_ids;
+var desired_latlng_bbox;
 
 // Smell reports variables
 var smell_reports_cache;
@@ -90,8 +93,13 @@ var widgets = new edaplotjs.Widgets();
 
 function init() {
   setQueryStringData(); // set data coming from the query string
+  initGoogleMap();
+  setUserLatLngBoundingBox(); // compute and set the latlng bounding box for the current user location
   setMode(); // set the mode based on the query string data
-  initUI(); // initialize the user interface
+  initTerrainBtn();
+  initHomeBtn();
+  initCalendarBtn();
+  initAnimationUI();
   loadDataAndSetUI(); // load data from the server and set the UI
 
   // Disable vertical bouncing effect on mobile browsers
@@ -117,6 +125,38 @@ function setQueryStringData() {
   app = safeGet(app, "PGH");
 }
 
+function setUserLatLngBoundingBox() {
+  var spherical = google.maps.geometry.spherical;
+  var distance = 100000; // diagonal distance from the center: 100 km
+  var center_pt = new google.maps.LatLng(user_latlng["lat"], user_latlng["lng"]);
+  var tl_pt = spherical.computeOffset(center_pt, distance, -45); // top-left corner
+  var br_pt = spherical.computeOffset(center_pt, distance, 135); // bottom-right corner
+  var tl_lat = tl_pt.lat();
+  var tl_lng = tl_pt.lng();
+  var br_lat = br_pt.lat();
+  var br_lng = br_pt.lng();
+  user_latlng_bbox = tl_lat + "," + tl_lng + "," + br_lat + "," + br_lng;
+  user_latlng_polygon = new google.maps.Polygon({
+    paths: [[
+      {lat: -90, lng: -180},
+      {lat: 90, lng: -180},
+      {lat: 90, lng: 180},
+      {lat: -90, lng: 180},
+      {lat: -90, lng: 0}
+    ], [
+      {lat: tl_lat, lng: br_lng},
+      {lat: tl_lat, lng: tl_lng},
+      {lat: br_lat, lng: tl_lng},
+      {lat: br_lat, lng: br_lng}
+    ]],
+    strokeColor: "#000000",
+    strokeOpacity: 0.8,
+    strokeWeight: 1,
+    fillColor: "#000000",
+    fillOpacity: 0.35
+  });
+}
+
 function setMode(mode) {
   hideSmellMarkersByTime(current_epochtime_milisec);
   hideSensorMarkersByTime(current_epochtime_milisec);
@@ -135,16 +175,9 @@ function setMode(mode) {
   }
 }
 
-function initUI() {
-  initGoogleMap();
-  initTerrainBtn();
-  initHomeBtn();
-  initCalendarBtn();
-  initAnimationUI();
-}
-
 function loadDataAndSetUI() {
   $home_text.text(desired_home);
+  centerMap();
 
   // Load calendar list
   loadAndDrawCalendar();
@@ -191,10 +224,14 @@ function setToSmellMyCity(mode) {
     // Want to show all data
     setDesiredLatLngZoomHome(all_data_latlng, all_data_zoom_mobile, all_data_home);
     desired_city_ids = at_participating_cities.map(function (city) {return city.id;});
+    desired_latlng_bbox = undefined;
+    clearLatLngBoundOnMap(user_latlng_polygon);
   } else if (mode == "user") {
     // Want to show only the data near the current user location
     setDesiredLatLngZoomHome(user_latlng, user_zoom_mobile, user_home);
-    desired_city_ids = [];
+    desired_city_ids = undefined;
+    desired_latlng_bbox = user_latlng_bbox;
+    drawPolygonMaskOnMap(user_latlng_polygon);
     // TODO: Pass latlng_bbox rather than city_ids
     // latlng_bbox (top-left to bottom-right)
     // http://localhost:3000/api/v2/smell_reports?latlng_bbox=30,-99,40,-88
@@ -203,7 +240,17 @@ function setToSmellMyCity(mode) {
     // Want to show the data of the participating city (if any) at the user location
     setDesiredLatLngZoomHome(user_city_latlng, user_city_zoom_mobile, user_city_name);
     desired_city_ids = user_city_ids;
+    desired_latlng_bbox = undefined;
+    clearPolygonMaskOnMap(user_latlng_polygon);
   }
+}
+
+function drawPolygonMaskOnMap(polygon) {
+  polygon.setMap(map);
+}
+
+function clearPolygonMaskOnMap(polygon) {
+  polygon.setMap(null);
 }
 
 function setUserCityLatLngZoomHomeId(latlng, zoom, home, ids) {
@@ -501,7 +548,6 @@ function loadSensorList(city_id) {
 function loadAndDrawCalendar() {
   $.ajax({
     "url": generateURLForSmellReports({
-      "city_ids": desired_city_ids.join(","),
       "group_by": "month",
       "aggregate": "true"
     }),
@@ -549,7 +595,6 @@ function loadAndCreateTimeline() {
 function loadTimelineData(start_time, end_time, callback) {
   $.ajax({
     "url": generateURLForSmellReports({
-      "city_ids": desired_city_ids.join(","),
       "group_by": "day",
       "aggregate": "true",
       "smell_values": "3,4,5",
@@ -597,7 +642,6 @@ function loadAndCreateSmellMarkers(epochtime_milisec) {
   var end_time = start_time + 86399; // one day after the starting time
   $.ajax({
     "url": generateURLForSmellReports({
-      "city_ids": desired_city_ids.join(","),
       "start_time": start_time,
       "end_time": end_time
     }),
@@ -669,11 +713,19 @@ function hideMarkers(markers) {
 }
 
 function generateSmellPghURL(domain, path, parameters) {
-  var api_paras = "";
-  var parameter_list = [];
   if (app_id != app_id_smellmycity) {
     parameters["client_ids"] = app_id;
   }
+  if (typeof desired_city_ids !== "undefined" && desired_city_ids.length > 0) {
+    parameters["city_ids"] = desired_city_ids.join(",");
+  }
+  if (typeof desired_latlng_bbox !== "undefined") {
+    // For example, latlng_bbox=30,-99,40,-88
+    // Top-left corner is (30, -99), bottom-right corner is (40,-88)
+    parameters["latlng_bbox"] = desired_latlng_bbox;
+  }
+  var api_paras = "";
+  var parameter_list = [];
   if (typeof parameters == "object") {
     var list = Object.keys(parameters);
     list.forEach(function (i) {
@@ -768,8 +820,9 @@ function drawHome(data) {
         setMode("city");
       }
       loadDataAndSetUI();
+    } else {
+      centerMap();
     }
-    centerMap();
     addGoogleAnalyticEvent("home", "click", {"dimension5": current_epochtime_milisec.toString()});
     $(this).prop("selectedIndex", 0);
   });

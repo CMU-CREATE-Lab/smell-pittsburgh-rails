@@ -91,28 +91,24 @@
   position: absolute;
   left: 9px;
   top: 121px;
-  opacity: 0.75;
 }
 
 #calendar-btn {
   position: absolute;
   left: 9px;
   top: 65px;
-  opacity: 0.75;
 }
 
 #home-btn {
   position: absolute;
   left: 9px;
   top: 9px;
-  opacity: 0.75;
 }
 
 #playback-btn {
   position: absolute;
   left: 9px;
   bottom: 25px;
-  opacity: 0.75;
 }
 
 #stop-btn {
@@ -120,7 +116,6 @@
   left: 9px;
   bottom: 81px;
   display: none;
-  opacity: 0.75;
 }
 
 #playback-txt {
@@ -141,7 +136,7 @@
   right: 9px;
   top: 9px;
   outline: none;
-  background-color: rgba(255, 255, 255, 0.75);
+  background-color: white;
   border: 1px solid #777777;
   border-radius: 2px;
   padding-top: 4px;
@@ -157,7 +152,6 @@
 
 #legend-smell-value .smell-color-td {
   color: black;
-  opacity: 0.9;
   min-width: 13px;
   max-width: 13px;
   background-repeat: no-repeat;
@@ -167,7 +161,6 @@
 
 #legend-smell-value .wind-arrow-td {
   color: black;
-  opacity: 0.9;
   background-repeat: no-repeat;
   background-size: 40px 15px;
 }
