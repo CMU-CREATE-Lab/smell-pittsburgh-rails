@@ -8,8 +8,8 @@ class AddJeffersonkyMarkers < ActiveRecord::Migration
           "PM25":{"sources":[{"feed":4175,"channel":"PM2_5"}]},
           "SO2":{"sources":[{"feed":4175,"channel":"SO2"}]},
         }},
-        38.188805,
-        -85.6767705,
+        38.23158,
+        -85.82675,
       ],
       [{
         "name":"WATSON AirNow",
@@ -18,8 +18,8 @@ class AddJeffersonkyMarkers < ActiveRecord::Migration
           "PM25":{"sources":[{"feed":2921,"channel":"PM2_5"}]},
           "SO2":{"sources":[{"feed":2921,"channel":"SO2"}]},
         }},
-        38.188805,
-        -85.6767705,
+        38.0608,
+        -85.8961,
       ],
       [{
         "name":"New Albany AirNow",
@@ -27,16 +27,16 @@ class AddJeffersonkyMarkers < ActiveRecord::Migration
           "PM25":{"sources":[{"feed":2822,"channel":"PM2_5"}]},
           "SO2":{"sources":[{"feed":2822,"channel":"SO2"}]},
         }},
-        38.188805,
-        -85.6767705,
+        38.3081,
+        -85.8342,
       ],
       [{
         "name":"PALouisville PurpleAir",
         "sensors":{
           "PM25":{"sources":[{"feed":16935,"channel":"PM2_5"}]},
         }},
-        38.188805,
-        -85.6767705,
+        38.298912,
+        -85.647063,
       ],
       [{
         "name":"Cannons Lane AirNow",
@@ -45,32 +45,32 @@ class AddJeffersonkyMarkers < ActiveRecord::Migration
           "PM25":{"sources":[{"feed":2922,"channel":"PM2_5"}]},
           "SO2":{"sources":[{"feed":2922,"channel":"SO2"}]},
         }},
-        38.188805,
-        -85.6767705,
+        38.2286,
+        -85.6544,
       ],
       [{
         "name":"PALouisville B PurpleAir",
         "sensors":{
           "PM25":{"sources":[{"feed":16936,"channel":"PM2_5"}]},
         }},
-        38.188805,
-        -85.6767705,
+        38.298912,
+        -85.647063,
       ],
       [{
         "name":"Carrithers Middle School AirNow",
         "sensors":{
           "PM25":{"sources":[{"feed":15690,"channel":"PM2_5"}]},
         }},
-        38.188805,
-        -85.6767705,
+        38.1825,
+        -85.5744,
       ],
       [{
         "name":"Wyandotte Park AirNow",
         "sensors":{
           "PM10":{"sources":[{"feed":2920,"channel":"PM10"}]},
         }},
-        38.188805,
-        -85.6767705,
+        38.1911,
+        -85.7792,
       ],
       [{
         "name":"Southwick Community Center AirNow",
@@ -78,16 +78,16 @@ class AddJeffersonkyMarkers < ActiveRecord::Migration
           "PM10":{"sources":[{"feed":2919,"channel":"PM10"}]},
           "PM25":{"sources":[{"feed":2919,"channel":"PM2_5"}]},
         }},
-        38.188805,
-        -85.6767705,
+        38.2317,
+        -85.8156,
       ],
       [{
         "name":"BATES AirNow",
         "sensors":{
           "PM25":{"sources":[{"feed":2918,"channel":"PM2_5"}]},
         }},
-        38.188805,
-        -85.6767705,
+        38.1372,
+        -85.5783,
       ]
     ]
    markers.each do |item|
