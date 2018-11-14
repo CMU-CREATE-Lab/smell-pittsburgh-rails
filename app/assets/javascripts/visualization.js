@@ -127,7 +127,7 @@ function setQueryStringData() {
 
 function setUserLatLngBoundingBox() {
   var spherical = google.maps.geometry.spherical;
-  var distance = 100000; // diagonal distance from the center: 100 km
+  var distance = 10000; // diagonal distance from the center: 10 km
   var center_pt = new google.maps.LatLng(user_latlng["lat"], user_latlng["lng"]);
   var tl_pt = spherical.computeOffset(center_pt, distance, -45); // top-left corner
   var br_pt = spherical.computeOffset(center_pt, distance, 135); // bottom-right corner
@@ -152,8 +152,8 @@ function setUserLatLngBoundingBox() {
     strokeColor: "#000000",
     strokeOpacity: 0.8,
     strokeWeight: 1,
-    fillColor: "#000000",
-    fillOpacity: 0.35
+    fillColor: "#ffffff",
+    fillOpacity: 0.75
   });
 }
 
