@@ -203,12 +203,14 @@ function loadDataAndSetUI() {
 // This is Bay Area
 function setToBayArea() {
   app_id = app_id_ba;
+  desired_city_ids = user_city_ids;
   setDesiredLatLngZoomHome(ba_latlng, ba_zoom_mobile, ba_home);
 }
 
 // This is Smell Pittsburgh
 function setToSmellPgh() {
   app_id = app_id_smellpgh;
+  desired_city_ids = user_city_ids;
   setDesiredLatLngZoomHome(pittsburgh_latlng, pittsburgh_zoom_mobile, pittsburgh_home);
 }
 
