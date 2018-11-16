@@ -170,9 +170,9 @@
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
-    // Privileged methods
+    // Public methods
     //
-    var startAnimation = function (settings) {
+    this.startAnimation = function (settings) {
       var map = settings["map"]; // the map for showing the marker
       if (typeof map === "undefined") return;
 
@@ -284,27 +284,24 @@
         elapsed_milisec += increments_per_frame;
       }, interval);
     };
-    this.startAnimation = startAnimation;
 
-    var pauseAnimation = function () {
+    this.pauseAnimation = function () {
       if (!isPlaying || isPaused) return;
       isPaused = true;
       if (typeof after_pause === "function") {
         after_pause();
       }
     };
-    this.pauseAnimation = pauseAnimation;
 
-    var resumeAnimation = function () {
+    this.resumeAnimation = function () {
       if (!isPlaying || !isPaused) return;
       isPaused = false;
       if (typeof after_resume === "function") {
         after_resume();
       }
     };
-    this.resumeAnimation = resumeAnimation;
 
-    var stopAnimation = function () {
+    this.stopAnimation = function () {
       if (!isPlaying) return;
       isPlaying = false;
       isDwelling = false;
@@ -319,17 +316,14 @@
         after_stop();
       }
     };
-    this.stopAnimation = stopAnimation;
 
-    var isPlaying = function () {
+    this.isPlaying = function () {
       return isPlaying;
     };
-    this.isPlaying = isPlaying;
 
-    var isPaused = function () {
+    this.isPaused = function () {
       return isPaused;
     };
-    this.isPaused = isPaused;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //

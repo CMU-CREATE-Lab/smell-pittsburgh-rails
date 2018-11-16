@@ -60,6 +60,8 @@ var desired_latlng_bbox;
 // Smell reports variables
 var smell_reports_cache;
 var current_epochtime_milisec;
+var animation_start_epochtime_milisec;
+var ignore_markers_after_animation_stop = false;
 var infowindow_smell;
 
 // Animation variables
@@ -509,6 +511,7 @@ function initAnimationUI() {
       $stop_button.show();
       hideSmellMarkersByTime(current_epochtime_milisec);
       hideSensorMarkersByTime(current_epochtime_milisec);
+      animation_start_epochtime_milisec = current_epochtime_milisec;
     },
     when_play: function (animation_text) {
       $playback_txt.text(animation_text);
@@ -527,8 +530,12 @@ function initAnimationUI() {
       $playback_txt.text("");
       $playback_txt.hide();
       $stop_button.hide();
-      showSmellMarkersByTime(current_epochtime_milisec);
-      showSensorMarkersByTime(current_epochtime_milisec);
+      animation_start_epochtime_milisec = undefined;
+      if (!ignore_markers_after_animation_stop) {
+        ignore_markers_after_animation_stop = false;
+        showSmellMarkersByTime(current_epochtime_milisec);
+        showSensorMarkersByTime(current_epochtime_milisec);
+      }
     }
   });
 }
@@ -1060,7 +1067,14 @@ function handleTimelineButtonSelected(epochtime_milisec) {
   infowindow_smell.close();
   infowindow_PM25.close();
   infowindow_VOC.close();
-  animator.stopAnimation();
+  if (animator.isPlaying()) {
+    // This is to prevent calling showSmellMarkersByTime() and showSensorMarkersByTime()
+    // in the callback function of the animator object when stopping animation 
+    if (animation_start_epochtime_milisec != epochtime_milisec) {
+      ignore_markers_after_animation_stop = true;
+    }
+    animator.stopAnimation();
+  }
   hideSmellMarkersByTime(current_epochtime_milisec);
   showSmellMarkersByTime(epochtime_milisec);
   hideSensorMarkersByTime(current_epochtime_milisec);
@@ -1070,8 +1084,8 @@ function handleTimelineButtonSelected(epochtime_milisec) {
 
 function showSensorMarkersByTime(epochtime_milisec) {
   if (typeof epochtime_milisec == "undefined") return;
-
   // Check if data exists in the cache
+  // If not, load data from the server
   var r = sensors_cache[epochtime_milisec];
   if (typeof r != "undefined") {
     // Show the AQI if needed
