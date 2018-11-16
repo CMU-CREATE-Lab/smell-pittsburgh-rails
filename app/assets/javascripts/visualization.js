@@ -187,10 +187,10 @@ function loadDataAndSetUI() {
   loadAndDrawCalendar();
 
   // Check if we are in a participating city
-  if (typeof desired_city_ids !== "undefined" && mode != "all") {
+  if (typeof desired_city_ids !== "undefined" && mode != "user") {
     // Load sensor list of the city first
     // loadSensorList() also calls loadAndCreateTimeline()
-    loadSensorList(desired_city_ids[0]);
+    loadSensorList(desired_city_ids);
   } else {
     loadAndCreateTimeline();
   }
@@ -540,9 +540,9 @@ function initAnimationUI() {
   });
 }
 
-function loadSensorList(city_id) {
+function loadSensorList(city_ids) {
   $.ajax({
-    "url": generateURLForMapMarkers(city_id),
+    "url": generateURLForMapMarkers(city_ids),
     "success": function (data) {
       for (var i = 0; i < data.length; i++) {
         sensors_list.push(data[i]);
@@ -727,9 +727,6 @@ function generateSmellPghURL(domain, path, parameters) {
   if (app_id != app_id_smellmycity) {
     parameters["client_ids"] = app_id;
   }
-  if (typeof desired_city_ids !== "undefined" && desired_city_ids.length > 0) {
-    parameters["city_ids"] = desired_city_ids.join(",");
-  }
   if (typeof desired_latlng_bbox !== "undefined") {
     // For example, latlng_bbox=30,-99,40,-88
     // Top-left corner is (30, -99), bottom-right corner is (40,-88)
@@ -752,11 +749,14 @@ function generateSmellPghURL(domain, path, parameters) {
 }
 
 function generateURLForSmellReports(parameters) {
+  if (typeof desired_city_ids !== "undefined" && desired_city_ids.length > 0) {
+    parameters["city_ids"] = desired_city_ids.join(",");
+  }
   return generateSmellPghURL(window.location.origin, "/api/v2/smell_reports", parameters);
 }
 
-function generateURLForMapMarkers(city_id) {
-  return generateSmellPghURL(window.location.origin, "/api/v2/cities/" + city_id + "/map_markers", {});
+function generateURLForMapMarkers(city_ids) {
+  return generateSmellPghURL(window.location.origin, "/api/v2/cities/" + city_ids.join(",") + "/map_markers", {});
 }
 
 function histSmellReport(r) {
