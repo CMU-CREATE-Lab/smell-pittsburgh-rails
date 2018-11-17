@@ -7,6 +7,7 @@ class CreateCities < ActiveRecord::Migration
       t.string :name
       t.string :state_code
       t.text :description
+      t.text :app_metadata
 
       t.timestamps null: false
     end
