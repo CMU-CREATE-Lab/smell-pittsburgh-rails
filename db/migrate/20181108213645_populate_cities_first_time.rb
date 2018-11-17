@@ -32,6 +32,7 @@ class PopulateCitiesFirstTime < ActiveRecord::Migration
       city_obj.longitude = city['longitude']
       city_obj.zoom_level = city['zoom_level']
       city_obj.description = city['description']
+      city_obj.app_metadata = city['app_metadata']
       city_obj.zip_codes.push( city['zipcodes'].map{|i| ZipCode.find_or_create_by(:zip => i)} )
       city_obj.regions.push( city['region_ids'].map{|i| Region.find(i)} )
       city_obj.save!
