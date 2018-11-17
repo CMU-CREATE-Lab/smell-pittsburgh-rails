@@ -5,6 +5,8 @@ class VisualizationController < ApplicationController
 
     latLng = params["latLng"].blank? ? [] : params["latLng"].split(",")
     zipCode = params["zipCode"]
+    clientToken = params["client_token"].blank? ? "" : params["client_token"]
+    client = Client.find_by_secret_token(clientToken) || Client.first
 
     # Default to Pittsburgh
     pgh = City.find(1)
@@ -15,7 +17,7 @@ class VisualizationController < ApplicationController
 
     if zipCode
       zip_code = ZipCode.find_by_zip(zipCode)
-      @city = zip_code.cities if zipCode
+      @city = zip_code.cities.first if zipCode
     elsif latLng.size == 2
       # latLng is the GPS user location, passed from the app
       @latitude = latLng[0]
@@ -25,7 +27,10 @@ class VisualizationController < ApplicationController
       zip_code = ZipCode.find_or_create_by(zip: geo.zip)
       @city = zip_code.cities.first
     end
-    @cities = City.all
+
+    @client_id = client.id
+    @city = @city.to_json(:except => [:created_at, :updated_at]).html_safe
+    @cities = City.all.to_json(:except => [:created_at, :updated_at]).html_safe
   end
 
 end

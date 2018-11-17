@@ -5,5 +5,4 @@ class City < ActiveRecord::Base
   validates :latitude, :longitude, :zoom_level, :name, :presence => true
   validates :name, :uniqueness => true
 
-  #scope :simple_attributes, -> {select("id, name, latitude, longitude, zoom_level")}
 end

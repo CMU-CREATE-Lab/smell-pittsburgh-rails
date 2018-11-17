@@ -405,9 +405,25 @@ class ApiController < ApplicationController
   end
 
   def cities_map_markers
-    if City.exists? params[:id]
-      @city = City.find params[:id]
-      render :json => @city.map_markers.map(&:to_api).to_json
+    city_ids = params[:id].split(",")
+    response = []
+    city_ids.each do |city_id|
+      @city = City.find_by_id(city_id)
+      response << {"name" => @city.name, "state_code" => @city.state_code, "markers" => @city.map_markers.map(&:to_api)} if @city
+    end
+    if response.empty?
+      render :json => { :error => "City does not exist." }, :status => 404
+    else
+      render :json => response
+    end
+  end
+
+
+  def get_city_by_zip
+    zipCode = params[:zipCode]
+    @city = City.includes(:zip_codes).where('zip_codes.zip' => zipCode)
+    if @city
+      render :json => @city
     else
       render :json => { :error => "City does not exist." }, :status => 404
     end

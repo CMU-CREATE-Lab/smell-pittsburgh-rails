@@ -12,19 +12,21 @@
 
 <% content_for :js do %>
   <script>
-  // // values from latLng or from a city that contains the latLng
-  var at_latitude = <%= @city.blank? ? @latitude : @city.latitude %>;
-  var at_longitude = <%= @city.blank? ? @longitude : @city.longitude %>;
+  // Matched city, if it is a participating city
+  var at_city = JSON.parse('<%= @city %>');
+  // values from latLng or from a city that contains the latLng
+  var at_latitude = at_city ? at_city.latitude : <%= @latitude %>;
+  var at_longitude = at_city ? at_city.longitude : <%= @latitude %>;
   // the zoom level to use for the map
-  var at_zoom = <%= @city.blank? ? @zoom : @city.zoom_level %>;
+  var at_zoom = at_city ? at_city.zoom_level : <%= @zoom %>;
+  // the client id of the current user
+  var at_client_id = <%= @client_id %>;
   // the client id (indicating smell pgh, bay area, or smell my city)
   var app_id_smellpgh = <%= CLIENT_ID_SMELLPGH %>;
   var app_id_ba = <%= CLIENT_ID_BA %>;
   var app_id_smellmycity = <%= CLIENT_ID_SMELLMYCITY %>;
   // List of cities participating in Smell My City
-  var at_participating_cities = <%= @cities.to_json.to_s.html_safe %>;
-  // Matched city, if it is a participating city
-  var at_city = <%= @city.to_json.to_s.html_safe %>;
+  var at_participating_cities = JSON.parse('<%= @cities %>');
   </script>
   <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js" %>
   <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js" %>

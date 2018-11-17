@@ -20,11 +20,11 @@ Rails.application.routes.draw do
   get "/api/v2/zip_codes" => "api#zip_codes"
   get "/api/v2/clients" => "api#clients_index"
   get "/api/v2/smell_reports" => "api#smell_reports_index_api2"
-  get "/api/v2/get_aqi" => "api#get_aqi"
 
+  get "/api/v2/get_aqi" => "api#get_aqi"
+  get "/api/v2/get_city_by_zip" => "api#get_city_by_zip"
 
   get "/visualization" => "visualization#index"
-  get "/visualization/v2" => "visualization#index"
   get "/summary" => "summary#index"
 
 end

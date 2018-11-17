@@ -11,8 +11,8 @@ var aqi_root_url = "https://api.smellpittsburgh.org/api/v1/get_aqi?city=";
 var map; // google map object
 
 // Application variables
-var app; // "SMC" means smell my city, "BA" means bay area, "PGH" means smell pgh
-var app_id; // passed from index.html.erb
+// NOTE: client_id is used by google-analytics, so we call it app_id here
+var app_id = at_client_id; // passed from index.html.erb
 var mode; // "user", "all", "city", see setMode() function for details
 
 // Current participating city (based on current user location)
@@ -95,7 +95,7 @@ var sensors_list;
 var widgets = new edaplotjs.Widgets();
 
 function init() {
-  setQueryStringData(); // set data coming from the query string
+  //getQueryStringData(); // set data coming from the query string
   initGoogleMap();
   setUserLatLngBoundingBox(); // compute and set the latlng bounding box for the current user location
   setMode(); // set the mode based on the query string data
@@ -116,16 +116,14 @@ function init() {
   });
 }
 
-function setQueryStringData() {
+function getQueryStringData() {
   var query = window.location.search.slice(1).split("&");
   for (var i = 0; i < query.length; i++) {
     var queryVar = decodeURI(query[i]);
-    if (queryVar.indexOf("user_hash") != -1) {
-      var matched = queryVar.split("=")[1].match(/[A-Z]{2,}/);
-      if (matched) app = matched[0];
-    }
+    //if (queryVar.indexOf("exampleQueryString") != -1) {
+    //  example = queryVar.split("=")[1];
+    //}
   }
-  app = safeGet(app, "PGH");
 }
 
 function setUserLatLngBoundingBox() {
@@ -170,12 +168,12 @@ function setMode(desired_mode) {
   sensors_cache = {};
   sensors_list = [];
   if (show_voc_sensors) addVocSensors();
-  if (app == "BA") {
+  if (app_id == app_id_ba) {
     setToBayArea();
-  } else if (app == "PGH") {
-    setToSmellPgh();
-  } else if (app == "SMC") {
+  } else if (app_id == app_id_smellmycity) {
     setToSmellMyCity(mode);
+  } else {
+    setToSmellPgh();
   }
 }
 
@@ -204,21 +202,18 @@ function loadDataAndSetUI() {
 
 // This is Bay Area
 function setToBayArea() {
-  app_id = app_id_ba;
   desired_city_ids = user_city_ids;
   setDesiredLatLngZoomHome(ba_latlng, ba_zoom_mobile, ba_home);
 }
 
 // This is Smell Pittsburgh
 function setToSmellPgh() {
-  app_id = app_id_smellpgh;
   desired_city_ids = user_city_ids;
   setDesiredLatLngZoomHome(pittsburgh_latlng, pittsburgh_zoom_mobile, pittsburgh_home);
 }
 
 // This is Smell My City
 function setToSmellMyCity(mode) {
-  app_id = app_id_smellmycity;
   // If there is a participating city
   if (at_city) {
     mode = safeGet(mode, "city"); // default to the mode of participating cities
@@ -422,7 +417,7 @@ function initHomeBtn() {
   $home_text = $("#home-btn span");
 
   // Load city list
-  if (app == "SMC") {
+  if (app_id == app_id_smellmycity) {
     drawHome(formatDataForHome(at_participating_cities));
   }
 
@@ -437,7 +432,7 @@ function initHomeBtn() {
 
   // Add event to the home button
   $("#home-btn").on("click", function () {
-    if (app == "SMC") {
+    if (app_id == app_id_smellmycity) {
       $home_dialog.dialog("open");
     } else {
       centerMap();
@@ -545,7 +540,10 @@ function loadSensorList(city_ids) {
     "url": generateURLForMapMarkers(city_ids),
     "success": function (data) {
       for (var i = 0; i < data.length; i++) {
-        sensors_list.push(data[i]);
+        var markers = data[i].markers;
+        for (var j = 0; j < markers.length; j++) {
+          sensors_list.push(markers[j]);
+        }
       }
       loadAndCreateTimeline();
     },
@@ -723,7 +721,7 @@ function hideMarkers(markers) {
   }
 }
 
-function generateSmellPghURL(domain, path, parameters) {
+function generateURL(domain, path, parameters) {
   if (app_id != app_id_smellmycity) {
     parameters["client_ids"] = app_id;
   }
@@ -732,7 +730,7 @@ function generateSmellPghURL(domain, path, parameters) {
     // Top-left corner is (30, -99), bottom-right corner is (40,-88)
     parameters["latlng_bbox"] = desired_latlng_bbox;
   }
-  var api_paras = "";
+  var api_params = "";
   var parameter_list = [];
   if (typeof parameters == "object") {
     var list = Object.keys(parameters);
@@ -740,12 +738,12 @@ function generateSmellPghURL(domain, path, parameters) {
       parameter_list.push(encodeURIComponent(i) + "=" + encodeURIComponent(parameters[i]));
     });
     if (parameter_list.length > 0) {
-      api_paras += "?" + parameter_list.join("&");
+      api_params += "?" + parameter_list.join("&");
     }
   } else {
     console.log("parameters is not an object");
   }
-  return domain + path + api_paras;
+  return domain + path + api_params;
 }
 
 function generateURLForSmellReports(parameters) {
@@ -794,7 +792,7 @@ function formatDataForHome(data) {
   // Desktop zoom = mobile zoom + 1
   var cities = [];
   for (var i = 0; i < data.length; i++) {
-    cities.push({"id": data[i]['id'], "name": data[i]['name'], "lat": data[i]['latitude'], "lng": data[i]['longitude'], "zoom": data[i]['zoom_level']});
+    cities.push({"id": data[i]['id'], "name": data[i]['name'], "lat": data[i]['latitude'], "lng": data[i]['longitude'], "zoom": data[i]['zoom_level'], "state_code": data[i]['state_code']});
   }
   return cities;
 }
@@ -805,7 +803,7 @@ function drawHome(data) {
   $home_select.append($("<option selected>Select...</option>"));
   for (var i = 0; i < data.length; i++) {
     var d = data[i];
-    $home_select.append($('<option value="' + d["name"] + '" data-id="' + d["id"] + '"data-lat="' + d["lat"] + '" data-lng="' + d["lng"] + '" data-zoom="' + d["zoom"] + '">' + d["name"] + '</option>'));
+    $home_select.append($('<option value="' + d["name"] + '" data-id="' + d["id"] + '"data-lat="' + d["lat"] + '" data-lng="' + d["lng"] + '" data-state_code="' + d["state_code"] + '" data-zoom="' + d["zoom"] + '">' + d["name"] + '</option>'));
   }
   $home_select.append($('<option value="' + user_home + '">' + user_home + '</option>'));
   $home_select.append($('<option value="' + all_data_home + '">' + all_data_home + '</option>'));
@@ -1069,7 +1067,7 @@ function handleTimelineButtonSelected(epochtime_milisec) {
   infowindow_VOC.close();
   if (animator.isPlaying()) {
     // This is to prevent calling showSmellMarkersByTime() and showSensorMarkersByTime()
-    // in the callback function of the animator object when stopping animation 
+    // in the callback function of the animator object when stopping animation
     if (animation_start_epochtime_milisec != epochtime_milisec) {
       ignore_markers_after_animation_stop = true;
     }
@@ -1275,7 +1273,7 @@ function getSensorType(info) {
 
 function showOrHideAQI(is_current_day) {
   // Show current Pittsburgh AQI if on current day and user is in Pittsburgh
-  if (is_current_day && app == "PGH") {
+  if (is_current_day && app_id == app_id_smellpgh) {
     $.getJSON(aqi_root_url + "Pittsburgh", function (response) {
       if (response) {
         $(".aqi-td").text(response);
