@@ -750,11 +750,11 @@ function generateURLForSmellReports(parameters) {
   if (typeof desired_city_ids !== "undefined" && desired_city_ids.length > 0) {
     parameters["city_ids"] = desired_city_ids.join(",");
   }
-  return generateSmellPghURL(window.location.origin, "/api/v2/smell_reports", parameters);
+  return generateURL(window.location.origin, "/api/v2/smell_reports", parameters);
 }
 
 function generateURLForMapMarkers(city_ids) {
-  return generateSmellPghURL(window.location.origin, "/api/v2/cities/" + city_ids.join(",") + "/map_markers", {});
+  return generateURL(window.location.origin, "/api/v2/cities/" + city_ids.join(",") + "/map_markers", {});
 }
 
 function histSmellReport(r) {
