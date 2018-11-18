@@ -29,8 +29,8 @@ class VisualizationController < ApplicationController
     end
 
     @client_id = client.id
-    @city = @city.to_json(:except => [:created_at, :updated_at]).html_safe
-    @cities = City.all.to_json(:except => [:created_at, :updated_at]).html_safe
+    @city = @city.to_json(:except => [:created_at, :updated_at, :app_metadata, :description]).html_safe
+    @cities = City.all.to_json(:except => [:created_at, :updated_at, :app_metadata, :description]).html_safe
   end
 
 end

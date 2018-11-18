@@ -4,5 +4,5 @@ class City < ActiveRecord::Base
   has_many :map_markers
   validates :latitude, :longitude, :zoom_level, :name, :presence => true
   validates :name, :uniqueness => true
-
+  serialize :app_metadata
 end
