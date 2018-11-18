@@ -24,12 +24,12 @@ class VisualizationController < ApplicationController
       @city = zip_code.cities.first
     end
 
-    if @city.blank?
+    if @city.nil?
       # Default to Pittsburgh
       pgh = City.find(1)
       @city = pgh
-      @latitude = pgh.latitude
-      @longitude = pgh.longitude
+      @latitude = pgh.latitude unless @latitude
+      @longitude = pgh.longitude unless @longitude
     end
 
     @client_id = client.id
