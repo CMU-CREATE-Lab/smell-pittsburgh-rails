@@ -46,14 +46,15 @@ ActiveRecord::Schema.define(version: 20181110062710) do
   end
 
   create_table "cities", force: :cascade do |t|
-    t.float    "latitude",    limit: 24
-    t.float    "longitude",   limit: 24
-    t.integer  "zoom_level",  limit: 4
-    t.string   "name",        limit: 255
-    t.string   "state_code",  limit: 255
-    t.text     "description", limit: 65535
-    t.datetime "created_at",                null: false
-    t.datetime "updated_at",                null: false
+    t.float    "latitude",     limit: 24
+    t.float    "longitude",    limit: 24
+    t.integer  "zoom_level",   limit: 4
+    t.string   "name",         limit: 255
+    t.string   "state_code",   limit: 255
+    t.text     "description",  limit: 65535
+    t.text     "app_metadata", limit: 65535
+    t.datetime "created_at",                 null: false
+    t.datetime "updated_at",                 null: false
   end
 
   create_table "cities_regions", id: false, force: :cascade do |t|
