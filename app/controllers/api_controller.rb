@@ -422,10 +422,10 @@ class ApiController < ApplicationController
   def get_city_by_zip
     zipCode = params[:zipCode]
     @city = City.includes(:zip_codes).where('zip_codes.zip' => zipCode)
-    if @city
-      render :json => @city
+    if @city.empty?
+      render :json => { :error => "No participating city has that zip code." }, :status => 404
     else
-      render :json => { :error => "City does not exist." }, :status => 404
+      render :json => @city.first
     end
   end
 
