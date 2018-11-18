@@ -31,6 +31,8 @@ if (at_city) {
 var user_latlng = {"lat": at_latitude, "lng": at_longitude};
 var user_zoom_mobile = at_zoom;
 var user_home = "My Location";
+// e.g. &latlng_bbox=30,-99,40,-88
+// top-left is (30, -99), bottom-right is (40,-88)
 var user_latlng_bbox; // for requesting data within a latlng bounding box
 var user_latlng_polygon; // for drawing the polygon on the Google map for "My Location"
 
@@ -233,10 +235,6 @@ function setToSmellMyCity(mode) {
     desired_city_ids = undefined;
     desired_latlng_bbox = user_latlng_bbox;
     drawPolygonMaskOnMap(user_latlng_polygon);
-    // TODO: Pass latlng_bbox rather than city_ids
-    // latlng_bbox (top-left to bottom-right)
-    // http://localhost:3000/api/v2/smell_reports?latlng_bbox=30,-99,40,-88
-    // top-left is (30, -99), bottom-right is (40,-88)
   } else if (mode == "city") {
     // Want to show the data of the participating city (if any) at the user location
     setDesiredLatLngZoomHome(user_city_latlng, user_city_zoom_mobile, user_city_name);

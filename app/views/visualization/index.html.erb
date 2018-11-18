@@ -14,11 +14,11 @@
   <script>
   // Matched city, if it is a participating city
   var at_city = JSON.parse('<%= @city %>');
-  // values from latLng or from a city that contains the latLng
-  var at_latitude = at_city ? at_city.latitude : <%= @latitude %>;
-  var at_longitude = at_city ? at_city.longitude : <%= @latitude %>;
+  // values from latLng, obtained from GPS (or a default of PGH)
+  var at_latitude = <%= @latitude %>;
+  var at_longitude = <%= @longitude %>;
   // the zoom level to use for the map
-  var at_zoom = at_city ? at_city.zoom_level : <%= @zoom %>;
+  var at_zoom = <%= @zoom %>;
   // the client id of the current user
   var at_client_id = <%= @client_id %>;
   // the client id (indicating smell pgh, bay area, or smell my city)
