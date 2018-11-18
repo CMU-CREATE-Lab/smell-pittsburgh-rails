@@ -12,12 +12,6 @@ class VisualizationController < ApplicationController
       # latLng is the GPS user location, passed from the app
       @latitude = latLng[0]
       @longitude = latLng[1]
-    else
-      # Default to Pittsburgh
-      pgh = City.find(1)
-      @city = pgh
-      @latitude = pgh.latitude
-      @longitude = pgh.longitude
     end
 
     if zipCode
@@ -28,6 +22,14 @@ class VisualizationController < ApplicationController
       geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{@latitude}, #{@longitude}" )
       zip_code = ZipCode.find_or_create_by(zip: geo.zip)
       @city = zip_code.cities.first
+    end
+
+    if @city.blank?
+      # Default to Pittsburgh
+      pgh = City.find(1)
+      @city = pgh
+      @latitude = pgh.latitude
+      @longitude = pgh.longitude
     end
 
     @client_id = client.id
