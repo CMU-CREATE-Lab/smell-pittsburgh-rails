@@ -416,7 +416,35 @@ function initHomeBtn() {
 
   // Load city list
   if (app_id == app_id_smellmycity) {
+    $home_select = $("#home");
     drawHome(formatDataForHome(at_participating_cities));
+    // Add event to the home select
+    $home_select.on("change", function () {
+      $home_dialog.dialog("close");
+      var $selected = $home_select.find(":selected");
+      var selected_home = $selected.val();
+      if (selected_home != desired_home) {
+        if (selected_home == all_data_home) {
+          // User wants to see all data
+          setMode("all");
+        } else if (selected_home == user_home) {
+          // User wants to see the data near the current location
+          setMode("user");
+        } else {
+          // User wants to see the data of a participating city
+          var selected_city_latlng = {"lat": $selected.data("lat"), "lng": $selected.data("lng")};
+          var selected_city_mobile_zoom = $selected.data("zoom");
+          var selected_city_ids = [$selected.data("id")];
+          setUserCityLatLngZoomHomeId(selected_city_latlng, selected_city_mobile_zoom, selected_home, selected_city_ids);
+          setMode("city");
+        }
+        loadDataAndSetUI();
+      } else {
+        centerMap();
+      }
+      addGoogleAnalyticEvent("home", "click", {"dimension5": current_epochtime_milisec.toString()});
+      $(this).prop("selectedIndex", 0);
+    });
   }
 
   // Create the home dialog
@@ -447,12 +475,40 @@ function styleInfoWindowCloseButton() {
 }
 
 function initCalendarBtn() {
+  // Create the calendar dialog
   $calendar_dialog = widgets.createCustomDialog({
     selector: "#calendar-dialog",
     full_width_button: true
   });
+
+  // Add event to the calendar button
   $("#calendar-btn").on("click", function () {
     $calendar_dialog.dialog("open");
+  });
+
+  // Add event to the calendar select
+  $calendar_select = $("#calendar");
+  $calendar_select.on("change", function () {
+    $calendar_dialog.dialog("close");
+    var $selected = $calendar_select.find(":selected");
+    var selected_value = $selected.val();
+    if ($calendar_select.data("value") == selected_value) {
+      timeline.clearBlockSelection();
+      timeline.selectLastBlock();
+    } else {
+      var selected_date_obj = new Date($selected.data("year"), $selected.data("month") - 1);
+      var selected_time = selected_date_obj.getTime();
+      if (selected_value == -1) {
+        loadInitialTimeLine();
+      } else {
+        loadAndUpdateTimeLine(selected_time, firstDayOfNextMonth(selected_date_obj).getTime());
+      }
+      addGoogleAnalyticEvent("calendar", "click", {"dimension5": selected_time.toString()});
+    }
+    // Save the current selected index
+    $calendar_select.data("value", selected_value);
+    // Have selector go back to showing default option
+    $(this).prop("selectedIndex", 0);
   });
 }
 
@@ -583,11 +639,9 @@ function loadInitialTimeLine() {
 
 function loadAndUpdateTimeLine(start_time, end_time) {
   loadTimelineData(start_time, end_time, function (data) {
-    if (!isDictEmpty(data)) {
-      timeline.updateBlocks(formatDataForTimeline(data, new Date(end_time)));
-      timeline.clearBlockSelection();
-      timeline.selectLastBlock();
-    }
+    timeline.updateBlocks(formatDataForTimeline(data, new Date(end_time)));
+    timeline.clearBlockSelection();
+    timeline.selectLastBlock();
   });
 }
 
@@ -796,7 +850,6 @@ function formatDataForHome(data) {
 }
 
 function drawHome(data) {
-  $home_select = $("#home");
   $home_select.empty();
   $home_select.append($("<option selected>Select...</option>"));
   for (var i = 0; i < data.length; i++) {
@@ -805,34 +858,6 @@ function drawHome(data) {
   }
   $home_select.append($('<option value="' + user_home + '">' + user_home + '</option>'));
   $home_select.append($('<option value="' + all_data_home + '">' + all_data_home + '</option>'));
-
-  // Add event
-  $home_select.on("change", function () {
-    $home_dialog.dialog("close");
-    var $selected = $home_select.find(":selected");
-    var selected_home = $selected.val();
-    if (selected_home != desired_home) {
-      if (selected_home == all_data_home) {
-        // User wants to see all data
-        setMode("all");
-      } else if (selected_home == user_home) {
-        // User wants to see the data near the current location
-        setMode("user");
-      } else {
-        // User wants to see the data of a participating city
-        var selected_city_latlng = {"lat": $selected.data("lat"), "lng": $selected.data("lng")};
-        var selected_city_mobile_zoom = $selected.data("zoom");
-        var selected_city_ids = [$selected.data("id")];
-        setUserCityLatLngZoomHomeId(selected_city_latlng, selected_city_mobile_zoom, selected_home, selected_city_ids);
-        setMode("city");
-      }
-      loadDataAndSetUI();
-    } else {
-      centerMap();
-    }
-    addGoogleAnalyticEvent("home", "click", {"dimension5": current_epochtime_milisec.toString()});
-    $(this).prop("selectedIndex", 0);
-  });
 }
 
 function centerMap() {
@@ -859,7 +884,6 @@ function formatDataForCalendar(data) {
 function drawCalendar(data) {
   var month_arr = data.month;
   var today = new Date();
-  $calendar_select = $("#calendar");
   $calendar_select.empty();
   $calendar_select.append($("<option selected>Select...</option>"));
   $calendar_select.append($('<option value="' + -1 + '" data-year="' + today.getFullYear() + '" data-month="' + (today.getMonth() + 1) + '">Today</option>'));
@@ -868,30 +892,6 @@ function drawCalendar(data) {
     var month = month_arr[i][1];
     $calendar_select.append($('<option value="' + i + '" data-year="' + year + '" data-month="' + month + '">' + month_names[month - 1] + ' ' + year + '</option>'));
   }
-
-  // Add event
-  $calendar_select.on("change", function () {
-    $calendar_dialog.dialog("close");
-    var $selected = $calendar_select.find(":selected");
-    var selected_value = $selected.val();
-    if ($calendar_select.data("value") == selected_value) {
-      timeline.clearBlockSelection();
-      timeline.selectLastBlock();
-    } else {
-      var selected_date_obj = new Date($selected.data("year"), $selected.data("month") - 1);
-      var selected_time = selected_date_obj.getTime();
-      if (selected_value == -1) {
-        loadInitialTimeLine();
-      } else {
-        loadAndUpdateTimeLine(selected_time, firstDayOfNextMonth(selected_date_obj).getTime());
-      }
-      addGoogleAnalyticEvent("calendar", "click", {"dimension5": selected_time.toString()});
-    }
-    // Save the current selected index
-    $calendar_select.data("value", selected_value);
-    // Have selector go back to showing default option
-    $(this).prop("selectedIndex", 0);
-  });
 }
 
 function formatDataForTimeline(data, pad_to_date_obj) {
