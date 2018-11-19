@@ -873,55 +873,32 @@ function drawCalendar(data) {
   $calendar_select.on("change", function () {
     $calendar_dialog.dialog("close");
     var $selected = $calendar_select.find(":selected");
-    var last_block_data = timeline.getLastBlockData();
-    var last_block_month;
-    if (typeof last_block_data !== "undefined") {
-      last_block_month = (new Date(last_block_data["epochtime_milisec"])).getMonth();
-    }
-    if ($selected.val() == -1) {
-      // This means that user selects "today"
-      var selected_month = $selected.data("month");
-      if (selected_month - 1 != last_block_month) {
-        // Only load a new timeline when the desired month does not contain the last block
+    var selected_value = $selected.val();
+    if ($calendar_select.data("value") == selected_value) {
+      timeline.clearBlockSelection();
+      timeline.selectLastBlock();
+    } else {
+      var selected_date_obj = new Date($selected.data("year"), $selected.data("month") - 1);
+      var selected_time = selected_date_obj.getTime();
+      if (selected_value == -1) {
         loadInitialTimeLine();
       } else {
-        // Otherwise, just select the last block
-        timeline.clearBlockSelection();
-        timeline.selectLastBlock();
+        loadAndUpdateTimeLine(selected_time, firstDayOfNextMonth(selected_date_obj).getTime());
       }
-    } else {
-      var start_date_obj = new Date($selected.data("year"), $selected.data("month") - 1);
-      var start_time = start_date_obj.getTime();
-      if (start_date_obj.getMonth() == (new Date()).getMonth()) {
-        // Only load a new timeline when the desired month does not contain the last block
-        if (start_date_obj.getMonth() != last_block_month) {
-          // If the desired month is the current month, load the initial timeline
-          loadInitialTimeLine();
-        } else {
-          // Otherwise, just select the last block
-          timeline.clearBlockSelection();
-          timeline.selectLastBlock();
-        }
-      } else {
-        // Only load a new timeline when the desired month does not contain the last block
-        if (start_date_obj.getMonth() != last_block_month) {
-          var end_date_obj = firstDayOfNextMonth(start_date_obj);
-          var end_time = end_date_obj.getTime();
-          loadAndUpdateTimeLine(start_time, end_time);
-        } else {
-          // Otherwise, just select the last block
-          timeline.clearBlockSelection();
-          timeline.selectLastBlock();
-        }
-      }
-      addGoogleAnalyticEvent("calendar", "click", {"dimension5": start_time.toString()});
+      addGoogleAnalyticEvent("calendar", "click", {"dimension5": selected_time.toString()});
     }
+    // Save the current selected index
+    $calendar_select.data("value", selected_value);
     // Have selector go back to showing default option
     $(this).prop("selectedIndex", 0);
   });
 }
 
 function formatDataForTimeline(data, pad_to_date_obj) {
+  var current_date_obj = new Date();
+  if (pad_to_date_obj.getTime() > current_date_obj.getTime()) {
+    pad_to_date_obj = current_date_obj;
+  }
   var batch_3d = []; // 3D batch data
   var batch_2d = []; // the inner small 2D batch data for batch_3d
   var sorted_day_str = Object.keys(data).sort();
