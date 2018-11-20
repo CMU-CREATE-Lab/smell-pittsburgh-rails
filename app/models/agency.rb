@@ -22,7 +22,7 @@ class Agency < ActiveRecord::Base
       Rails.logger.info("Agency Form (GoogleGeocoder Error): reverse geocoding failed on smell report id=#{smell_report.id} with lat/long='#{smell_report.latitude}, #{smell_report.longitude}'; agency form not submitted")
     elsif not geo.zip.blank?
       # TODO only does ACHD for now
-      if self == Agency.where(:name => "ACHD").first
+      #if self == Agency.where(:name => "ACHD").first
         # construct object
         form = AgencyForm.new
         form.smell_report = smell_report
@@ -34,7 +34,7 @@ class Agency < ActiveRecord::Base
         form.save!
 
         client = Client.find_by_id(smell_report.client_id)
-        if (options[:agency_name] and options[:agency_email])
+        unless agency_name.blank? and agency_email.blank?
           email = GenericMailer.email(form,geo.street_address,geo.zip,agency_email,agency_name,client)
         else
           Rails.logger.info("Agency Form: No agency name or email specified")
@@ -49,9 +49,9 @@ class Agency < ActiveRecord::Base
           Rails.logger.info("Agency Form (non-production): generated email:\n#{email.body}")
         end
         Rails.logger.info("======")
-      else
-        Rails.logger.info("Agency Form (GoogleGeocoder Error): zipcode on smell report id=#{smell_report.id} was #{geo.zip} and is not in AC; agency form not submitted")
-      end
+      #else
+      #  Rails.logger.info("Agency Form (GoogleGeocoder Error): zipcode on smell report id=#{smell_report.id} was #{geo.zip} and is not in AC; agency form not submitted")
+      #end
     else
       Rails.logger.info("Agency Form (GoogleGeocoder Error): failed to reverse geocode a zipcode on smell report id=#{smell_report.id} with lat/long='#{smell_report.latitude}, #{smell_report.longitude}'; agency form not submitted")
     end

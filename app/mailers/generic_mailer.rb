@@ -9,6 +9,7 @@ class GenericMailer < ApplicationMailer
     @street_address = street_address
     @zipcode = zipcode
     @phone_number = form.phone
+    @reply_to = form.email
     @agency_name = agency_name
     @name = form.name.blank? ? "Smell My City App User" : form.name
     @address = form.address

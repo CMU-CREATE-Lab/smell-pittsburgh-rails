@@ -580,8 +580,8 @@ class ApiController < ApplicationController
         unless regions.empty?
           # create and submit one form per agency (smell_report => zip_code => regions => agencies)
           regions.map(&:agencies).flatten.uniq.each do |agency|
-            options.agency_name = agency.name
-            options.agency_email = agency.email
+            options[:agency_name] = agency.name
+            options[:agency_email] = agency.email
             agency.create_and_submit_form(smell_report,options)
           end
         end
