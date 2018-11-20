@@ -99,7 +99,7 @@ var widgets = new edaplotjs.Widgets();
 function init() {
   //getQueryStringData(); // set data coming from the query string
   initGoogleMap();
-  setUserLatLngBoundingBox(); // compute and set the latlng bounding box for the current user location
+  //setUserLatLngBoundingBox(); // compute and set the latlng bounding box for the current user location
   setMode(); // set the mode based on the query string data
   initTerrainBtn();
   initHomeBtn();
@@ -187,7 +187,7 @@ function loadDataAndSetUI() {
   loadAndDrawCalendar();
 
   // Check if we are in a participating city
-  if (typeof desired_city_ids !== "undefined" && mode != "user") {
+  if (typeof desired_city_ids !== "undefined" /*&& mode != "user"*/) {
     // Load sensor list of the city first
     // loadSensorList() also calls loadAndCreateTimeline()
     loadSensorList(desired_city_ids);
@@ -228,19 +228,19 @@ function setToSmellMyCity(mode) {
     setDesiredLatLngZoomHome(all_data_latlng, all_data_zoom_mobile, all_data_home);
     desired_city_ids = at_participating_cities.map(function (city) {return city.id;});
     desired_latlng_bbox = undefined;
-    clearPolygonMaskOnMap(user_latlng_polygon);
+    //clearPolygonMaskOnMap(user_latlng_polygon);
   } else if (mode == "user") {
     // Want to show only the data near the current user location
     setDesiredLatLngZoomHome(user_latlng, user_zoom_mobile, user_home);
-    desired_city_ids = undefined;
-    desired_latlng_bbox = user_latlng_bbox;
-    drawPolygonMaskOnMap(user_latlng_polygon);
+    desired_city_ids = at_participating_cities.map(function (city) {return city.id;}); //undefined;
+    desired_latlng_bbox = undefined; //user_latlng_bbox;
+    //drawPolygonMaskOnMap(user_latlng_polygon);
   } else if (mode == "city") {
     // Want to show the data of the participating city (if any) at the user location
     setDesiredLatLngZoomHome(user_city_latlng, user_city_zoom_mobile, user_city_name);
     desired_city_ids = user_city_ids;
     desired_latlng_bbox = undefined;
-    clearPolygonMaskOnMap(user_latlng_polygon);
+    //clearPolygonMaskOnMap(user_latlng_polygon);
   }
 }
 
