@@ -49,7 +49,7 @@ var ba_home = "Bay Area";
 // Desired location for the US
 var all_data_latlng = {"lat": 40.610271, "lng": -101.413473};
 var all_data_zoom_mobile = 3;
-var all_data_home = "All Data";
+var all_data_home = "All Regions";
 
 // Desired location
 var desired_latlng;
