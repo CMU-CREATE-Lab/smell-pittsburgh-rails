@@ -582,10 +582,10 @@ function initAnimationUI() {
       $stop_button.hide();
       animation_start_epochtime_milisec = undefined;
       if (!ignore_markers_after_animation_stop) {
-        ignore_markers_after_animation_stop = false;
         showSmellMarkersByTime(current_epochtime_milisec);
         showSensorMarkersByTime(current_epochtime_milisec);
       }
+      ignore_markers_after_animation_stop = false;
     }
   });
 }
