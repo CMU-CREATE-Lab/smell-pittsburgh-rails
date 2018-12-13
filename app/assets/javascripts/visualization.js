@@ -531,6 +531,7 @@ function initAnimationUI() {
       }
     } else {
       animator.startAnimation({
+        current_epochtime_milisec: current_epochtime_milisec,
         smell_markers: smell_reports_cache[current_epochtime_milisec]["markers"],
         sensor_marker_table: sensors_cache[current_epochtime_milisec]["marker_table"],
         map: map
@@ -707,9 +708,13 @@ function loadAndCreateSmellMarkers(epochtime_milisec) {
       "end_time": end_time
     }),
     "success": function (data) {
+      // Sort smell reports by time
+      var sorted_index = Object.keys(data).map(Number).sort(function (a, b) {
+        return data[a]["observed_at"] - data[b]["observed_at"];
+      });
       // Create all smell report markers
-      for (var i = 0; i < data.length; i++) {
-        createAndShowSmellMarker(data[i], epochtime_milisec);
+      for (var i = 0; i < sorted_index.length; i++) {
+        createAndShowSmellMarker(data[sorted_index[i]], epochtime_milisec);
       }
     },
     "error": function (response) {

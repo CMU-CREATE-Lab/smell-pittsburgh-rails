@@ -182,6 +182,7 @@
 
       smell_markers = safeGet(settings["smell_markers"], []);
       sensor_marker_table = safeGet(settings["sensor_marker_table"], []);
+      current_epochtime_milisec = safeGet(settings["current_epochtime_milisec"], 0);
 
       if (animate_interval != null || (smell_markers.length == 0 && sensor_marker_table[0].length == 0)) return;
 
@@ -218,6 +219,7 @@
           // This condition means we need to animate smell reports and sensors
           // Check all smell reports that are not on the map
           // Show a smell report only if it has time less than the current elapsed time
+          // This logic assumes that the smell markers are sorted by time (from low to high)
           if (smell_idx < smell_markers.length) {
             for (var i = smell_idx; i < smell_markers.length; i++) {
               var smell_m = smell_markers[i];
@@ -234,6 +236,7 @@
             }
           }
           // Show sensors
+          // This logic assumes that the sensor markers are sorted by time (from low to high)
           for (var j = 0; j < sensor_marker_table.length; j++) {
             var sensor_idx = sensor_idx_array[j];
             var sensor_markers = sensor_marker_table[j];
