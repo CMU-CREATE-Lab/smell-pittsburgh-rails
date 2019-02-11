@@ -1,5 +1,56 @@
 "use strict";
 
+var canvasLayer;
+var context;
+var resolutionScale =1;
+var projectionScale = 2000;
+var mapProjection;
+
+var dataUrl = "https://data.cmucreatelab.org/purpleair-aggregates/so2_"
+var dataUrl2 = "https://data.cmucreatelab.org/purpleair-aggregates/purpleair_"
+
+var curDate = "10-01-2018";
+var curDate2 = "2018-10-01";
+
+var siteData;
+var pm25Data;
+var timeSlider;
+
+var pollutionColors = {
+      "SO2":{
+           "low": [129, 183, 255],
+           "medium": [127,145,232],
+           "high": [196, 173,255],
+           "extreme":[209, 145,232],
+           "extremeHigh":[154, 106, 166]
+       },
+
+      "PM25":{
+          "low": [51, 204, 51],
+          "medium": [255,255,51],
+          "high": [255, 153,51],
+          "extreme":[255,58,58],
+          "extremeHigh": [153, 0,56]
+      }
+    };
+
+var pollutionRanges = {
+      "SO2": {
+          "low": 20,
+          "medium": 70,
+          "high": 90,
+          "extreme":100
+      },
+      "PM25":{
+          "low": 12.5,
+          "medium": 35.4,
+          "high": 55.4,
+          "extreme":150.4
+      }
+    }
+
+
+
 // Staging testing features
 var animate_smell_text = false; // for animating smell descriptions
 var show_voc_sensors = false; // for showing VOC sensors on the map
@@ -391,7 +442,195 @@ function initGoogleMap() {
   infowindow_VOC.addListener("domready", function () {
     styleInfoWindowCloseButton();
   });
+
+
+var canvasLayerOptions = {
+        map: map,
+        animate: true,
+        updateHandler: update,
+        resolutionScale: resolutionScale
+  };
+  canvasLayer = new CanvasLayer(canvasLayerOptions);
+  context = canvasLayer.canvas.getContext('2d');
+
+//   console.log(canvasLayer)
+  setup()
 }
+
+function setup() {
+      if (typeof map === "undefined") return;
+      
+      timeSlider = new TimeSlider({
+      startTime: new Date(2018,10, 1, 0, 0, 0, 0).getTime(),
+      endTime: new Date(2018, 10, 1, 23, 59, 59, 0).getTime(),
+      increment: 5*60*1000,
+      span: 0*60*1000,
+      formatCurrentTime: function(date) {
+        return String(date.getFullYear()) + "/" + String(date.getMonth()) + "/" + String(date.getDate())
+          + " " + String(date.getHours()) + ":" + String(date.getMinutes()) + ":" + 
+        String(date.getSeconds());
+      },
+      animationRate: {
+          fast: 50,
+          medium: 100,
+          slow: 150
+        }
+      });
+
+      // $.get(dataUrl + curDate + ".json", function(data3){
+      //     siteData = data3;
+      // });
+      $.get(dataUrl2 + curDate2 + ".json", function(data2){
+          pm25Data = data2;
+          for(var i = 0; i < data2.length; i++){
+            paintPollutionSensor(pm25Data[i], 0, true,  "PM25")
+          }
+      
+
+          
+      });
+    }
+
+function interpolate(interp, color1, color2, factor) {
+      if(!interp){
+        return color1;
+      }
+      if (arguments.length < 3) { factor = 0.5; }
+      var result = color1.slice();
+      for (var i=0;i<3;i++) {
+        result[i] = Math.round(result[i] + factor*(color2[i]-color1[i]));
+      }
+      return result;
+    };
+
+
+function paintPollutionSensor(site, time, interp, pollutionType) {
+      
+      var rectLatLng = new google.maps.LatLng(site[0], site[1]);
+      var worldPoint = mapProjection.fromLatLngToPoint(rectLatLng);
+      var x = worldPoint.x;
+      var y = worldPoint.y;
+
+      var bar_width = 5;
+      var bar_scale = 0.5;
+      context.font = '4px Arial';
+
+
+      // How many pixels per mile?
+      var offset1mile = mapProjection.fromLatLngToPoint(new google.maps.LatLng(site[0] + 0.014457067, site[1]));
+      var unitsPerMile = 1000 * (worldPoint.y - offset1mile.y);
+
+      // var y_scale = site.flip_y ? -1 : 1;
+
+      var color;
+      var pollution = site[time+2];
+      var styleColor = ""
+
+      var lowRange = pollutionRanges[pollutionType]["low"]
+      var midRange = pollutionRanges[pollutionType]["medium"]
+      var highRange = pollutionRanges[pollutionType]["high"]
+      var extremeRange = pollutionRanges[pollutionType]["extreme"]
+      
+
+      var lowColor = pollutionColors[pollutionType]["low"]
+      var midColor = pollutionColors[pollutionType]["medium"]
+      var highColor = pollutionColors[pollutionType]["high"]
+      var extremeColor = pollutionColors[pollutionType]["extreme"]
+      var extremeHighColor = pollutionColors[pollutionType]["extremeHigh"]
+
+      if(pollution < lowRange){
+         
+         color = interpolate(interp, lowColor, midColor, (pollution)/lowRange)
+      } else if(pollution < midRange){
+         
+         color = interpolate(interp, midColor,highColor,(pollution-lowRange)/(midRange-lowRange))
+
+      } else if(pollution < highRange) {
+        
+         color = interpolate(interp, highColor,extremeColor,(pollution-midRange)/(highRange-midRange))
+
+      } else if(pollution > extremeRange) {
+         
+         color = interpolate(interp, extremeColor, extremeHighColor, (pollution-highRange)/(extremeRange-highRange))
+      } 
+      styleColor = 'rgb(' + color[0] + ',' + color[1] + "," +  color[2] + ', 0.5)'
+     
+//      console.log(context)
+  
+      context.style = styleColor;
+      context.fillStyle = styleColor
+      context.beginPath();
+      context.arc(x, y,  0.001*(Math.sqrt(2*pollution)), 0, 2 * Math.PI, false);
+      context.fill();
+
+    }
+
+function update() {
+        var latlong = new google.maps.LatLng(40.4406, -79.9959);
+        var rectWidth = 1.0;
+        // clear previous canvas contents
+        var canvasWidth = canvasLayer.canvas.width;
+        var canvasHeight = canvasLayer.canvas.height;
+        context.clearRect(0, 0, canvasWidth, canvasHeight);
+
+        mapProjection = map.getProjection();
+
+        // we like our rectangles hideous
+        context.fillStyle = 'rgba(230, 77, 26, 1)';
+
+        // if(animatorCanvas &&  pm25Data && context){
+        //   repaintCanvasLayer()
+        //   // animatorCanvas.startAnimation(timeSlider, siteData, pm25Data, context);
+        // }
+        
+        /* We need to scale and translate the map for current view.
+         * see https://developers.google.com/maps/documentation/javascript/maptypes#MapCoordinates
+         */
+
+
+        /**
+         * Clear transformation from last update by setting to identity matrix.
+         * Could use context.resetTransform(), but most browsers don't support
+         * it yet.
+         */
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        
+        // scale is just 2^zoom
+        // If canvasLayer is scaled (with resolutionScale), we need to scale by
+        // the same amount to account for the larger canvas.
+        var scale = Math.pow(2, map.zoom) * resolutionScale;
+        context.scale(scale, scale);
+
+        /* If the map was not translated, the topLeft corner would be 0,0 in
+         * world coordinates. Our translation is just the vector from the
+         * world coordinate of the topLeft corder to 0,0.
+         */
+        var offset = mapProjection.fromLatLngToPoint(canvasLayer.getTopLeft());
+        context.translate(-offset.x , -offset.y ); 
+
+        var epochTime = timeSlider.getCurrentTime()
+
+        for(var i = 0; i < pm25Data.length; i++){
+                      var curDate = new Date((epochTime));
+
+                      var hours = parseInt(curDate.getHours());
+                      var offset = 0;//((curDate.getMinutes())/5);
+                      if(curDate.getMinutes() == 30){
+                          offset = 1
+
+                      }
+                      var timeIndex = ((hours) * 2)+offset;
+                
+                      paintPollutionSensor(pm25Data[i], timeIndex, true,  "PM25");
+
+
+        }
+
+        // project rectLatLng to world coordinates and draw
+        var worldPoint = mapProjection.fromLatLngToPoint(latlong);
+        //context.fillRect(worldPoint.x, worldPoint.y, rectWidth, rectWidth);
+    }
+
 
 function initTerrainBtn() {
   $("#terrain-btn").on("click", function () {

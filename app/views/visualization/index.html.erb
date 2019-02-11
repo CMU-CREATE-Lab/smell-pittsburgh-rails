@@ -36,6 +36,8 @@
   <%= javascript_include_tag "widgets" %>
   <%= javascript_include_tag "visualization" %>
   <%= javascript_include_tag "TimelineHeatmap" %>
+  <%= javascript_include_tag "CanvasLayer" %>
+  <%= javascript_include_tag "TimeSlider" %>
   <%= javascript_include_tag "CustomMapMarker" %>
   <%= javascript_include_tag "AnimateCustomMapMarker" %>
   <%= javascript_include_tag "infobox" %>
@@ -51,6 +53,7 @@
       <button id="terrain-btn" title="Terrain mode" class="custom-button-flat"><img src="/img/terrain.png"></button>
       <button id="playback-btn" title="Playback animation" class="custom-button-flat"><img src="/img/play.png"></button>
       <button id="stop-btn" title="Stop animation" class="custom-button-flat"><img src="/img/stop.png"></button>
+      <div id="time-slider-controls"></div>
       <div id="playback-txt"></div>
       <table id="legend-smell-value">
         <tr>

@@ -22,4 +22,4 @@ ACHD_EMAIL_RECIPIENT = "DO-NOT-PUSH-ME"
 # this is a string appended to user hash when reporting anonymized user hashes
 ANONYMOUS_USER_HASH = "DO-NOT-PUSH-ME"
 # Google Maps API Key
-GOOGLE_MAPS_API_KEY = "DO-NOT-PUSH-ME"
+GOOGLE_MAPS_API_KEY = "AIzaSyCBBfZ7Z0nsi3o4Z508B-z0iiy-w4wue6g"
