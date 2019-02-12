@@ -1,4 +1,5 @@
 require 'csv'
+require 'cgi'
 
 class ApiController < ApplicationController
 
@@ -550,9 +551,8 @@ class ApiController < ApplicationController
     # determine smell report observed at time
     # string format: %Y-%m-%dT%H:%M:%S%:z
     smell_report.observed_at = DateTime.rfc3339(params["observed_at"]).to_i unless params["observed_at"].blank?
-    if smell_report.custom_time == false or smell_report.observed_at.blank?
+    if smell_report.observed_at.blank?
       smell_report.observed_at = Time.now.to_i
-      smell_report.custom_time = false
     end
 
     # by default, send to agency
@@ -621,8 +621,8 @@ class ApiController < ApplicationController
   # GET /api/v2/smell_reports
   #
   # PARAMS
-  # start_time: Integer (default: 0)
-  # end_time: Integer (default: now)
+  # start_time: Integer (default: 0); represented as epoch time
+  # end_time: Integer (default: now); represented as epoch time
   # client_ids: List of Client IDs
   # region_ids: List of Region IDs
   # city_ids: List of City IDs
@@ -630,7 +630,7 @@ class ApiController < ApplicationController
   # latlng_bbox: lat/long coordinates, top-left to bottom-right
   # group_by: {zipcode|month|day}
   # aggregate: {true|false} (default: False)
-  # timezone_offset: number representing offset in minutes (default: 0)
+  # timezone_string: String representing desired timezone to show smell reports in (default: "UTC")
   # zipcodes: List of zipcodes
   # format:  {json|csv} (default: json)
   #   - What format the output should be in, either JSON or CSV.
@@ -646,11 +646,13 @@ class ApiController < ApplicationController
     latlng_bbox = params["latlng_bbox"].blank? ? [] : params["latlng_bbox"].split(",").map(&:to_f)
     group_by = ["zipcode","month","day"].index(params["group_by"]).nil? ? "" : params["group_by"]
     aggregate = (params["aggregate"] == "true")
-    timezone_offset = params["timezone_offset"].blank? ? 0 : params["timezone_offset"].to_i
+    timezone_string = params["timezone_string"].blank? ? "UTC" : CGI::unescape(params["timezone_string"])
     zipcodes = params["zipcodes"].blank? ? [] : params["zipcodes"].split(",")
     format_as = ["csv","json"].index(params["format"]).nil? ? "json" : params["format"]
 
-    time_range = [0, Time.now.to_i]
+    Time.zone = timezone_string
+
+    time_range = [0, Time.zone.now.to_i]
     time_range[0] = start_time.to_i if start_time
     time_range[1] = end_time.to_i if end_time
 
@@ -701,12 +703,12 @@ class ApiController < ApplicationController
     else
       if group_by == "month"
         # results = SmellReport.aggregate_by_month(results)
-        # NOTE: this is a bit hacky. we are just adding seconds to the time object, which defaults to UTC. This will bucket the times properly (for month/day) based on timezone offset.
-        results = results.flatten.group_by{|i| Time.at(i.observed_at-timezone_offset*60).strftime("%Y-%m")}
+        # This will bucket the times properly (for month/day) based on timezone offset.
+        results = results.flatten.group_by{|i| Time.zone.at(i.observed_at).strftime("%Y-%m")}
       elsif group_by == "day"
         # results = SmellReport.aggregate_by_day(results,timezone_offset)
         # NOTE: (see above reference)
-        results = results.flatten.group_by{|i| Time.at(i.observed_at-timezone_offset*60).strftime("%Y-%m-%d")}
+        results = results.flatten.group_by{|i| Time.zone.at(i.observed_at).strftime("%Y-%m-%d")}
       elsif group_by == "zipcode"
         tmp = results.flatten
         results = {}
@@ -734,9 +736,9 @@ class ApiController < ApplicationController
     if format_as == "csv"
       csv_rows = []
 
-      csv_rows.push ["epoch time","rfc3339 time","smell value","zipcode","smell description","feelings symptoms"].to_csv
+      csv_rows.push ["epoch time","date & time","smell value","zipcode","smell description","feelings symptoms"].to_csv
       results.each do |value|
-        csv_rows.push [value["observed_at"],Time.at(value["observed_at"]).to_datetime.rfc3339,value["smell_value"],value["zipcode"],value["smell_description"],value["feelings_symptoms"]].to_csv
+        csv_rows.push [value["observed_at"],Time.zone.at(value["observed_at"]).to_datetime.strftime("%m/%d/%Y %H:%M:%S %Z"),value["smell_value"],value["zipcode"],value["smell_description"],value["feelings_symptoms"]].to_csv
       end
 
       headers["Content-Type"] = "text/csv; charset=utf-8"
