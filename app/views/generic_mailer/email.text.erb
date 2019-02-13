@@ -22,7 +22,6 @@ Below are some things I noticed about this smell episode.
 
 
 <% end %>
-
 <% if not @reply_to.blank? and not @phone_number.blank? %>
 My contact information is (email): <%= @reply_to %>, (phone): <%= @phone_number %>.
 <% elsif not @reply_to.blank?  %>
@@ -30,8 +29,6 @@ My contact information is (email): <%= @reply_to %>.
 <% elsif not @phone_number.blank? %>
 My contact information is (phone): <%= @phone_number %>.
 <% end %>
-
-
 <% end %>
 
 
