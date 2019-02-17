@@ -7,7 +7,7 @@ var projectionScale = 2000;
 var mapProjection;
 
 var dataUrl = "https://data.cmucreatelab.org/purpleair-aggregates/so2_"
-var dataUrl2 = "https://data.cmucreatelab.org/purpleair-aggregates/purpleair_"
+var dataUrl2 = "https://data2.createlab.org/esdr-aggregates/SO2_"
 
 var curDate = "10-01-2018";
 var curDate2 = "2018-10-01";
@@ -480,6 +480,7 @@ function setup() {
       // $.get(dataUrl + curDate + ".json", function(data3){
       //     siteData = data3;
       // });
+      
       $.get(dataUrl2 + curDate2 + ".json", function(data2){
           pm25Data = data2;
           for(var i = 0; i < data2.length; i++){
@@ -553,14 +554,14 @@ function paintPollutionSensor(site, time, interp, pollutionType) {
          
          color = interpolate(interp, extremeColor, extremeHighColor, (pollution-highRange)/(extremeRange-highRange))
       } 
-      styleColor = 'rgb(' + color[0] + ',' + color[1] + "," +  color[2] + ', 0.5)'
+      styleColor = 'rgb(' + color[0] + ',' + color[1] + "," +  color[2] + ', 0.75)'
      
 //      console.log(context)
   
       context.style = styleColor;
       context.fillStyle = styleColor
       context.beginPath();
-      context.arc(x, y,  0.001*(Math.sqrt(2*pollution)), 0, 2 * Math.PI, false);
+      context.arc(x, y,  0.01*(Math.sqrt(0.05*pollution)), 0, 2 * Math.PI, false);
       context.fill();
 
     }
@@ -577,7 +578,42 @@ function update() {
 
         // we like our rectangles hideous
         context.fillStyle = 'rgba(230, 77, 26, 1)';
+        var curDateTrial = new Date(current_epochtime_milisec)
+        
+        var monthVal = curDateTrial.getMonth() + 1
+        var monthString = ""
+        if(monthVal < 10){
+          monthString = "0" + String(monthVal)
+        } else {
+          monthString = String(monthVal)
+        }
 
+        var dayVal = curDateTrial.getDate()
+        var dayString = ""
+        if(dayVal < 10){
+          dayString = "0" + String(curDateTrial.getDate())
+        } else {
+          dayString = String(curDateTrial.getDate())
+        }
+        var dateString = String(curDateTrial.getFullYear()) + "-" + monthString  + "-" + dayString
+        
+        if(curDate2 != dateString){
+          console.log(dateString)
+          $.get(dataUrl2 + dateString + ".json", function(data2){
+            pm25Data = data2;
+            
+          });
+          curDate2 = dateString
+
+        }else{
+          console.log("same")
+        }
+
+        for(var i = 0; i < pm25Data.length; i++){
+              paintPollutionSensor(pm25Data[i], 2, true,  "PM25")
+        }
+        
+        // console.log(curDateTrial.toLocaleString("America/New_York"))
         // if(animatorCanvas &&  pm25Data && context){
         //   repaintCanvasLayer()
         //   // animatorCanvas.startAnimation(timeSlider, siteData, pm25Data, context);
@@ -608,23 +644,23 @@ function update() {
         var offset = mapProjection.fromLatLngToPoint(canvasLayer.getTopLeft());
         context.translate(-offset.x , -offset.y ); 
 
-        var epochTime = timeSlider.getCurrentTime()
+        // var epochTime = timeSlider.getCurrentTime()
 
-        for(var i = 0; i < pm25Data.length; i++){
-                      var curDate = new Date((epochTime));
+        // for(var i = 0; i < pm25Data.length; i++){
+        //               var curDate = new Date((epochTime));
 
-                      var hours = parseInt(curDate.getHours());
-                      var offset = 0;//((curDate.getMinutes())/5);
-                      if(curDate.getMinutes() == 30){
-                          offset = 1
+        //               var hours = parseInt(curDate.getHours());
+        //               var offset = 0;//((curDate.getMinutes())/5);
+        //               if(curDate.getMinutes() == 30){
+        //                   offset = 1
 
-                      }
-                      var timeIndex = ((hours) * 2)+offset;
+        //               }
+        //               var timeIndex = ((hours) * 2)+offset;
                 
-                      paintPollutionSensor(pm25Data[i], timeIndex, true,  "PM25");
+        //               paintPollutionSensor(pm25Data[i], timeIndex, true,  "PM25");
 
 
-        }
+        // }
 
         // project rectLatLng to world coordinates and draw
         var worldPoint = mapProjection.fromLatLngToPoint(latlong);

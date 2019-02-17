@@ -4,7 +4,7 @@ development:
   encoding: utf8
   database: smellpgh_dev
   username: plaintext_username_here
-  password: plaintext_password_here
+  password: abc123
 
 production:
   adapter: mysql2
