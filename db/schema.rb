@@ -11,13 +11,15 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20181110062710) do
+ActiveRecord::Schema.define(version: 20190218225821) do
 
   create_table "agencies", force: :cascade do |t|
     t.string   "name",       limit: 255
     t.string   "email",      limit: 255
     t.datetime "created_at",             null: false
     t.datetime "updated_at",             null: false
+    t.string   "website",    limit: 255
+    t.string   "full_name",  limit: 255
   end
 
   create_table "agencies_regions", id: false, force: :cascade do |t|
@@ -127,6 +129,12 @@ ActiveRecord::Schema.define(version: 20181110062710) do
 
   add_index "smell_reports", ["client_id"], name: "index_smell_reports_on_client_id", using: :btree
   add_index "smell_reports", ["zip_code_id"], name: "index_smell_reports_on_zip_code_id", using: :btree
+
+  create_table "time_zones", force: :cascade do |t|
+    t.string   "time_zone",  limit: 255
+    t.datetime "created_at",             null: false
+    t.datetime "updated_at",             null: false
+  end
 
   create_table "zip_codes", force: :cascade do |t|
     t.string   "zip",        limit: 10
