@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190218225821) do
+ActiveRecord::Schema.define(version: 20190219003935) do
 
   create_table "agencies", force: :cascade do |t|
     t.string   "name",       limit: 255
@@ -125,10 +125,17 @@ ActiveRecord::Schema.define(version: 20190218225821) do
     t.integer  "client_id",           limit: 4
     t.integer  "observed_at",         limit: 4
     t.text     "debug_info",          limit: 65535
+    t.integer  "time_zone_id",        limit: 4
   end
 
   add_index "smell_reports", ["client_id"], name: "index_smell_reports_on_client_id", using: :btree
+  add_index "smell_reports", ["time_zone_id"], name: "index_smell_reports_on_time_zone_id", using: :btree
   add_index "smell_reports", ["zip_code_id"], name: "index_smell_reports_on_zip_code_id", using: :btree
+
+  create_table "smell_reports_time_zones", id: false, force: :cascade do |t|
+    t.integer "time_zone_id",    limit: 4, null: false
+    t.integer "smell_report_id", limit: 4, null: false
+  end
 
   create_table "time_zones", force: :cascade do |t|
     t.string   "time_zone",  limit: 255
