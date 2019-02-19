@@ -7,6 +7,7 @@ class PopulateClientIdForSmellmycityWebsite < ActiveRecord::Migration
     client.name = "SmellMyCityWebsite"
     client.description = "Website for Smell MyCity."
     client.secret_token = token
+    client.website = "https://smellmycity.org"
     client.save!
   end
 end
