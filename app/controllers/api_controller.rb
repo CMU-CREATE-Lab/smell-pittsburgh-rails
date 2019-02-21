@@ -71,6 +71,18 @@ class ApiController < ApplicationController
       smell_report.street_name = geo.street_name
     end
 
+    # TODO: Until the smellpgh app passes in a time zone, we know at least the timezone of pittsburgh reports
+    # If the smell pgh app is used outside of pgh, then we will end up with an empty timezone field.
+
+    # set the time zone that this report was taken in. The format is the IANA format.
+    unless params["timezone"].blank?
+      time_zone = TimeZone.find_or_create_by(time_zone: params["timezone"])
+      smell_report.time_zone_id = time_zone.id
+    elsif (smell_report.send_form_to_agency)
+      time_zone = TimeZone.find_by_time_zone("America/New_York")
+      smell_report.time_zone_id = time_zone.id
+    end
+
     last_smell_report_from_user = SmellReport.where(user_hash: smell_report.user_hash).order("created_at").last
     # 5 seconds
     if (last_smell_report_from_user and (Time.now.to_i - last_smell_report_from_user.created_at.to_i) <= 5)
@@ -570,6 +582,12 @@ class ApiController < ApplicationController
     # get the street name from reverse geocoding
     unless geo.street_name.blank?
       smell_report.street_name = geo.street_name
+    end
+
+    # set the time zone that this report was taken in. The format is the IANA format.
+    unless params["timezone"].blank?
+      time_zone = TimeZone.find_or_create_by(time_zone: params["timezone"])
+      smell_report.time_zone_id = time_zone.id
     end
 
     if smell_report.save
