@@ -71,14 +71,13 @@ class ApiController < ApplicationController
       smell_report.street_name = geo.street_name
     end
 
-    # TODO: Until the smellpgh app passes in a time zone, we know at least the timezone of pittsburgh reports
-    # If the smell pgh app is used outside of pgh, then we will end up with an empty timezone field.
-
     # set the time zone that this report was taken in. The format is the IANA format.
-    unless params["timezone"].blank?
+    if not params["timezone"].blank?
       time_zone = TimeZone.find_or_create_by(time_zone: params["timezone"])
       smell_report.time_zone_id = time_zone.id
-    elsif (smell_report.send_form_to_agency)
+    elsif smell_report.send_form_to_agency
+      # TODO: Until the smellpgh app passes in a time zone, we know at least the timezone of pittsburgh reports
+      # If the smell pgh app is used outside of pgh, then we will end up with an empty timezone field.
       time_zone = TimeZone.find_by_time_zone("America/New_York")
       smell_report.time_zone_id = time_zone.id
     end
