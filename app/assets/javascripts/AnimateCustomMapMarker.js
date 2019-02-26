@@ -38,6 +38,8 @@
     var dwell_sec = 2;
     var dwell_increments = dwell_sec * frames_per_sec * increments_per_frame;
 
+    var elapsed_milisec = 0;
+
     // An array of smell markers created with CustomMapMarker.js
     var smell_markers;
 
@@ -190,7 +192,7 @@
       var smell_idx;
       var sensor_idx_array;
       var sensor_idx_array_on_map;
-      var elapsed_milisec;
+      
       var label_idx;
       if (typeof before_play === "function") {
         before_play();
@@ -212,14 +214,21 @@
       if (typeof when_play === "function") {
         when_play(animation_labels[label_idx]["text"]);
       }
+
+
       animate_interval = setInterval(function () {
         if (isPaused) return;
+
+
         if (elapsed_milisec < 86400000) {
+
+
           ///////////////////////////////////////////////////////////////////////////////
           // This condition means we need to animate smell reports and sensors
           // Check all smell reports that are not on the map
           // Show a smell report only if it has time less than the current elapsed time
           // This logic assumes that the smell markers are sorted by time (from low to high)
+          
           if (smell_idx < smell_markers.length) {
             for (var i = smell_idx; i < smell_markers.length; i++) {
               var smell_m = smell_markers[i];
@@ -312,6 +321,7 @@
       if (animate_interval != null) {
         clearInterval(animate_interval);
         animate_interval = null;
+        elapsed_milisec = 0;
       }
       hideMarkerArray(smell_markers, map);
       hideMarkerTable(sensor_marker_table, map);
@@ -324,10 +334,16 @@
       return isPlaying;
     };
 
+
+
     this.isPaused = function () {
       return isPaused;
+
     };
 
+    this.getCurrentAnimationTime = function () {
+      return elapsed_milisec;
+    }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
     // Constructor

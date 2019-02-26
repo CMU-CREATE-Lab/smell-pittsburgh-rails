@@ -16,6 +16,8 @@ var siteData;
 var pm25Data;
 var timeSlider;
 
+var timeOffset;
+
 var pollutionColors = {
       "SO2":{
            "low": [129, 183, 255],
@@ -480,11 +482,13 @@ function setup() {
       // $.get(dataUrl + curDate + ".json", function(data3){
       //     siteData = data3;
       // });
+
+
       
       $.get(dataUrl2 + curDate2 + ".json", function(data2){
           pm25Data = data2;
           for(var i = 0; i < data2.length; i++){
-            paintPollutionSensor(pm25Data[i], 0, true,  "PM25")
+            paintPollutionSensor(pm25Data[i], 2, true,  "PM25")
           }
       
 
@@ -561,7 +565,7 @@ function paintPollutionSensor(site, time, interp, pollutionType) {
       context.style = styleColor;
       context.fillStyle = styleColor
       context.beginPath();
-      context.arc(x, y,  0.01*(Math.sqrt(0.05*pollution)), 0, 2 * Math.PI, false);
+      context.arc(x, y, 0.0035 + 0.02*(Math.sqrt(0.004*pollution)), 0, 2 * Math.PI, false);
       context.fill();
 
     }
@@ -598,19 +602,27 @@ function update() {
         var dateString = String(curDateTrial.getFullYear()) + "-" + monthString  + "-" + dayString
         
         if(curDate2 != dateString){
-          console.log(dateString)
+          //console.log(dateString)
           $.get(dataUrl2 + dateString + ".json", function(data2){
             pm25Data = data2;
             
           });
           curDate2 = dateString
 
-        }else{
-          console.log("same")
         }
 
+        var elapsed_milisec = animator.getCurrentAnimationTime()
+
+
+        var interval = 900000
+        var offset = (((elapsed_milisec / interval))) + 2.0
+//        console.log("Offset")
+//        console.log(offset)
+//        console.log(Math.floor(offset))
+//
+
         for(var i = 0; i < pm25Data.length; i++){
-              paintPollutionSensor(pm25Data[i], 2, true,  "PM25")
+              paintPollutionSensor(pm25Data[i], parseInt(offset), true,  "PM25")
         }
         
         // console.log(curDateTrial.toLocaleString("America/New_York"))
