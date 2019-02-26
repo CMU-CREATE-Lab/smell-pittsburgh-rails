@@ -445,18 +445,20 @@ function initGoogleMap() {
     styleInfoWindowCloseButton();
   });
 
-
-var canvasLayerOptions = {
-        map: map,
-        animate: true,
-        updateHandler: update,
-        resolutionScale: resolutionScale
+  var canvasLayerOptions = {
+    map: map,
+    animate: true,
+    resizeHandler: resizeCanvasLayer,
+    updateHandler: updatePlumeLayer,
+    resolutionScale: resolutionScale
   };
   canvasLayer = new CanvasLayer(canvasLayerOptions);
   context = canvasLayer.canvas.getContext('2d');
+  window.addEventListener("resize", function() {
+    resizeCanvasLayer();
+  }, false);
 
-//   console.log(canvasLayer)
-  setup()
+  setup();
 }
 
 function setup() {
@@ -510,7 +512,8 @@ function interpolate(interp, color1, color2, factor) {
 
 
 function paintPollutionSensor(site, time, interp, pollutionType) {
-      
+      if (!mapProjection) return;
+
       var rectLatLng = new google.maps.LatLng(site[0], site[1]);
       var worldPoint = mapProjection.fromLatLngToPoint(rectLatLng);
       var x = worldPoint.x;
@@ -570,7 +573,11 @@ function paintPollutionSensor(site, time, interp, pollutionType) {
 
     }
 
-function update() {
+function resizeCanvasLayer() {
+  canvasLayer.resize_();
+}
+
+function updatePlumeLayer() {
         var latlong = new google.maps.LatLng(40.4406, -79.9959);
         var rectWidth = 1.0;
         // clear previous canvas contents
