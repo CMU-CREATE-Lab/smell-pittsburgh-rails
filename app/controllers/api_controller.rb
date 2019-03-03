@@ -75,9 +75,7 @@ class ApiController < ApplicationController
     if not params["timezone"].blank?
       time_zone = TimeZone.find_or_create_by(time_zone: params["timezone"])
       smell_report.time_zone_id = time_zone.id
-    elsif smell_report.send_form_to_agency
-      # TODO: Until the smellpgh app passes in a time zone, we know at least the timezone of pittsburgh reports
-      # If the smell pgh app is used outside of pgh, then we will end up with an empty timezone field.
+    elsif SmellReport.is_within_pittsburgh?(smell_report.latitude,smell_report.longitude)
       time_zone = TimeZone.find_by_time_zone("America/New_York")
       smell_report.time_zone_id = time_zone.id
     end
@@ -571,8 +569,16 @@ class ApiController < ApplicationController
     # override when flag is present in API request (and blank non-nil implies false)
     smell_report.send_form_to_agency = (params["send_form_to_agency"].blank? ? false : true) unless params["send_form_to_agency"].nil?
 
-    # request reverse geocode object
-    geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{smell_report.latitude}, #{smell_report.longitude}" )
+    # only request reverse geocode object if a zip and street were not passed in with the report
+    unless params["zip"] and params["street_name"]
+      geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{smell_report.latitude}, #{smell_report.longitude}" )
+    else
+      geo = OpenStruct.new
+      geo.zip = params["zip"]
+      geo.street_name = params["street_name"]
+      geo.full_address = geo.street_name
+    end
+
     # associate smell report with zip code
     unless geo.zip.blank?
       zip_code = ZipCode.find_or_create_by(zip: geo.zip)
@@ -581,11 +587,19 @@ class ApiController < ApplicationController
     # get the street name from reverse geocoding
     unless geo.street_name.blank?
       smell_report.street_name = geo.street_name
+    else
+      # It is possible the default street name result is empty. More than one geocoded result can be returned depending upon location accuracy,
+      # so we at least try to grab the second result and look at its street name. In testing situations where the above failed, this
+      # seems to always give a street name.
+      smell_report.street_name = geo.all[1].street_name unless geo.all.blank? or geo.all.length <= 1 or geo.all[1].street_name.blank?
     end
 
     # set the time zone that this report was taken in. The format is the IANA format.
-    unless params["timezone"].blank?
+    if not params["timezone"].blank?
       time_zone = TimeZone.find_or_create_by(time_zone: params["timezone"])
+      smell_report.time_zone_id = time_zone.id
+    elsif SmellReport.is_within_pittsburgh?(smell_report.latitude,smell_report.longitude)
+      time_zone = TimeZone.find_by_time_zone("America/New_York")
       smell_report.time_zone_id = time_zone.id
     end
 
@@ -616,7 +630,7 @@ class ApiController < ApplicationController
         unless regions.empty?
           # create and submit one form per agency (smell_report => zip_code => regions => agencies)
           regions.map(&:agencies).flatten.uniq.each do |agency|
-            options[:agency_name] = agency.name
+            options[:agency_name] = agency.full_name
             options[:agency_email] = agency.email
             agency.create_and_submit_form(smell_report,options)
           end

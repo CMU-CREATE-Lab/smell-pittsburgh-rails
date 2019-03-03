@@ -4,7 +4,7 @@ class PopulateClientIdForSmellmycityWebsite < ActiveRecord::Migration
     token = Digest::MD5.hexdigest time+rand.to_s
     client = Client.new
     client.id = 5
-    client.name = "SmellMyCityWebsite"
+    client.name = "Smell MyCity Website"
     client.description = "Website for Smell MyCity."
     client.secret_token = token
     client.website = "https://smellmycity.org"

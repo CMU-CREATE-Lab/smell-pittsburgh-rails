@@ -21,37 +21,32 @@ class Agency < ActiveRecord::Base
     if geo.full_address.blank?
       Rails.logger.info("Agency Form (GoogleGeocoder Error): reverse geocoding failed on smell report id=#{smell_report.id} with lat/long='#{smell_report.latitude}, #{smell_report.longitude}'; agency form not submitted")
     elsif not geo.zip.blank?
-      # TODO only does ACHD for now
-      #if self == Agency.where(:name => "ACHD").first
-        # construct object
-        form = AgencyForm.new
-        form.smell_report = smell_report
-        form.email = reply_email
-        form.phone = phone_number
-        form.name = name
-        form.address = user_address
-        form.agency = self
-        form.save!
+      # construct object
+      form = AgencyForm.new
+      form.smell_report = smell_report
+      form.email = reply_email
+      form.phone = phone_number
+      form.name = name
+      form.address = user_address
+      form.agency = self
+      form.save!
 
-        client = Client.find_by_id(smell_report.client_id)
-        unless agency_name.blank? and agency_email.blank?
-          email = GenericMailer.email(form,geo.street_address,geo.zip,agency_email,agency_name,client)
-        else
-          Rails.logger.info("Agency Form: No agency name or email specified")
-          return
-        end
+      client = Client.find_by_id(smell_report.client_id)
+      unless agency_name.blank? and agency_email.blank?
+        email = GenericMailer.email(form,geo.street_name,geo.zip,agency_email,agency_name,client)
+      else
+        Rails.logger.info("Agency Form: No agency name or email specified")
+        return
+      end
 
-        # do not send from dev/staging environments
-        if Rails.env == "production"
-          email.deliver!
-          Rails.logger.info("Agency Form: email delivered")
-        else
-          Rails.logger.info("Agency Form (non-production): generated email:\n#{email.body}")
-        end
-        Rails.logger.info("======")
-      #else
-      #  Rails.logger.info("Agency Form (GoogleGeocoder Error): zipcode on smell report id=#{smell_report.id} was #{geo.zip} and is not in AC; agency form not submitted")
-      #end
+      # do not send from dev/staging environments
+      if Rails.env == "production"
+        email.deliver!
+        Rails.logger.info("Agency Form: email delivered")
+      else
+        Rails.logger.info("Agency Form (non-production): generated email:\n#{email.body}")
+      end
+      Rails.logger.info("======")
     else
       Rails.logger.info("Agency Form (GoogleGeocoder Error): failed to reverse geocode a zipcode on smell report id=#{smell_report.id} with lat/long='#{smell_report.latitude}, #{smell_report.longitude}'; agency form not submitted")
     end
