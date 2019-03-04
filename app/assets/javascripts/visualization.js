@@ -779,12 +779,16 @@ function hideMarkers(markers) {
 }
 
 function generateURL(domain, path, parameters) {
+  parameters = safeGet(parameters, {});
   // TODO: Ignore bay area related results for now
   parameters["client_ids"] = [app_id_smellpgh, app_id_smellmycity];
   if (typeof desired_latlng_bbox !== "undefined") {
     // For example, latlng_bbox=30,-99,40,-88
     // Top-left corner is (30, -99), bottom-right corner is (40,-88)
     parameters["latlng_bbox"] = desired_latlng_bbox;
+  }
+  if (typeof parameters["timezone_string"] === "undefined") {
+    parameters["timezone_string"] = encodeURIComponent(moment.tz.guess(true));
   }
   var api_params = "";
   var parameter_list = [];
