@@ -22,13 +22,19 @@ var user_city_zoom_mobile;
 var user_city_name;
 if (at_city) {
   user_city_ids = [at_city["id"]];
-  user_city_latlng = {"lat": at_city["latitude"], "lng": at_city["longitude"]};
+  user_city_latlng = {
+    "lat": at_city["latitude"],
+    "lng": at_city["longitude"]
+  };
   user_city_zoom_mobile = at_city.zoom_level;
   user_city_name = at_city["name"];
 }
 
 // Current user location
-var user_latlng = {"lat": at_latitude, "lng": at_longitude};
+var user_latlng = {
+  "lat": at_latitude,
+  "lng": at_longitude
+};
 var user_zoom_mobile = at_zoom;
 var user_home = "My Location";
 // e.g. &latlng_bbox=30,-99,40,-88
@@ -37,17 +43,26 @@ var user_latlng_bbox; // for requesting data within a latlng bounding box
 var user_latlng_polygon; // for drawing the polygon on the Google map for "My Location"
 
 // Desired location for Pittsburgh
-var pittsburgh_latlng = {"lat": 40.45, "lng": -79.93};
+var pittsburgh_latlng = {
+  "lat": 40.45,
+  "lng": -79.93
+};
 var pittsburgh_zoom_mobile = 11;
 var pittsburgh_home = "Pittsburgh";
 
 // Desired location for Bay Area
-var ba_latlng = {"lat": 38.004472, "lng": -122.260693};
+var ba_latlng = {
+  "lat": 38.004472,
+  "lng": -122.260693
+};
 var ba_zoom_mobile = 11;
 var ba_home = "Bay Area";
 
 // Desired location for the US
-var all_data_latlng = {"lat": 40.610271, "lng": -101.413473};
+var all_data_latlng = {
+  "lat": 40.610271,
+  "lng": -101.413473
+};
 var all_data_zoom_mobile = 3;
 var all_data_home = "All Regions";
 
@@ -100,7 +115,19 @@ function init() {
   //getQueryStringData(); // set data coming from the query string
   initGoogleMap();
   //setUserLatLngBoundingBox(); // compute and set the latlng bounding box for the current user location
-  setMode(); // set the mode based on the query string data
+
+  // If there is a participating city
+  if (app_id == app_id_smellmycitywebsite) {
+    mode = "all"; // default to the mode of all regions
+  } else {
+    if (at_city) {
+      mode = "city"; // default to the mode of participating cities
+    } else {
+      mode = "user"; // default to the mode of user location
+    }
+  }
+  setMode(mode); // set the mode based on the query string data
+
   initTerrainBtn();
   initHomeBtn();
   initCalendarBtn();
@@ -140,18 +167,38 @@ function setUserLatLngBoundingBox() {
   var br_lng = br_pt.lng();
   user_latlng_bbox = tl_lat + "," + tl_lng + "," + br_lat + "," + br_lng;
   user_latlng_polygon = new google.maps.Polygon({
-    paths: [[
-      {lat: -90, lng: -180},
-      {lat: 90, lng: -180},
-      {lat: 90, lng: 180},
-      {lat: -90, lng: 180},
-      {lat: -90, lng: 0}
-    ], [
-      {lat: tl_lat, lng: br_lng},
-      {lat: tl_lat, lng: tl_lng},
-      {lat: br_lat, lng: tl_lng},
-      {lat: br_lat, lng: br_lng}
-    ]],
+    paths: [
+      [{
+          lat: -90,
+          lng: -180
+        }, {
+          lat: 90,
+          lng: -180
+        }, {
+          lat: 90,
+          lng: 180
+        }, {
+          lat: -90,
+          lng: 180
+        }, {
+          lat: -90,
+          lng: 0
+        }
+      ], [{
+          lat: tl_lat,
+          lng: br_lng
+        }, {
+          lat: tl_lat,
+          lng: tl_lng
+        }, {
+          lat: br_lat,
+          lng: tl_lng
+        }, {
+          lat: br_lat,
+          lng: br_lng
+        }
+      ]
+    ],
     strokeColor: "#000000",
     strokeOpacity: 0.8,
     strokeWeight: 1,
@@ -172,7 +219,7 @@ function setMode(desired_mode) {
   if (show_voc_sensors) addVocSensors();
   if (app_id == app_id_ba) {
     setToBayArea();
-  } else if (app_id == app_id_smellmycity) {
+  } else if (app_id == app_id_smellmycity || app_id == app_id_smellmycitywebsite) {
     setToSmellMyCity(mode);
   } else {
     setToSmellPgh();
@@ -187,7 +234,7 @@ function loadDataAndSetUI() {
   loadAndDrawCalendar();
 
   // Check if we are in a participating city
-  if (typeof desired_city_ids !== "undefined" /*&& mode != "user"*/) {
+  if (typeof desired_city_ids !== "undefined" /*&& mode != "user"*/ ) {
     // Load sensor list of the city first
     // loadSensorList() also calls loadAndCreateTimeline()
     loadSensorList(desired_city_ids);
@@ -216,23 +263,21 @@ function setToSmellPgh() {
 
 // This is Smell My City
 function setToSmellMyCity(mode) {
-  // If there is a participating city
-  if (at_city) {
-    mode = safeGet(mode, "city"); // default to the mode of participating cities
-  } else {
-    mode = safeGet(mode, "user"); // default to the mode of user location
-  }
   // Check mode
   if (mode == "all") {
     // Want to show all data
     setDesiredLatLngZoomHome(all_data_latlng, all_data_zoom_mobile, all_data_home);
-    desired_city_ids = at_participating_cities.map(function (city) {return city.id;});
+    desired_city_ids = at_participating_cities.map(function (city) {
+      return city.id;
+    });
     desired_latlng_bbox = undefined;
     //clearPolygonMaskOnMap(user_latlng_polygon);
   } else if (mode == "user") {
     // Want to show only the data near the current user location
     setDesiredLatLngZoomHome(user_latlng, user_zoom_mobile, user_home);
-    desired_city_ids = at_participating_cities.map(function (city) {return city.id;}); //undefined;
+    desired_city_ids = at_participating_cities.map(function (city) {
+      return city.id;
+    }); //undefined;
     desired_latlng_bbox = undefined; //user_latlng_bbox;
     //drawPolygonMaskOnMap(user_latlng_polygon);
   } else if (mode == "city") {
@@ -325,27 +370,27 @@ function addVocSensors() {
 
 function initGoogleMap() {
   // Set Google map style
-  var styleArray = [
-    {
-      featureType: "all",
-      stylers: [
-        {saturation: -80}
-      ]
-    }, {
-      featureType: "road.arterial",
-      elementType: "geometry",
-      stylers: [
-        {hue: "#00ffee"},
-        {saturation: 50}
-      ]
-    }, {
-      featureType: "poi.business",
-      elementType: "labels",
-      stylers: [
-        {visibility: "off"}
-      ]
-    }
-  ];
+  var styleArray = [{
+    featureType: "all",
+    stylers: [{
+      saturation: -80
+    }]
+  }, {
+    featureType: "road.arterial",
+    elementType: "geometry",
+    stylers: [{
+        hue: "#00ffee"
+      }, {
+        saturation: 50
+      }
+    ]
+  }, {
+    featureType: "poi.business",
+    elementType: "labels",
+    stylers: [{
+      visibility: "off"
+    }]
+  }];
 
   // Set Google map
   map = new google.maps.Map(document.getElementById("map"), {
@@ -415,7 +460,7 @@ function initHomeBtn() {
   $home_text = $("#home-btn span");
 
   // Load city list
-  if (app_id == app_id_smellmycity) {
+  if (app_id == app_id_smellmycity || app_id == app_id_smellmycitywebsite) {
     $home_select = $("#home");
     drawHome(formatDataForHome(at_participating_cities));
     // Add event to the home select
@@ -432,7 +477,10 @@ function initHomeBtn() {
           setMode("user");
         } else {
           // User wants to see the data of a participating city
-          var selected_city_latlng = {"lat": $selected.data("lat"), "lng": $selected.data("lng")};
+          var selected_city_latlng = {
+            "lat": $selected.data("lat"),
+            "lng": $selected.data("lng")
+          };
           var selected_city_mobile_zoom = $selected.data("zoom");
           var selected_city_ids = [$selected.data("id")];
           setUserCityLatLngZoomHomeId(selected_city_latlng, selected_city_mobile_zoom, selected_home, selected_city_ids);
@@ -442,7 +490,9 @@ function initHomeBtn() {
       } else {
         centerMap();
       }
-      addGoogleAnalyticEvent("home", "click", {"dimension5": current_epochtime_milisec.toString()});
+      addGoogleAnalyticEvent("home", "click", {
+        "dimension5": current_epochtime_milisec.toString()
+      });
       $(this).prop("selectedIndex", 0);
     });
   }
@@ -458,7 +508,7 @@ function initHomeBtn() {
 
   // Add event to the home button
   $("#home-btn").on("click", function () {
-    if (app_id == app_id_smellmycity) {
+    if (app_id == app_id_smellmycity || app_id == app_id_smellmycitywebsite) {
       $home_dialog.dialog("open");
     } else {
       centerMap();
@@ -503,7 +553,9 @@ function initCalendarBtn() {
       } else {
         loadAndUpdateTimeLine(selected_time, firstDayOfNextMonth(selected_date_obj).getTime());
       }
-      addGoogleAnalyticEvent("calendar", "click", {"dimension5": selected_time.toString()});
+      addGoogleAnalyticEvent("calendar", "click", {
+        "dimension5": selected_time.toString()
+      });
     }
     // Save the current selected index
     $calendar_select.data("value", selected_value);
@@ -630,7 +682,10 @@ function getInitialTimeRange() {
   var start_time = date_obj.getTime();
   // The ending time is the current time
   var end_time = Date.now();
-  return {"start_time": start_time, "end_time": end_time};
+  return {
+    "start_time": start_time,
+    "end_time": end_time
+  };
 }
 
 function loadInitialTimeLine() {
@@ -682,7 +737,9 @@ function showSmellMarkersByTime(epochtime_milisec) {
   if (typeof r !== "undefined") {
     showMarkers(r["markers"]);
   } else {
-    smell_reports_cache[epochtime_milisec] = {"markers": []};
+    smell_reports_cache[epochtime_milisec] = {
+      "markers": []
+    };
     loadAndCreateSmellMarkers(epochtime_milisec);
   }
 }
@@ -852,7 +909,14 @@ function formatDataForHome(data) {
   // Desktop zoom = mobile zoom + 1
   var cities = [];
   for (var i = 0; i < data.length; i++) {
-    cities.push({"id": data[i]['id'], "name": data[i]['name'], "lat": data[i]['latitude'], "lng": data[i]['longitude'], "zoom": data[i]['zoom_level'], "state_code": data[i]['state_code']});
+    cities.push({
+      "id": data[i]['id'],
+      "name": data[i]['name'],
+      "lat": data[i]['latitude'],
+      "lng": data[i]['longitude'],
+      "zoom": data[i]['zoom_level'],
+      "state_code": data[i]['state_code']
+    });
   }
   return cities;
 }
@@ -886,7 +950,10 @@ function formatDataForCalendar(data) {
     }));
     count.push(parseInt(value));
   });
-  return {"month": month, "count": count};
+  return {
+    "month": month,
+    "count": count
+  };
 }
 
 function drawCalendar(data) {
@@ -1081,7 +1148,10 @@ function showSensorMarkersByTime(epochtime_milisec) {
     // Show the AQI if needed
     showOrHideAQI(is_current_day);
     // For each sensor, load data from server and create a marker
-    sensors_cache[epochtime_milisec] = {"markers": [], "marker_table": []};
+    sensors_cache[epochtime_milisec] = {
+      "markers": [],
+      "marker_table": []
+    };
     for (var i = 0; i < sensors_list.length; i++) {
       loadAndCreateSensorMarkers(epochtime_milisec, sensors_list[i], is_current_day, i);
     }
@@ -1383,7 +1453,9 @@ function formatAndMergeSensorData(responses, info, method) {
   var data_max = {};
   for (var i = 0; i < t_all.length; i++) {
     var t = t_all[i];
-    var tmp = {time: t};
+    var tmp = {
+      time: t
+    };
     // Loop through channels
     for (var sensor_name in sensors_to_channels) {
       var channel_names = sensors_to_channels[sensor_name];
@@ -1467,7 +1539,9 @@ function aggregateSensorData(data, info) {
       current_sum += value;
       current_counter++;
     } else {
-      var pt = {"time": current_time};
+      var pt = {
+        "time": current_time
+      };
       pt[sensor_type] = roundTo(current_sum / current_counter, 0);
       data_cp["data"].unshift(pt);
       current_time = time;
@@ -1475,7 +1549,9 @@ function aggregateSensorData(data, info) {
       current_counter = 1;
     }
   }
-  var pt = {"time": current_time};
+  var pt = {
+    "time": current_time
+  };
   pt[sensor_type] = roundTo(current_sum / current_counter, 0);
   data_cp["data"].unshift(pt);
 
