@@ -543,30 +543,36 @@ function paintPollutionSensor(site, time, interp, pollutionType) {
       var extremeColor = pollutionColors[pollutionType]["extreme"]
       var extremeHighColor = pollutionColors[pollutionType]["extremeHigh"]
 
-      if(pollution < lowRange){
-         
-         color = interpolate(interp, lowColor, midColor, (pollution)/lowRange)
-      } else if(pollution < midRange){
-         
-         color = interpolate(interp, midColor,highColor,(pollution-lowRange)/(midRange-lowRange))
+      if(pollution != null){
+          if(site[0] == 40.29 && site[1] == -79.89){
+             //console.log(pollution, time+2) 
+          }
+          
+          if(pollution < lowRange){
 
-      } else if(pollution < highRange) {
-        
-         color = interpolate(interp, highColor,extremeColor,(pollution-midRange)/(highRange-midRange))
+             color = interpolate(interp, lowColor, midColor, (pollution)/lowRange)
+          } else if(pollution < midRange){
 
-      } else if(pollution > extremeRange) {
-         
-         color = interpolate(interp, extremeColor, extremeHighColor, (pollution-highRange)/(extremeRange-highRange))
-      } 
-      styleColor = 'rgb(' + color[0] + ',' + color[1] + "," +  color[2] + ', 0.75)'
-     
-//      console.log(context)
-  
-      context.style = styleColor;
-      context.fillStyle = styleColor
-      context.beginPath();
-      context.arc(x, y, 0.0035 + 0.02*(Math.sqrt(0.004*pollution)), 0, 2 * Math.PI, false);
-      context.fill();
+             color = interpolate(interp, midColor,highColor,(pollution-lowRange)/(midRange-lowRange))
+
+          } else if(pollution < highRange) {
+
+             color = interpolate(interp, highColor,extremeColor,(pollution-midRange)/(highRange-midRange))
+
+          } else{
+
+             color = interpolate(interp, extremeColor, extremeHighColor, (pollution-highRange)/(extremeRange-highRange))
+          } 
+          styleColor = 'rgb(' + color[0] + ',' + color[1] + "," +  color[2] + ', 0.75)'
+
+    //      console.log(context)
+
+          context.style = styleColor;
+          context.fillStyle = styleColor
+          context.beginPath();
+          context.arc(x, y, 0.0035 + 0.02*(Math.sqrt(0.004*pollution)), 0, 2 * Math.PI, false);
+          context.fill();
+      }
 
     }
 
@@ -615,13 +621,16 @@ function update() {
 
 
         var interval = 900000
-        var offset = (((elapsed_milisec / interval))) + 2.0
+        var offset = (((elapsed_milisec / interval))) 
 //        console.log("Offset")
 //        console.log(offset)
 //        console.log(Math.floor(offset))
 //
-
+        var date_now = new Date(elapsed_milisec)
+//        cur_time =
+        //console.log(date_now)
         for(var i = 0; i < pm25Data.length; i++){
+              
               paintPollutionSensor(pm25Data[i], parseInt(offset), true,  "PM25")
         }
         
