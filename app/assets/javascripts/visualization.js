@@ -625,6 +625,9 @@ function update() {
 //        console.log("Offset")
 //        console.log(offset)
 //        console.log(Math.floor(offset))
+        if(offset >= 95){
+            offset = 95
+        }
 //
         var date_now = new Date(elapsed_milisec)
 //        cur_time =
