@@ -14,7 +14,7 @@ var curDate2 = "2018-10-01";
 
 var siteData;
 var pm25Data;
-var timeSlider;
+//var timeSlider;
 
 var timeOffset;
 
@@ -445,39 +445,41 @@ function initGoogleMap() {
     styleInfoWindowCloseButton();
   });
 
-
-var canvasLayerOptions = {
-        map: map,
-        animate: true,
-        updateHandler: update,
-        resolutionScale: resolutionScale
+  var canvasLayerOptions = {
+    map: map,
+    animate: true,
+    resizeHandler: resizeCanvasLayer,
+    updateHandler: updatePlumeLayer,
+    resolutionScale: resolutionScale
   };
   canvasLayer = new CanvasLayer(canvasLayerOptions);
   context = canvasLayer.canvas.getContext('2d');
+  window.addEventListener("resize", function() {
+    resizeCanvasLayer();
+  }, false);
 
-//   console.log(canvasLayer)
-  setup()
+  setup();
 }
 
 function setup() {
       if (typeof map === "undefined") return;
       
-      timeSlider = new TimeSlider({
-      startTime: new Date(2018,10, 1, 0, 0, 0, 0).getTime(),
-      endTime: new Date(2018, 10, 1, 23, 59, 59, 0).getTime(),
-      increment: 5*60*1000,
-      span: 0*60*1000,
-      formatCurrentTime: function(date) {
-        return String(date.getFullYear()) + "/" + String(date.getMonth()) + "/" + String(date.getDate())
-          + " " + String(date.getHours()) + ":" + String(date.getMinutes()) + ":" + 
-        String(date.getSeconds());
-      },
-      animationRate: {
-          fast: 50,
-          medium: 100,
-          slow: 150
-        }
-      });
+      //#timeSlider = new TimeSlider({
+      //startTime: new Date(2018,10, 1, 0, 0, 0, 0).getTime(),
+      //endTime: new Date(2018, 10, 1, 23, 59, 59, 0).getTime(),
+      //increment: 5*60*1000,
+      //span: 0*60*1000,
+      //formatCurrentTime: function(date) {
+      //  return String(date.getFullYear()) + "/" + String(date.getMonth()) + "/" + String(date.getDate())
+      //    + " " + String(date.getHours()) + ":" + String(date.getMinutes()) + ":" +
+      //  String(date.getSeconds());
+      //},
+      //animationRate: {
+      //    fast: 50,
+      //    medium: 100,
+      //    slow: 150
+      //  }
+      //});
 
       // $.get(dataUrl + curDate + ".json", function(data3){
       //     siteData = data3;
@@ -510,7 +512,8 @@ function interpolate(interp, color1, color2, factor) {
 
 
 function paintPollutionSensor(site, time, interp, pollutionType) {
-      
+      if (!mapProjection) return;
+
       var rectLatLng = new google.maps.LatLng(site[0], site[1]);
       var worldPoint = mapProjection.fromLatLngToPoint(rectLatLng);
       var x = worldPoint.x;
@@ -576,7 +579,11 @@ function paintPollutionSensor(site, time, interp, pollutionType) {
 
     }
 
-function update() {
+function resizeCanvasLayer() {
+  canvasLayer.resize_();
+}
+
+function updatePlumeLayer() {
         var latlong = new google.maps.LatLng(40.4406, -79.9959);
         var rectWidth = 1.0;
         // clear previous canvas contents
