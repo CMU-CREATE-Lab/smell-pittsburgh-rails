@@ -15,6 +15,7 @@ class SmellReport < ActiveRecord::Base
 
   belongs_to :zip_code
   belongs_to :client
+  belongs_to :time_zone
   has_many :agency_forms
 
   validates :user_hash, :latitude, :longitude, :smell_value, :presence => true

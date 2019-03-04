@@ -1,4 +1,5 @@
 require 'csv'
+require 'cgi'
 
 class ApiController < ApplicationController
 
@@ -68,6 +69,15 @@ class ApiController < ApplicationController
     # get the street name from reverse geocoding
     unless geo.street_name.blank?
       smell_report.street_name = geo.street_name
+    end
+
+    # set the time zone that this report was taken in. The format is the IANA format.
+    if not params["timezone"].blank?
+      time_zone = TimeZone.find_or_create_by(time_zone: params["timezone"])
+      smell_report.time_zone_id = time_zone.id
+    elsif SmellReport.is_within_pittsburgh?(smell_report.latitude,smell_report.longitude)
+      time_zone = TimeZone.find_by_time_zone("America/New_York")
+      smell_report.time_zone_id = time_zone.id
     end
 
     last_smell_report_from_user = SmellReport.where(user_hash: smell_report.user_hash).order("created_at").last
@@ -455,6 +465,25 @@ class ApiController < ApplicationController
   end
 
 
+  def get_location_info_by_zip
+    zipCode = params[:zipCode]
+    city = City.joins(:zip_codes).where('zip_codes.zip' => zipCode).select("cities.id, name, state_code, app_metadata")
+    region = Region.joins(:zip_codes).where('zip_codes.zip' => zipCode).select("regions.id, name")
+    if city.empty? or region.empty?
+      render :json => { :error => "No participating location has that zip code." }, :status => 404
+    else
+      city_info = city.first
+      region_info = region.first
+      agency_info = region_info.agencies.select("id, name, full_name, website").first
+      location_info = {}
+      location_info["city"] = city_info
+      location_info["region"] = region_info
+      location_info["agency"] = agency_info
+      render :json => location_info
+    end
+  end
+
+
   # POST /api/v2/smell_reports
   #
   # PARAMS (required fields denoted by asterisk)
@@ -531,9 +560,8 @@ class ApiController < ApplicationController
     # determine smell report observed at time
     # string format: %Y-%m-%dT%H:%M:%S%:z
     smell_report.observed_at = DateTime.rfc3339(params["observed_at"]).to_i unless params["observed_at"].blank?
-    if smell_report.custom_time == false or smell_report.observed_at.blank?
+    if smell_report.observed_at.blank?
       smell_report.observed_at = Time.now.to_i
-      smell_report.custom_time = false
     end
 
     # by default, send to agency
@@ -541,8 +569,16 @@ class ApiController < ApplicationController
     # override when flag is present in API request (and blank non-nil implies false)
     smell_report.send_form_to_agency = (params["send_form_to_agency"].blank? ? false : true) unless params["send_form_to_agency"].nil?
 
-    # request reverse geocode object
-    geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{smell_report.latitude}, #{smell_report.longitude}" )
+    # only request reverse geocode object if a zip and street were not passed in with the report
+    unless params["zip"] and params["street_name"]
+      geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{smell_report.latitude}, #{smell_report.longitude}" )
+    else
+      geo = OpenStruct.new
+      geo.zip = params["zip"]
+      geo.street_name = params["street_name"]
+      geo.full_address = geo.street_name
+    end
+
     # associate smell report with zip code
     unless geo.zip.blank?
       zip_code = ZipCode.find_or_create_by(zip: geo.zip)
@@ -551,6 +587,20 @@ class ApiController < ApplicationController
     # get the street name from reverse geocoding
     unless geo.street_name.blank?
       smell_report.street_name = geo.street_name
+    else
+      # It is possible the default street name result is empty. More than one geocoded result can be returned depending upon location accuracy,
+      # so we at least try to grab the second result and look at its street name. In testing situations where the above failed, this
+      # seems to always give a street name.
+      smell_report.street_name = geo.all[1].street_name unless geo.all.blank? or geo.all.length <= 1 or geo.all[1].street_name.blank?
+    end
+
+    # set the time zone that this report was taken in. The format is the IANA format.
+    if not params["timezone"].blank?
+      time_zone = TimeZone.find_or_create_by(time_zone: params["timezone"])
+      smell_report.time_zone_id = time_zone.id
+    elsif SmellReport.is_within_pittsburgh?(smell_report.latitude,smell_report.longitude)
+      time_zone = TimeZone.find_by_time_zone("America/New_York")
+      smell_report.time_zone_id = time_zone.id
     end
 
     if smell_report.save
@@ -580,7 +630,7 @@ class ApiController < ApplicationController
         unless regions.empty?
           # create and submit one form per agency (smell_report => zip_code => regions => agencies)
           regions.map(&:agencies).flatten.uniq.each do |agency|
-            options[:agency_name] = agency.name
+            options[:agency_name] = agency.full_name
             options[:agency_email] = agency.email
             agency.create_and_submit_form(smell_report,options)
           end
@@ -602,8 +652,8 @@ class ApiController < ApplicationController
   # GET /api/v2/smell_reports
   #
   # PARAMS
-  # start_time: Integer (default: 0)
-  # end_time: Integer (default: now)
+  # start_time: Integer (default: 0); represented as epoch time
+  # end_time: Integer (default: now); represented as epoch time
   # client_ids: List of Client IDs
   # region_ids: List of Region IDs
   # city_ids: List of City IDs
@@ -611,7 +661,7 @@ class ApiController < ApplicationController
   # latlng_bbox: lat/long coordinates, top-left to bottom-right
   # group_by: {zipcode|month|day}
   # aggregate: {true|false} (default: False)
-  # timezone_offset: number representing offset in minutes (default: 0)
+  # timezone_string: String representing desired timezone to show smell reports in (default: "UTC")
   # zipcodes: List of zipcodes
   # format:  {json|csv} (default: json)
   #   - What format the output should be in, either JSON or CSV.
@@ -627,11 +677,13 @@ class ApiController < ApplicationController
     latlng_bbox = params["latlng_bbox"].blank? ? [] : params["latlng_bbox"].split(",").map(&:to_f)
     group_by = ["zipcode","month","day"].index(params["group_by"]).nil? ? "" : params["group_by"]
     aggregate = (params["aggregate"] == "true")
-    timezone_offset = params["timezone_offset"].blank? ? 0 : params["timezone_offset"].to_i
+    timezone_string = params["timezone_string"].blank? ? "UTC" : CGI::unescape(params["timezone_string"])
     zipcodes = params["zipcodes"].blank? ? [] : params["zipcodes"].split(",")
     format_as = ["csv","json"].index(params["format"]).nil? ? "json" : params["format"]
 
-    time_range = [0, Time.now.to_i]
+    Time.zone = timezone_string
+
+    time_range = [0, Time.zone.now.to_i]
     time_range[0] = start_time.to_i if start_time
     time_range[1] = end_time.to_i if end_time
 
@@ -682,12 +734,12 @@ class ApiController < ApplicationController
     else
       if group_by == "month"
         # results = SmellReport.aggregate_by_month(results)
-        # NOTE: this is a bit hacky. we are just adding seconds to the time object, which defaults to UTC. This will bucket the times properly (for month/day) based on timezone offset.
-        results = results.flatten.group_by{|i| Time.at(i.observed_at-timezone_offset*60).strftime("%Y-%m")}
+        # This will bucket the times properly (for month/day) based on timezone offset.
+        results = results.flatten.group_by{|i| Time.zone.at(i.observed_at).strftime("%Y-%m")}
       elsif group_by == "day"
         # results = SmellReport.aggregate_by_day(results,timezone_offset)
         # NOTE: (see above reference)
-        results = results.flatten.group_by{|i| Time.at(i.observed_at-timezone_offset*60).strftime("%Y-%m-%d")}
+        results = results.flatten.group_by{|i| Time.zone.at(i.observed_at).strftime("%Y-%m-%d")}
       elsif group_by == "zipcode"
         tmp = results.flatten
         results = {}
@@ -715,9 +767,9 @@ class ApiController < ApplicationController
     if format_as == "csv"
       csv_rows = []
 
-      csv_rows.push ["epoch time","rfc3339 time","smell value","zipcode","smell description","feelings symptoms"].to_csv
+      csv_rows.push ["epoch time","date & time","smell value","zipcode","smell description","feelings symptoms"].to_csv
       results.each do |value|
-        csv_rows.push [value["observed_at"],Time.at(value["observed_at"]).to_datetime.rfc3339,value["smell_value"],value["zipcode"],value["smell_description"],value["feelings_symptoms"]].to_csv
+        csv_rows.push [value["observed_at"],Time.zone.at(value["observed_at"]).to_datetime.strftime("%m/%d/%Y %H:%M:%S %Z"),value["smell_value"],value["zipcode"],value["smell_description"],value["feelings_symptoms"]].to_csv
       end
 
       headers["Content-Type"] = "text/csv; charset=utf-8"

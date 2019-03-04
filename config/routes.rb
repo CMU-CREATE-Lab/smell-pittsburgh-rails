@@ -23,6 +23,7 @@ Rails.application.routes.draw do
 
   get "/api/v2/get_aqi" => "api#get_aqi"
   get "/api/v2/get_city_by_zip" => "api#get_city_by_zip"
+  get "/api/v2/get_location_info_by_zip" => "api#get_location_info_by_zip"
 
   get "/visualization" => "visualization#index"
   get "/summary" => "summary#index"
