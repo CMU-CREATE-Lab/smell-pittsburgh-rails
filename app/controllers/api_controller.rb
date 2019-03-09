@@ -63,7 +63,10 @@ class ApiController < ApplicationController
     geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{smell_report.latitude}, #{smell_report.longitude}" )
     # associate smell report with zip code
     unless geo.zip.blank?
-      zip_code = ZipCode.find_or_create_by(zip: geo.zip)
+      state = State.find_or_create_by(state_code: geo.state) if geo.state
+      zip_code = ZipCode.where(:zip => geo.zip).first_or_create do |zip|
+        zip.state_id = state.id unless state.blank?
+      end
       smell_report.zip_code_id = zip_code.id
     end
     # get the street name from reverse geocoding
@@ -419,7 +422,7 @@ class ApiController < ApplicationController
     response = []
     city_ids.each do |city_id|
       @city = City.find_by_id(city_id)
-      response << {"name" => @city.name, "state_code" => @city.state_code, "markers" => @city.map_markers.map(&:to_api)} if @city
+      response << {"name" => @city.name, "state_code" => @city.state.state_code, "markers" => @city.map_markers.map(&:to_api)} if @city
     end
     if response.empty?
       render :json => { :error => "City does not exist." }, :status => 404
@@ -569,19 +572,23 @@ class ApiController < ApplicationController
     # override when flag is present in API request (and blank non-nil implies false)
     smell_report.send_form_to_agency = (params["send_form_to_agency"].blank? ? false : true) unless params["send_form_to_agency"].nil?
 
-    # only request reverse geocode object if a zip and street were not passed in with the report
-    unless params["zip"] and params["street_name"]
+    # only request reverse geocode object if a zip, street and state were not passed in with the report
+    unless params["zip"] and params["street_name"] and params["state"]
       geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{smell_report.latitude}, #{smell_report.longitude}" )
     else
       geo = OpenStruct.new
       geo.zip = params["zip"]
+      geo.state = params["state"]
       geo.street_name = params["street_name"]
       geo.full_address = geo.street_name
     end
 
     # associate smell report with zip code
     unless geo.zip.blank?
-      zip_code = ZipCode.find_or_create_by(zip: geo.zip)
+      state = State.find_or_create_by(state_code: geo.state) if geo.state
+      zip_code = ZipCode.where(:zip => geo.zip).first_or_create do |zip|
+        zip.state_id = state.id unless state.blank?
+      end
       smell_report.zip_code_id = zip_code.id
     end
     # get the street name from reverse geocoding
@@ -673,6 +680,7 @@ class ApiController < ApplicationController
     client_ids = params["client_ids"].nil? ? [] : params["client_ids"].split(",").map(&:to_i)
     region_ids = params["region_ids"].nil? ? [] : params["region_ids"].split(",").map(&:to_i)
     city_ids = params["city_ids"].nil? ? [] : params["city_ids"].split(",").map(&:to_i)
+    state_ids = params["state_ids"].nil? ? [] : params["state_ids"].split(",").map(&:to_i)
     smell_values = params["smell_value"].blank? ? [] : params["smell_value"].split(",").map(&:to_i)
     latlng_bbox = params["latlng_bbox"].blank? ? [] : params["latlng_bbox"].split(",").map(&:to_f)
     group_by = ["zipcode","month","day"].index(params["group_by"]).nil? ? "" : params["group_by"]
@@ -688,12 +696,14 @@ class ApiController < ApplicationController
     time_range[1] = end_time.to_i if end_time
 
     #
-    # 1. zip_codes/regions/cities; regions take precedence
+    # 1. zip_codes/regions/cities/states; regions take precedence
     zip_codes = zipcodes.map{|i| ZipCode.where(:zip => i).first}.delete_if(&:nil?).uniq
     if not region_ids.empty?
       zip_codes = (zip_codes + region_ids.map{ |i| Region.find(i) if Region.exists?(i) }.delete_if(&:nil?).map(&:zip_codes).flatten).uniq
     elsif not city_ids.empty?
       zip_codes = (zip_codes + city_ids.map{ |i| City.find(i) if City.exists?(i) }.delete_if(&:nil?).map(&:zip_codes).flatten).uniq
+    elsif not state_ids.empty?
+      zip_codes = (zip_codes + ZipCode.where(state_id: state_ids)).uniq
     end
     results = zip_codes.empty? ? [SmellReport.all] : zip_codes.map(&:smell_reports)
     #
@@ -767,7 +777,7 @@ class ApiController < ApplicationController
     if format_as == "csv"
       csv_rows = []
 
-      csv_rows.push ["epoch time","date & time","smell value","zipcode","smell description","feelings symptoms"].to_csv
+      csv_rows.push ["epoch time","date & time","smell value","zipcode","smell description","symptoms"].to_csv
       results.each do |value|
         csv_rows.push [value["observed_at"],Time.zone.at(value["observed_at"]).to_datetime.strftime("%m/%d/%Y %H:%M:%S %Z"),value["smell_value"],value["zipcode"],value["smell_description"],value["feelings_symptoms"]].to_csv
       end
