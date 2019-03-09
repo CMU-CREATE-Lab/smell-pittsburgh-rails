@@ -28,7 +28,7 @@ class InitialPopulateStatesTable < ActiveRecord::Migration
         puts e
       end
       sleep(1)
-      if geo and geo.zip and geo.country = "United States"
+      if geo and geo.zip and geo.country == "United States"
         state = State.find_or_create_by(state_code: geo.state) if geo.state
         zip_code = ZipCode.where(:zip => geo.zip).first_or_create do |zip|
           zip.state_id = state.id unless state.blank?
@@ -66,7 +66,7 @@ class InitialPopulateStatesTable < ActiveRecord::Migration
           puts e
         end
         sleep(1)
-        if geo and geo.state and geo.country = "United States"
+        if geo and geo.state and geo.country == "United States"
           state = State.find_or_create_by(state_code: geo.state)
           zip_code.state_id = state.id
           zip_code.save!
