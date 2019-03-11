@@ -470,7 +470,7 @@ class ApiController < ApplicationController
 
   def get_location_info_by_zip
     zipCode = params[:zipCode]
-    city = City.joins(:zip_codes).where('zip_codes.zip' => zipCode).select("cities.id, name, app_metadata")
+    city = City.joins(:zip_codes).where('zip_codes.zip' => zipCode).select("cities.id, cities.state_id, name, app_metadata")
     region = Region.joins(:zip_codes).where('zip_codes.zip' => zipCode).select("regions.id, name")
     if city.empty? or region.empty?
       render :json => { :error => "No participating location has that zip code." }, :status => 404
