@@ -736,7 +736,7 @@ class ApiController < ApplicationController
     # 6. group_by and aggregate
     id_zip_hash = Hash[ZipCode.all.map{|z| [z.id,z.zip]}]
     if group_by.blank? or format_as == "csv"
-      results = results.flatten
+      results = results.flatten.sort_by{|u| u["observed_at"]}
       # format as json
       results = results.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :smell_description, :observed_at, :zip_code_id])
       # plus zipcode
