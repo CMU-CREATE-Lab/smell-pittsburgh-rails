@@ -866,7 +866,7 @@ function generateURL(domain, path, parameters) {
 function generateURLForSmellReports(parameters) {
   if (app_id == app_id_smellpgh || app_id == app_id_smellpghwebsite) {
     parameters["state_ids"] = [1];
-  } else if (typeof desired_city_ids !== "undefined" && desired_city_ids.length > 0 && mode != "all") {
+  } else if (typeof desired_city_ids !== "undefined" && desired_city_ids.length > 0 && mode == "city") {
     parameters["city_ids"] = desired_city_ids.join(",");
   }
   return generateURL(window.location.origin, "/api/v2/smell_reports", parameters);
