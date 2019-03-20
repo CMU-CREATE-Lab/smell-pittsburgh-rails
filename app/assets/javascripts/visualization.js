@@ -114,7 +114,9 @@ var widgets = new edaplotjs.Widgets();
 function init() {
   //getQueryStringData(); // set data coming from the query string
   initGoogleMap();
-  //setUserLatLngBoundingBox(); // compute and set the latlng bounding box for the current user location
+  if (app_id == app_id_smellmycity) {
+    setUserLatLngBoundingBox(); // compute and set the latlng bounding box for the current user location
+  }
 
   // If there is a participating city
   if (app_id == app_id_smellmycitywebsite) {
@@ -166,7 +168,7 @@ function setUserLatLngBoundingBox() {
   var br_lat = br_pt.lat();
   var br_lng = br_pt.lng();
   user_latlng_bbox = tl_lat + "," + tl_lng + "," + br_lat + "," + br_lng;
-  user_latlng_polygon = new google.maps.Polygon({
+  /*user_latlng_polygon = new google.maps.Polygon({
     paths: [
       [{
           lat: -90,
@@ -204,7 +206,7 @@ function setUserLatLngBoundingBox() {
     strokeWeight: 1,
     fillColor: "#ffffff",
     fillOpacity: 0.75
-  });
+  });*/
 }
 
 function setMode(desired_mode) {
@@ -277,8 +279,8 @@ function setToSmellMyCity(mode) {
     setDesiredLatLngZoomHome(user_latlng, user_zoom_mobile, user_home);
     desired_city_ids = at_participating_cities.map(function (city) {
       return city.id;
-    }); //undefined;
-    desired_latlng_bbox = undefined; //user_latlng_bbox;
+    });
+    desired_latlng_bbox = user_latlng_bbox;
     //drawPolygonMaskOnMap(user_latlng_polygon);
   } else if (mode == "city") {
     // Want to show the data of the participating city (if any) at the user location
