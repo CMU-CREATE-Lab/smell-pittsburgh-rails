@@ -1,4 +1,4 @@
-class AddLocalParntersToJeffersonCountyAppMetadata < ActiveRecord::Migration
+class AddLocalPartnersToJeffersonCountyAppMetadata < ActiveRecord::Migration
   def change
     city_obj = City.find_by_name("Louisville")
     city_obj.app_metadata = {

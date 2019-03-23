@@ -4,8 +4,8 @@ class ModifyJeffersonkyMarkers < ActiveRecord::Migration
       [{
         "name":"Near Road AirNow",
         "sensors":{
-          "PM25":{"sources":[{"feed"4174,"channel":"PM2_5"}]},
-          "SO2":{"sources":[{"feed"4174,"channel":"SO2"}]},
+          "PM25":{"sources":[{"feed":4174,"channel":"PM2_5"}]},
+          "SO2":{"sources":[{"feed":4174,"channel":"SO2"}]},
         }},
         38.1935,
         -85.7121,
@@ -13,7 +13,7 @@ class ModifyJeffersonkyMarkers < ActiveRecord::Migration
     ]
    markers.each do |item|
       m = MapMarker.new
-      m.region_id = 2
+      m.city_id = 2
       m.marker_type = "esdr_feed"
       m.data = item[0].to_json
       m.latitude = item[1]
