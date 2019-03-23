@@ -22,5 +22,5 @@ class ModifyJeffersonkyMarkers < ActiveRecord::Migration
     end
   end
   # Remove PurpleAirs added in a prior migration
-  City.find_by_name("Louisville").map_markers.where("latitude LIKE ? AND longitude LIKE ?", 38.2989, -85.6471).delete
+  City.find_by_name("Louisville").map_markers.where("latitude LIKE ? AND longitude LIKE ?", 38.2989, -85.6471).destroy_all
 end
