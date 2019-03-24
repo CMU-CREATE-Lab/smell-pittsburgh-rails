@@ -566,14 +566,20 @@ function paintPollutionSensor(site, time, interp, pollutionType) {
 
              color = interpolate(interp, extremeColor, extremeHighColor, (pollution-highRange)/(extremeRange-highRange))
           } 
-          styleColor = 'rgb(' + color[0] + ',' + color[1] + "," +  color[2] + ', 0.75)'
+          styleColor = 'rgb(' + color[0] + ',' + color[1] + "," +  color[2] + ',1)'
 
     //      console.log(context)
 
           context.style = styleColor;
           context.fillStyle = styleColor
+          context.strokeStyle = "white";
+          context.lineWidth = "0.0015";
+         
+
           context.beginPath();
-          context.arc(x, y, 0.0035 + 0.02*(Math.sqrt(0.004*pollution)), 0, 2 * Math.PI, false);
+          context.rect(x, y, 0.005, 0.005);
+//          context.arc(x, y, 0.0035, 0, 2 * Math.PI, false);
+          context.stroke();
           context.fill();
       }
 
