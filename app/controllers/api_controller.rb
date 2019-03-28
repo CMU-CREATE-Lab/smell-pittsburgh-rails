@@ -738,7 +738,7 @@ class ApiController < ApplicationController
     if group_by.blank? or format_as == "csv"
       results = results.flatten.sort_by{|u| u["observed_at"]}
       # format as json
-      results = results.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :smell_description, :observed_at, :zip_code_id])
+      results = results.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :smell_description, :additional_comments, :observed_at, :zip_code_id])
       # plus zipcode
       results.each do |json|
         json["zipcode"] = id_zip_hash[json["zip_code_id"]]
@@ -779,9 +779,9 @@ class ApiController < ApplicationController
     if format_as == "csv"
       csv_rows = []
 
-      csv_rows.push ["epoch time","date & time","smell value","zipcode","smell description","symptoms"].to_csv
+      csv_rows.push ["epoch time","date & time","smell value","zipcode","smell description","symptoms","additional comments"].to_csv
       results.each do |value|
-        csv_rows.push [value["observed_at"],Time.zone.at(value["observed_at"]).to_datetime.strftime("%m/%d/%Y %H:%M:%S %Z"),value["smell_value"],value["zipcode"],value["smell_description"],value["feelings_symptoms"]].to_csv
+        csv_rows.push [value["observed_at"],Time.zone.at(value["observed_at"]).to_datetime.strftime("%m/%d/%Y %H:%M:%S %Z"),value["smell_value"],value["zipcode"],value["smell_description"],value["feelings_symptoms"],value["additional_comments"]].to_csv
       end
 
       headers["Content-Type"] = "text/csv; charset=utf-8"
