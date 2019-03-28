@@ -88,6 +88,10 @@ class AqiTracker < ActiveRecord::Base
       {
         "name" => "Philadelphia",
         "zipcode" => "19104"
+      },
+      {
+        "name" => "Louisville",
+        "zipcode" => "40202"
       }
     ]
   end
@@ -101,7 +105,7 @@ class AqiTracker < ActiveRecord::Base
 	end
 	return Rails.cache.read("current_aqi_#{zipcode}")[0]
   end
-  
+
   #Get the most recent AQI stored for a specific zipcode
   def self.get_current_aqi_zip(zip)
 	if Rails.cache.read("current_aqi_"+zip).blank?
@@ -153,7 +157,7 @@ class AqiTracker < ActiveRecord::Base
     cities[1..-1].each do |city|
       result.push(city) if category_for_aqi(get_current_aqi(city))["index"] < pgh_category
     end
-    
+
     return result
   end
 
