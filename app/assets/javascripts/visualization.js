@@ -932,7 +932,9 @@ function drawHome(data) {
     var d = data[i];
     $home_select.append($('<option value="' + d["name"] + '" data-id="' + d["id"] + '"data-lat="' + d["lat"] + '" data-lng="' + d["lng"] + '" data-state_code="' + d["state_code"] + '" data-zoom="' + d["zoom"] + '">' + d["name"] + '</option>'));
   }
-  $home_select.append($('<option value="' + user_home + '">' + user_home + '</option>'));
+  if (app_id == app_id_smellmycity) {
+    $home_select.append($('<option value="' + user_home + '">' + user_home + '</option>'));
+  }
   $home_select.append($('<option value="' + all_data_home + '">' + all_data_home + '</option>'));
 }
 
