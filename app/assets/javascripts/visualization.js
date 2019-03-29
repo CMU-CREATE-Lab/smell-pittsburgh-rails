@@ -470,6 +470,7 @@ function initHomeBtn() {
       $home_dialog.dialog("close");
       var $selected = $home_select.find(":selected");
       var selected_home = $selected.val();
+      user_city_name = null;
       if (selected_home != desired_home) {
         if (selected_home == all_data_home) {
           // User wants to see all data
@@ -1332,8 +1333,8 @@ function getSensorType(info) {
 
 function showOrHideAQI(is_current_day) {
   // Show current city AQI if on current day and user is in a participating city
-  if (is_current_day && at_city) {
-    $.getJSON(aqi_root_url + at_city["name"], function (response) {
+  if (is_current_day && user_city_name) {
+    $.getJSON(aqi_root_url + user_city_name, function (response) {
       if (response && response != "null") {
         $(".aqi-td").text(response);
         $(".aqi-tr").show();
