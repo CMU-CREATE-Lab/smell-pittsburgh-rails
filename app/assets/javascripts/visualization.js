@@ -471,6 +471,7 @@ function initHomeBtn() {
       var $selected = $home_select.find(":selected");
       var selected_home = $selected.val();
       user_city_name = null;
+      $(".aqi-tr").hide();
       if (selected_home != desired_home) {
         if (selected_home == all_data_home) {
           // User wants to see all data
