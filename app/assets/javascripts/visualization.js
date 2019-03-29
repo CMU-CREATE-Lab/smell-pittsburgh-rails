@@ -1336,6 +1336,7 @@ function showOrHideAQI(is_current_day) {
   if (is_current_day && user_city_name) {
     $.getJSON(aqi_root_url + user_city_name, function (response) {
       if (response && response != "null") {
+        $(".aqi-city").text(user_city_name);
         $(".aqi-td").text(response);
         $(".aqi-tr").show();
       }
