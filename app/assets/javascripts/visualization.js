@@ -1331,10 +1331,10 @@ function getSensorType(info) {
 }
 
 function showOrHideAQI(is_current_day) {
-  // Show current Pittsburgh AQI if on current day and user is in Pittsburgh
-  if (is_current_day && app_id == app_id_smellpgh) {
-    $.getJSON(aqi_root_url + "Pittsburgh", function (response) {
-      if (response) {
+  // Show current city AQI if on current day and user is in a participating city
+  if (is_current_day && at_city) {
+    $.getJSON(aqi_root_url + at_city["name"], function (response) {
+      if (response && response != "null") {
         $(".aqi-td").text(response);
         $(".aqi-tr").show();
       }
