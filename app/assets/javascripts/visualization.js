@@ -20,6 +20,9 @@ var user_city_ids;
 var user_city_latlng;
 var user_city_zoom_mobile;
 var user_city_name;
+
+at_city = jQuery.isEmptyObject(at_city) ? null : at_city;
+
 if (at_city) {
   user_city_ids = [at_city["id"]];
   user_city_latlng = {
