@@ -14,6 +14,8 @@ var curDate2 = "2018-10-01";
 
 var siteData;
 var pm25Data;
+
+var so2_icon = []
 //var timeSlider;
 
 var timeOffset;
@@ -38,10 +40,10 @@ var pollutionColors = {
 
 var pollutionRanges = {
       "SO2": {
-          "low": 20,
-          "medium": 70,
-          "high": 90,
-          "extreme":100
+          "low": 5,
+          "medium": 15,
+          "high": 25,
+          "extreme":50
       },
       "PM25":{
           "low": 12.5,
@@ -486,17 +488,29 @@ function setup() {
       // });
 
 
-      
-      $.get(dataUrl2 + curDate2 + ".json", function(data2){
-          pm25Data = data2;
-          for(var i = 0; i < data2.length; i++){
-            paintPollutionSensor(pm25Data[i], 2, true,  "PM25")
-          }
-      
-
-          
-      });
+    
+    
+    
+       var path = "/img/";
+       var so2_icon_file = ["voc_0.png", "voc_1.png", "voc_2.png", "voc_3.png", "voc_4.png", "voc_5.png"];
+       
+       
+    
+       for(var i = 0; i < so2_icon_file.length; i++){
+           so2_icon.push(new Image(64, 64));
+           so2_icon[i].src = path + so2_icon_file[i];
+        
+           so2_icon[i].onload = img_read(i);
+           
+       }
+    
+  
     }
+
+function img_read(ind){
+//    console.log(so2_icon[ind])
+    so2_icon[ind].ready = true 
+}
 
 function interpolate(interp, color1, color2, factor) {
       if(!interp){
@@ -510,23 +524,35 @@ function interpolate(interp, color1, color2, factor) {
       return result;
     };
 
+function latLng2Point(latLng, map) {
+  var topRight = map.getProjection().fromLatLngToPoint(map.getBounds().getNorthEast());
+  var bottomLeft = map.getProjection().fromLatLngToPoint(map.getBounds().getSouthWest());
+  var scale = Math.pow(2, map.getZoom());
+  var worldPoint = map.getProjection().fromLatLngToPoint(latLng);
+  return new google.maps.Point((worldPoint.x - bottomLeft.x) * scale, (worldPoint.y - topRight.y) * scale);
+}
 
 function paintPollutionSensor(site, time, interp, pollutionType) {
       if (!mapProjection) return;
 
+//      var topRight = map.getProjection().fromLatLngToPoint(map.getBounds().getNorthEast());
+//      var bottomLeft = map.getProjection().fromLatLngToPoint(map.getBounds().getSouthWest());
       var rectLatLng = new google.maps.LatLng(site[0], site[1]);
-      var worldPoint = mapProjection.fromLatLngToPoint(rectLatLng);
-      var x = worldPoint.x;
-      var y = worldPoint.y;
-
+      var latLng = [site[0], site[1]]
+//      var worldPoint = mapProjection.fromLatLngToPoint(rectLatLng);
+      var points = latLng2Point(rectLatLng, map)
+    
+      var x = points.x//(worldPoint.x - bottomLeft.x)*Math.pow(2, map.zoom);
+      var y = points.y//(worldPoint.y - topRight.y)*Math.pow(2, map.zoom);
+    //console.log(x, y);
       var bar_width = 5;
       var bar_scale = 0.5;
       context.font = '4px Arial';
 
 
       // How many pixels per mile?
-      var offset1mile = mapProjection.fromLatLngToPoint(new google.maps.LatLng(site[0] + 0.014457067, site[1]));
-      var unitsPerMile = 1000 * (worldPoint.y - offset1mile.y);
+//      var offset1mile = mapProjection.fromLatLngToPoint(new google.maps.LatLng(site[0] + 0.014457067, site[1]));
+//      var unitsPerMile = 1000 * (worldPoint.y - offset1mile.y);
 
       // var y_scale = site.flip_y ? -1 : 1;
 
@@ -549,41 +575,38 @@ function paintPollutionSensor(site, time, interp, pollutionType) {
       if(pollution != null){
           if(site[0] == 40.29 && site[1] == -79.89){
              //console.log(pollution, time+2) 
-          }
-          
+          }    
           if(pollution < lowRange){
-
-             color = interpolate(interp, lowColor, midColor, (pollution)/lowRange)
+             color = 1
           } else if(pollution < midRange){
-
-             color = interpolate(interp, midColor,highColor,(pollution-lowRange)/(midRange-lowRange))
-
+             color = 2
           } else if(pollution < highRange) {
-
-             color = interpolate(interp, highColor,extremeColor,(pollution-midRange)/(highRange-midRange))
-
-          } else{
-
-             color = interpolate(interp, extremeColor, extremeHighColor, (pollution-highRange)/(extremeRange-highRange))
-          } 
-          styleColor = 'rgb(' + color[0] + ',' + color[1] + "," +  color[2] + ',1)'
-
-    //      console.log(context)
-
-          context.style = styleColor;
-          context.fillStyle = styleColor
-          context.strokeStyle = "white";
-          context.lineWidth = "0.0015";
-         
+             color = 3
+          } else if(pollution < extremeRange) {
+             color = 4    
+          }
+          else {
+             color = 5
+          }
 
           context.beginPath();
-          context.rect(x, y, 0.005, 0.005);
-//          context.arc(x, y, 0.0035, 0, 2 * Math.PI, false);
-          context.stroke();
-          context.fill();
+          //context.rect(x, y, 0.005, 0.005);
+//          context.getScale()
+//          console.log(context.currentTransform);
+//          context.arc(x, y, 20, 0, 2 * Math.PI, false);
+//          console.log(x,y, 50/Math.pow(2, map.zoom));
+          
+          
+          if(so2_icon[color].ready){
+//              console.log(so2_icon[color])
+              context.drawImage(so2_icon[color], 0, 0,  64, 64, x, y, 24, 24)
+          }
+          
+          
+      
       }
-
-    }
+        
+}
 
 function resizeCanvasLayer() {
   canvasLayer.resize_();
@@ -598,6 +621,7 @@ function updatePlumeLayer() {
         context.clearRect(0, 0, canvasWidth, canvasHeight);
 
         mapProjection = map.getProjection();
+        
 
         // we like our rectangles hideous
         context.fillStyle = 'rgba(230, 77, 26, 1)';
@@ -635,31 +659,22 @@ function updatePlumeLayer() {
 
         var interval = 900000
         var offset = (((elapsed_milisec / interval))) 
-//        console.log("Offset")
-//        console.log(offset)
-//        console.log(Math.floor(offset))
+
         if(offset >= 95){
             offset = 95
         }
-//
+
         var date_now = new Date(elapsed_milisec)
-//        cur_time =
-        //console.log(date_now)
+
         for(var i = 0; i < pm25Data.length; i++){
               
-              paintPollutionSensor(pm25Data[i], parseInt(offset), true,  "PM25")
+              paintPollutionSensor(pm25Data[i], parseInt(offset), true,  "SO2")
         }
         
-        // console.log(curDateTrial.toLocaleString("America/New_York"))
-        // if(animatorCanvas &&  pm25Data && context){
-        //   repaintCanvasLayer()
-        //   // animatorCanvas.startAnimation(timeSlider, siteData, pm25Data, context);
-        // }
-        
+   
         /* We need to scale and translate the map for current view.
          * see https://developers.google.com/maps/documentation/javascript/maptypes#MapCoordinates
          */
-
 
         /**
          * Clear transformation from last update by setting to identity matrix.
@@ -672,32 +687,15 @@ function updatePlumeLayer() {
         // If canvasLayer is scaled (with resolutionScale), we need to scale by
         // the same amount to account for the larger canvas.
         var scale = Math.pow(2, map.zoom) * resolutionScale;
-        context.scale(scale, scale);
+//        context.scale(scale, scale);
 
         /* If the map was not translated, the topLeft corner would be 0,0 in
          * world coordinates. Our translation is just the vector from the
          * world coordinate of the topLeft corder to 0,0.
          */
-        var offset = mapProjection.fromLatLngToPoint(canvasLayer.getTopLeft());
-        context.translate(-offset.x , -offset.y ); 
+//        var offset = mapProjection.fromLatLngToPoint(canvasLayer.getTopLeft());
+//        context.translate(-offset.x , -offset.y ); 
 
-        // var epochTime = timeSlider.getCurrentTime()
-
-        // for(var i = 0; i < pm25Data.length; i++){
-        //               var curDate = new Date((epochTime));
-
-        //               var hours = parseInt(curDate.getHours());
-        //               var offset = 0;//((curDate.getMinutes())/5);
-        //               if(curDate.getMinutes() == 30){
-        //                   offset = 1
-
-        //               }
-        //               var timeIndex = ((hours) * 2)+offset;
-                
-        //               paintPollutionSensor(pm25Data[i], timeIndex, true,  "PM25");
-
-
-        // }
 
         // project rectLatLng to world coordinates and draw
         var worldPoint = mapProjection.fromLatLngToPoint(latlong);
