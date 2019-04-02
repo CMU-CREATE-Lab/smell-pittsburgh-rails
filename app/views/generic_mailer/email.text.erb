@@ -14,11 +14,11 @@ I would describe this smell/source as: <%= @smell_report.smell_description %>
 <% end %>
 <% unless @smell_report.feelings_symptoms.blank? %>
 
-I noticed the following symptoms when I smelled the odor: <%= @smell_report.feelings_symptoms %>
+At the time, I experienced the following symptoms: <%= @smell_report.feelings_symptoms %>
 <% end %>
 <% unless @reply_to.blank? and @phone_number.blank? %>
 
-Please let me know if there were particular causes of this smell and what health impacts could result by contacting me at:
+Please let me know if there were particular causes of this smell by contacting me at:
 <% unless @reply_to.blank? %>
 email: <%= @reply_to %>
 <% end %>
