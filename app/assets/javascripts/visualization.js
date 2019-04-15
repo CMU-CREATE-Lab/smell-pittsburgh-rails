@@ -612,7 +612,11 @@ function resizeCanvasLayer() {
 }
 
 function argMax(array) {
-  return array.map((x, i) => [x, i]).reduce((r, a) => (a[0] > r[0] ? a : r))[1];
+  return array.map(function (x, i) {
+    return [x, i];
+  }).reduce(function (r, a) {
+    return a[0] > r[0] ? a : r;
+  })[1];
 }
 
 function updatePlumeLayer() {
