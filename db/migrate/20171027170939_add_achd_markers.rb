@@ -2,7 +2,7 @@ class AddAchdMarkers < ActiveRecord::Migration
   def up
     markers = [
       [
-        {"name":"County AQ Monitor - Liberty","sensors":{"wind_speed":{"sources":[{"feed":28,"channel":"SONICWS_MPH"}]},"wind_direction":{"sources":[{feed:28,"channel":"SONICWD_DEG"}]},"PM25":{"sources":[{"feed":29,"channel":"PM25_UG_M3"}]}}},
+        {"name":"County AQ Monitor - Liberty","sensors":{"wind_speed":{"sources":[{"feed":28,"channel":"SONICWS_MPH"}]},"wind_direction":{"sources":[{feed:28,"channel":"SONICWD_DEG"}]},"PM25":{"sources":[{"feed":29,"channel":"PM25_UG_M3"},{"feed":29,"channel":"PM25T_UG_M3"}]}}},
         40.32377,
         -79.86806
       ],
