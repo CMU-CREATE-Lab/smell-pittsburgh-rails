@@ -584,9 +584,7 @@ function paintPollutionSensor(site, time, interp, pollutionType) {
       var extremeHighColor = pollutionColors[pollutionType]["extremeHigh"]
 
       if(pollution != null){
-          if(site[0] == 40.29 && site[1] == -79.89){
-             //console.log(pollution, time+2) 
-          }    
+        
           if(pollution < lowRange){
              color = 1
           } else if(pollution < midRange){
@@ -683,9 +681,6 @@ function updatePlumeLayer() {
                   if(is_current_day){        
                       offset = (((current_time_elapsed / interval)))
                   }
-
-                  
-                 
               }
               paintPollutionSensor(pm25Data[i], parseInt(offset), true,  "SO2")
         }
