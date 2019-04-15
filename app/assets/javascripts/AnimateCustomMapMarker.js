@@ -38,7 +38,7 @@
     var dwell_sec = 2;
     var dwell_increments = dwell_sec * frames_per_sec * increments_per_frame;
 
-    var elapsed_milisec = 0;
+    var elapsed_milisec = -1;
 
     // An array of smell markers created with CustomMapMarker.js
     var smell_markers;
@@ -205,7 +205,7 @@
           sensor_idx_array[i] = 0;
         }
         sensor_idx_array_on_map = [];
-        elapsed_milisec = 0;
+        elapsed_milisec = -1;
         label_idx = 0;
       };
       resetAnimation();
@@ -315,13 +315,14 @@
 
     this.stopAnimation = function () {
       if (!isPlaying) return;
+      elapsed_milisec = -1;
       isPlaying = false;
       isDwelling = false;
       isPaused = false;
       if (animate_interval != null) {
         clearInterval(animate_interval);
         animate_interval = null;
-        elapsed_milisec = 0;
+        elapsed_milisec = -1;
       }
       hideMarkerArray(smell_markers, map);
       hideMarkerTable(sensor_marker_table, map);

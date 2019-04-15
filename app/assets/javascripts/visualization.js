@@ -465,50 +465,21 @@ function initGoogleMap() {
 
 function setup() {
       if (typeof map === "undefined") return;
-      
-      //#timeSlider = new TimeSlider({
-      //startTime: new Date(2018,10, 1, 0, 0, 0, 0).getTime(),
-      //endTime: new Date(2018, 10, 1, 23, 59, 59, 0).getTime(),
-      //increment: 5*60*1000,
-      //span: 0*60*1000,
-      //formatCurrentTime: function(date) {
-      //  return String(date.getFullYear()) + "/" + String(date.getMonth()) + "/" + String(date.getDate())
-      //    + " " + String(date.getHours()) + ":" + String(date.getMinutes()) + ":" +
-      //  String(date.getSeconds());
-      //},
-      //animationRate: {
-      //    fast: 50,
-      //    medium: 100,
-      //    slow: 150
-      //  }
-      //});
-
-      // $.get(dataUrl + curDate + ".json", function(data3){
-      //     siteData = data3;
-      // });
-
-
-    
-    
     
        var path = "/img/";
-       var so2_icon_file = ["voc_0.png", "voc_1.png", "voc_2.png", "voc_3.png", "voc_4.png", "voc_5.png"];
+       var so2_icon_file = ["voc_0.png", "so2_1.png", "so2_2.png", "so2_3.png", "so2_4.png", "so2_5.png"];
        
        
-    
        for(var i = 0; i < so2_icon_file.length; i++){
-           so2_icon.push(new Image(64, 64));
+           so2_icon.push(new Image(24, 24));
            so2_icon[i].src = path + so2_icon_file[i];
-        
            so2_icon[i].onload = img_read(i);
            
        }
     
-  
     }
 
 function img_read(ind){
-//    console.log(so2_icon[ind])
     so2_icon[ind].ready = true 
 }
 
@@ -535,26 +506,16 @@ function latLng2Point(latLng, map) {
 function paintPollutionSensor(site, time, interp, pollutionType) {
       if (!mapProjection) return;
 
-//      var topRight = map.getProjection().fromLatLngToPoint(map.getBounds().getNorthEast());
-//      var bottomLeft = map.getProjection().fromLatLngToPoint(map.getBounds().getSouthWest());
       var rectLatLng = new google.maps.LatLng(site[0], site[1]);
       var latLng = [site[0], site[1]]
-//      var worldPoint = mapProjection.fromLatLngToPoint(rectLatLng);
       var points = latLng2Point(rectLatLng, map)
     
-      var x = points.x//(worldPoint.x - bottomLeft.x)*Math.pow(2, map.zoom);
-      var y = points.y//(worldPoint.y - topRight.y)*Math.pow(2, map.zoom);
-    //console.log(x, y);
+      var x = points.x
+      var y = points.y
+
       var bar_width = 5;
       var bar_scale = 0.5;
       context.font = '4px Arial';
-
-
-      // How many pixels per mile?
-//      var offset1mile = mapProjection.fromLatLngToPoint(new google.maps.LatLng(site[0] + 0.014457067, site[1]));
-//      var unitsPerMile = 1000 * (worldPoint.y - offset1mile.y);
-
-      // var y_scale = site.flip_y ? -1 : 1;
 
       var color;
       var pollution = site[time+2];
@@ -590,19 +551,9 @@ function paintPollutionSensor(site, time, interp, pollutionType) {
           }
 
           context.beginPath();
-          //context.rect(x, y, 0.005, 0.005);
-//          context.getScale()
-//          console.log(context.currentTransform);
-//          context.arc(x, y, 20, 0, 2 * Math.PI, false);
-//          console.log(x,y, 50/Math.pow(2, map.zoom));
-          
-          
           if(so2_icon[color].ready){
-//              console.log(so2_icon[color])
-              context.drawImage(so2_icon[color], 0, 0,  64, 64, x, y, 24, 24)
-          }
-          
-          
+              context.drawImage(so2_icon[color], x, y, 24, 24)
+          }  
       
       }
         
@@ -610,6 +561,10 @@ function paintPollutionSensor(site, time, interp, pollutionType) {
 
 function resizeCanvasLayer() {
   canvasLayer.resize_();
+}
+
+function argMax(array) {
+  return array.map((x, i) => [x, i]).reduce((r, a) => (a[0] > r[0] ? a : r))[1];
 }
 
 function updatePlumeLayer() {
@@ -645,7 +600,6 @@ function updatePlumeLayer() {
         var dateString = String(curDateTrial.getFullYear()) + "-" + monthString  + "-" + dayString
         
         if(curDate2 != dateString){
-          //console.log(dateString)
           $.get(dataUrl2 + dateString + ".json", function(data2){
             pm25Data = data2;
             
@@ -658,16 +612,31 @@ function updatePlumeLayer() {
 
 
         var interval = 900000
-        var offset = (((elapsed_milisec / interval))) 
+        var offset = (((elapsed_milisec / interval)))
+        
+        
 
         if(offset >= 95){
             offset = 95
         }
 
-        var date_now = new Date(elapsed_milisec)
+        var selected_date = (new Date(current_epochtime_milisec)).toDateString();
+        var current_date = (new Date()).toDateString();
+        var is_current_day = selected_date === current_date;
+    
+        var current_time_elapsed = (new Date()).getTime() - (new Date(current_epochtime_milisec)).getTime()
+     
 
         for(var i = 0; i < pm25Data.length; i++){
-              
+              if(elapsed_milisec == -1){
+                  offset = argMax(pm25Data[i].slice(2))
+                  if(is_current_day){        
+                      offset = (((current_time_elapsed / interval)))
+                  }
+
+                  
+                 
+              }
               paintPollutionSensor(pm25Data[i], parseInt(offset), true,  "SO2")
         }
         

@@ -228,24 +228,24 @@
   background-image: url("/img/PM25_5_legend.png");
 }
 
-.voc-color-1 {
-  background-image: url("/img/voc_1.png");
+.so2-color-1 {
+  background-image: url("/img/so2_1.png");
 }
 
-.voc-color-2 {
-  background-image: url("/img/voc_2.png");
+.so2-color-2 {
+  background-image: url("/img/so2_2.png");
 }
 
-.voc-color-3 {
-  background-image: url("/img/voc_3.png");
+.so2-color-3 {
+  background-image: url("/img/so2_3.png");
 }
 
-.voc-color-4 {
-  background-image: url("/img/voc_4.png");
+.so2-color-4 {
+  background-image: url("/img/so2_4.png");
 }
 
-.voc-color-5 {
-  background-image: url("/img/voc_5.png");
+.so2-color-5 {
+  background-image: url("/img/so2_5.png");
 }
 
 .wind-arrow {
@@ -253,10 +253,12 @@
 }
 
 /* Testing features */
+/*
 
 .voc-legend-row {
   display: none;
 }
+*/
 
 .animation-infobox {
   box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.4);
