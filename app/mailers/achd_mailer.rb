@@ -12,7 +12,7 @@ class AchdMailer < ApplicationMailer
     @street_address = street_address
     @zipcode = zipcode
     @phone_number = achd_form.phone
-    @name = achd_form.name.blank? ? "Smell PGH App User" : achd_form.name
+    @name = achd_form.name.blank? ? "Smell PGH App User (id: #{@smell_report.anonymized_user_hash})" : achd_form.name
     @address = achd_form.address
 
     mail(:subject => "Smell Report")

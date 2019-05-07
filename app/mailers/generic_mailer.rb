@@ -13,7 +13,7 @@ class GenericMailer < ApplicationMailer
     @phone_number = form.phone
     @reply_to = form.email
     @agency_name = agency_name
-    @name = form.name.blank? ? client.name + " User" : form.name
+    @name = form.name.blank? ? client.name + " User (id: #{@smell_report.anonymized_user_hash})" : form.name
     @address = form.address
     @client = client
     mail(:to => to_address,:subject => "Smell Report")
