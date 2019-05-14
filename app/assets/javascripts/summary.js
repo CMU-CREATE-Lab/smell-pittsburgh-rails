@@ -81,7 +81,7 @@ function genSmellURL(from_time) {
 function genSmellURLv2(from_time) {
   var timezone_offset = new Date().getTimezoneOffset();
   var api_paras = "aggregate=day";
-  api_paras += "&smell_values=" + "3,4,5";
+  api_paras += "&smell_value=" + "3,4,5";
   api_paras += "&timezone_offset=" + timezone_offset;
   api_paras += "&start_time=" + from_time;
   var api_url = "/api/v2/smell_reports?";

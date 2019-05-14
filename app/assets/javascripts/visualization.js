@@ -721,7 +721,7 @@ function loadTimelineData(start_time, end_time, callback) {
     "url": generateURLForSmellReports({
       "group_by": "day",
       "aggregate": "true",
-      "smell_values": "3,4,5",
+      "smell_value": "3,4,5",
       "start_time": parseInt(start_time / 1000).toString(),
       "end_time": parseInt(end_time / 1000).toString()
     }),
