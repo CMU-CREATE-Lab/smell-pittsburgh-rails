@@ -180,7 +180,7 @@ class ApiController < ApplicationController
     max_smell_value = params["max_smell_value"] == nil ? 5 : params["max_smell_value"]
     group_by_zipcode = params["group_by_zipcode"] == "true" ? true : false
     zipcodes = params["zipcodes"]
-    format_as = params["format"] == "csv" ? "csv" : "json"
+    format_as = params["format"] == "csv" ? "csv" : "geojson" ? "geojson" : "json" #lzmunch
     allegheny_county_only = params["allegheny_county_only"] == "true" ? true : false
     prediction_query = params["prediction_query"] == "true" ? true : false
 
@@ -672,8 +672,8 @@ class ApiController < ApplicationController
   # aggregate: {true|false} (default: False)
   # timezone_string: String representing desired timezone to show smell reports in (default: "UTC")
   # zipcodes: List of zipcodes
-  # format:  {json|csv} (default: json)
-  #   - What format the output should be in, either JSON or CSV.
+  # format:  {json|csv|geojson} (default: json)
+  #   - What format the output should be in, JSON, GEOJSON, or CSV.
   #
   def smell_reports_index_api2
     start_time = params["start_time"]
@@ -689,7 +689,8 @@ class ApiController < ApplicationController
     aggregate = (params["aggregate"] == "true")
     timezone_string = params["timezone_string"].blank? ? "UTC" : CGI::unescape(params["timezone_string"])
     zipcodes = params["zipcodes"].blank? ? [] : params["zipcodes"].split(",")
-    format_as = ["csv","json"].index(params["format"]).nil? ? "json" : params["format"]
+    #lzmunch
+    format_as = ["csv","json","geojson"].index(params["format"]).nil? ? "json" : params["format"]
 
     Time.zone = timezone_string
 
@@ -787,6 +788,19 @@ class ApiController < ApplicationController
       headers["Content-Type"] = "text/csv; charset=utf-8"
       headers["Content-Disposition"] = "attachment; filename=\"smell_reports.csv\""
       render :plain => csv_rows.join("")
+    elsif format_as == "geojson"
+      reports = {"type" => "FeatureCollection","features" => []}
+      results.each do |value|
+        #TODO check order of coord
+        coords = [value["longitude"],value["latitude"]]
+        geom = {"type"=>"Point","coordinates"=>coords}
+        props = {"epoch time"=>value["observed_at"],"smell value"=>value["smell_value"]}
+        reports["features"].push({"type"=>"feature","geometry"=>geom, "properties"=>props})
+      end
+      headers["Content-Type"] = "text/json; charset=utf-8"
+      headers["Content-Disposition"] = "attachment; filename=\"smell_reports.geojson\""
+      #render :plain => reports
+      render :json => reports.to_json
     else
       render :json => results.to_json
     end
