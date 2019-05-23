@@ -180,7 +180,7 @@ class ApiController < ApplicationController
     max_smell_value = params["max_smell_value"] == nil ? 5 : params["max_smell_value"]
     group_by_zipcode = params["group_by_zipcode"] == "true" ? true : false
     zipcodes = params["zipcodes"]
-    format_as = params["format"] == "csv" ? "csv" : "geojson" ? "geojson" : "json" #lzmunch
+    format_as = params["format"] == "csv" ? "csv" : "geojson" ? "geojson" : "json"
     allegheny_county_only = params["allegheny_county_only"] == "true" ? true : false
     prediction_query = params["prediction_query"] == "true" ? true : false
 
@@ -689,7 +689,6 @@ class ApiController < ApplicationController
     aggregate = (params["aggregate"] == "true")
     timezone_string = params["timezone_string"].blank? ? "UTC" : CGI::unescape(params["timezone_string"])
     zipcodes = params["zipcodes"].blank? ? [] : params["zipcodes"].split(",")
-    #lzmunch
     format_as = ["csv","json","geojson"].index(params["format"]).nil? ? "json" : params["format"]
 
     Time.zone = timezone_string
@@ -788,15 +787,22 @@ class ApiController < ApplicationController
       headers["Content-Type"] = "text/csv; charset=utf-8"
       headers["Content-Disposition"] = "attachment; filename=\"smell_reports.csv\""
       render :plain => csv_rows.join("")
+
     elsif format_as == "geojson"
       reports = {"type" => "FeatureCollection","features" => []}
+
       results.each do |value|
-        #TODO check order of coord
+        #coords = [value["latitude"],value["longitude"]]
         coords = [value["longitude"],value["latitude"]]
         geom = {"type"=>"Point","coordinates"=>coords}
-        props = {"epoch time"=>value["observed_at"],"smell value"=>value["smell_value"]}
-        reports["features"].push({"type"=>"feature","geometry"=>geom, "properties"=>props})
+        dt = Time.zone.at(value["observed_at"]).to_datetime
+        props = {"start_epoch_time"=>value["observed_at"],
+                 "end_epoch_time"=>dt.change(hour:23,min:59,sec:59).to_i,
+                 "date_time_string"=>dt.strftime("%m/%d/%Y %H:%M:%S %Z"),
+                 "smell value"=>value["smell_value"]}
+        reports["features"].push({"type"=>"Feature","geometry"=>geom, "properties"=>props})
       end
+
       headers["Content-Type"] = "text/json; charset=utf-8"
       headers["Content-Disposition"] = "attachment; filename=\"smell_reports.geojson\""
       #render :plain => reports
