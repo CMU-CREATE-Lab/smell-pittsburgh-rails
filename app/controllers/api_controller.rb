@@ -796,10 +796,31 @@ class ApiController < ApplicationController
         coords = [value["longitude"],value["latitude"]]
         geom = {"type"=>"Point","coordinates"=>coords}
         dt = Time.zone.at(value["observed_at"]).to_datetime
-        props = {"start_epoch_time"=>value["observed_at"],
-                 "end_epoch_time"=>dt.change(hour:23,min:59,sec:59).to_i,
-                 "date_time_string"=>dt.strftime("%m/%d/%Y %H:%M:%S %Z"),
-                 "smell value"=>value["smell_value"]}
+        smellVal = value["smell_value"]
+
+        case smellVal
+        when 1
+          color = 4700498.0
+        when 2
+          color = 1699059.0
+        when 3
+          color = 2129653.0
+        when 4
+          color = 2367469.0
+        when 5
+          color = 5184409.0
+        else
+          color = 0.0
+        end
+
+        displayDuration = 7200
+        props = {"PackedColor"=>color,
+                 "Size"=>15,
+                 "StartEpochTime"=>value["observed_at"],
+                 "EndEpochTime"=>(value["observed_at"] + displayDuration),
+                 "DateTimeString"=>dt.strftime("%m/%d/%Y %H:%M:%S %Z"),
+                 "GlyphIndex"=>(smellVal - 1),
+                 "SmellValue"=>smellVal}
         reports["features"].push({"type"=>"Feature","geometry"=>geom, "properties"=>props})
       end
 
