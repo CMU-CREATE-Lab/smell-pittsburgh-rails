@@ -45,15 +45,17 @@ var user_home = "My Location";
 var user_latlng_bbox; // for requesting data within a latlng bounding box
 var user_latlng_polygon; // for drawing the polygon on the Google map for "My Location"
 
-// Desired location for Pittsburgh
+// Desired location for Pittsburgh (for smellpgh)
+// TODO: Pull from db
 var pittsburgh_latlng = {
-  "lat": 40.45,
-  "lng": -79.93
+  "lat": 40.394,
+  "lng": -79.914
 };
 var pittsburgh_zoom_mobile = 11;
 var pittsburgh_home = "Pittsburgh";
 
 // Desired location for Bay Area
+// TODO: Move to db
 var ba_latlng = {
   "lat": 38.004472,
   "lng": -122.260693
@@ -62,6 +64,7 @@ var ba_zoom_mobile = 11;
 var ba_home = "Bay Area";
 
 // Desired location for the US
+// TODO: Move to db
 var all_data_latlng = {
   "lat": 40.610271,
   "lng": -101.413473
