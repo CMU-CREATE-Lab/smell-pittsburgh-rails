@@ -6,4 +6,5 @@ class City < ActiveRecord::Base
   validates :latitude, :longitude, :zoom_level, :name, :presence => true
   validates :name, :uniqueness => true
   serialize :app_metadata
+  attr_accessor :state_code
 end

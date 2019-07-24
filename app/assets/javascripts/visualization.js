@@ -17,6 +17,7 @@ var mode; // "user", "all", "city", see setMode() function for details
 
 // Current participating city (based on current user location)
 var user_city_ids;
+var user_city_state_codes;
 var user_city_latlng;
 var user_city_zoom_mobile;
 var user_city_name;
@@ -31,6 +32,7 @@ if (at_city) {
   };
   user_city_zoom_mobile = at_city.zoom_level;
   user_city_name = at_city["name"];
+  user_city_state_codes = [at_city["state_codes"]];
 }
 
 // Current user location
@@ -305,11 +307,15 @@ function clearPolygonMaskOnMap(polygon) {
   polygon.setMap(null);
 }
 
-function setUserCityLatLngZoomHomeId(latlng, zoom, home, ids) {
-  user_city_latlng = latlng;
-  user_city_zoom_mobile = zoom;
-  user_city_name = home;
-  user_city_ids = ids;
+function setUserCityLatLngZoomHomeId($selected) {
+  user_city_latlng = {
+    "lat": $selected.data("lat"),
+    "lng": $selected.data("lng")
+  };
+  user_city_zoom_mobile = $selected.data("zoom");
+  user_city_name = $selected.val();
+  user_city_ids = [$selected.data("id")];
+  user_city_state_codes = [$selected.data("state_code")];
 }
 
 function setDesiredLatLngZoomHome(latlng, zoom, home) {
@@ -487,13 +493,7 @@ function initHomeBtn() {
           setMode("user");
         } else {
           // User wants to see the data of a participating city
-          var selected_city_latlng = {
-            "lat": $selected.data("lat"),
-            "lng": $selected.data("lng")
-          };
-          var selected_city_mobile_zoom = $selected.data("zoom");
-          var selected_city_ids = [$selected.data("id")];
-          setUserCityLatLngZoomHomeId(selected_city_latlng, selected_city_mobile_zoom, selected_home, selected_city_ids);
+          setUserCityLatLngZoomHomeId($selected);
           setMode("city");
         }
         loadDataAndSetUI();
@@ -938,7 +938,7 @@ function drawHome(data) {
   $home_select.append($("<option selected>Select...</option>"));
   for (var i = 0; i < data.length; i++) {
     var d = data[i];
-    $home_select.append($('<option value="' + d["name"] + '" data-id="' + d["id"] + '"data-lat="' + d["lat"] + '" data-lng="' + d["lng"] + '" data-state_code="' + d["state_code"] + '" data-zoom="' + d["zoom"] + '">' + d["name"] + '</option>'));
+    $home_select.append($('<option value="' + d["name"] + '" data-id="' + d["id"] + '"data-lat="' + d["lat"] + '" data-lng="' + d["lng"] + '" data-state_code="' + d["state_code"] + '" data-zoom="' + d["zoom"] + '">' + d["name"] + ", " + d["state_code"] + '</option>'));
   }
   if (app_id == app_id_smellmycity) {
     $home_select.append($('<option value="' + user_home + '">' + user_home + '</option>'));
@@ -1341,7 +1341,7 @@ function getSensorType(info) {
 function showOrHideAQI(is_current_day) {
   // Show current city AQI if on current day and user is in a participating city
   if (is_current_day && user_city_name) {
-    $.getJSON(aqi_root_url + user_city_name, function (response) {
+    $.getJSON(aqi_root_url + user_city_name + "&state_code=" + user_city_state_codes[0], function (response) {
       if (response && response != "null") {
         $(".aqi-city").text(user_city_name);
         $(".aqi-td").text(response);

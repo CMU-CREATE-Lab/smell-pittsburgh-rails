@@ -365,20 +365,19 @@ class ApiController < ApplicationController
   # "city" or "zipcode" : String
   def get_aqi
     @aqi = "null"
-	  if (params["zipcode"])
-      zipcode = params["zipcode"]
-      if(!(Rails.cache.exist?("current_aqi_#{zipcode}") and (((Rails.cache.read("current_aqi_#{zipcode}")[1]).to_i-Time.now.to_i).abs < 60*60)))
-	      AirnowAqi.update_city_aqi({"name"=>"onlyZip","zipcode"=>params["zipcode"]})
+    zipcode = params["zipcode"]
+    unless zipcode
+      AqiTracker.cities.each do |hash|
+        if (hash.has_value?(params["city"]) and hash.has_value?(params["state_code"]))
+          zipcode = hash["zipcode"]
+          break
+        end
       end
-	    val = AqiTracker.get_current_aqi_zip(params["zipcode"])
-  	else
-		  AqiTracker.cities.each do |hash|
-		    if (hash.has_value?(params["city"]))
-			    val = AqiTracker.get_current_aqi(hash)
-			    break
-		    end
-	    end
     end
+    if (!(Rails.cache.exist?("current_aqi_#{zipcode}") and (((Rails.cache.read("current_aqi_#{zipcode}")[1]).to_i-Time.now.to_i).abs < 60*60)))
+      AirnowAqi.update_city_aqi({"name"=>"onlyZip", "zipcode"=>zipcode})
+    end
+    val = AqiTracker.get_current_aqi_zip(zipcode)
     @aqi = val
     render :json => @aqi.to_json
   end

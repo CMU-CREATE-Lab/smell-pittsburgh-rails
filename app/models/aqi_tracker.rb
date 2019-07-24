@@ -39,59 +39,78 @@ class AqiTracker < ActiveRecord::Base
     [
       {
         "name" => "Pittsburgh",
+        "state_code" => "PA",
         "zipcode" => "15213"
       },
       {
         "name" => "New York City",
+        "state_code" => "NY",
         "zipcode" => "11224"
       },
       {
         "name" => "Boston",
+        "state_code" => "MA",
         "zipcode" => "02210"
       },
       {
         "name" => "Cleveland",
+        "state_code" => "OH",
         "zipcode" => "44115"
       },
       {
         "name" => "Chicago",
+        "state_code" => "IL",
         "zipcode" => "60652"
       },
       {
         "name" => "Seattle",
+        "state_code" => "WA",
         "zipcode" => "98195"
       },
       {
         "name" => "San Francisco",
+        "state_code" => "CA",
         "zipcode" => "94117"
       },
       {
         "name" => "Washington DC",
+        "state_code" => "DC",
         "zipcode" => "20001"
       },
       {
         "name" => "Denver",
+        "state_code" => "CO",
         "zipcode" => "80201"
       },
       {
         "name" => "Columbus",
+        "state_code" => "OH",
         "zipcode" => "43085"
       },
       {
         "name" => "Houston",
+        "state_code" => "TX",
         "zipcode" => "77004"
       },
       {
         "name" => "Los Angeles",
+        "state_code" => "CA",
         "zipcode" => "90001"
       },
       {
         "name" => "Philadelphia",
+        "state_code" => "PA",
         "zipcode" => "19104"
       },
       {
         "name" => "Louisville",
+        "state_code" => "KY",
         "zipcode" => "40202"
+      },
+      {
+        "name" => "Portland",
+        "state_code" => "OR",
+        "zipcode" => "97204"
       }
     ]
   end
@@ -99,19 +118,20 @@ class AqiTracker < ActiveRecord::Base
 
   # Get the most recent AQI stored for a specific city
   def self.get_current_aqi(city)
-	zipcode = city["zipcode"]
-	if Rails.cache.read("current_aqi_#{zipcode}").blank?
-		return 0
-	end
-	return Rails.cache.read("current_aqi_#{zipcode}")[0]
+    zipcode = city["zipcode"]
+    if Rails.cache.read("current_aqi_#{zipcode}").blank?
+      return 0
+    end
+    return Rails.cache.read("current_aqi_#{zipcode}")[0]
   end
+
 
   #Get the most recent AQI stored for a specific zipcode
   def self.get_current_aqi_zip(zip)
-	if Rails.cache.read("current_aqi_"+zip).blank?
+    if Rails.cache.read("current_aqi_"+zip).blank?
       return 0
     end
-	return Rails.cache.read("current_aqi_"+zip)[0]
+    return Rails.cache.read("current_aqi_"+zip)[0]
   end
 
 

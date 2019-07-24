@@ -26,7 +26,14 @@ class VisualizationController < ApplicationController
     end
 
     @client_id = client.id
-    @cities = City.all.to_json(:except => [:created_at, :updated_at, :app_metadata, :description]).html_safe
+
+    @cities = City.all
+    # Manually add state code to each city object to be used on the visualization page.
+    # Cities already contain a reference to the state id, but not the literal state code string.
+    @cities.each do |city|
+      city.state_code = State.find_by_id(city.state_id).state_code
+    end
+    @cities = @cities.to_json(:methods => [:state_code], :except => [:created_at, :updated_at, :app_metadata, :description]).html_safe
 
     if @client_id == CLIENT_ID_SMELLPGH or @client_id == CLIENT_ID_SMELLPGHWEBSITE
       @zoom = pgh.zoom_level
