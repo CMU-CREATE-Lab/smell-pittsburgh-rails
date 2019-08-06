@@ -27,24 +27,28 @@ class VisualizationController < ApplicationController
 
     @client_id = client.id
 
+    # All participating citites
     @cities = City.all
     # Manually add state code to each city object to be used on the visualization page.
     # Cities already contain a reference to the state id, but not the literal state code string.
     @cities.each do |city|
       city.state_code = State.find_by_id(city.state_id).state_code
     end
-    @cities = @cities.to_json(:methods => [:state_code], :except => [:created_at, :updated_at, :app_metadata, :description]).html_safe
+    @cities = @cities.to_json(:methods => [:state_code], :except => [:created_at, :updated_at, :app_metadata, :description, :state_id]).html_safe
 
     if @client_id == CLIENT_ID_SMELLPGH or @client_id == CLIENT_ID_SMELLPGHWEBSITE
       @zoom = pgh.zoom_level
-      @city = pgh.to_json(:except => [:created_at, :updated_at, :app_metadata, :description]).html_safe
+      @city = pgh
     elsif @city
       @zoom = @city.zoom_level
-      @city = @city.to_json(:except => [:created_at, :updated_at, :app_metadata, :description]).html_safe
+    else
+      @city = {}
     end
 
+    @city.state_code = State.find_by_id(@city.state_id).state_code unless @city.blank?
+    @city = @city.to_json(:methods => [:state_code], :except => [:created_at, :updated_at, :app_metadata, :description, :state_id]).html_safe
+
     # Defaults. Many of these will be ignored depending upon the client used
-    @city = "{}" unless @city
     @zoom = 11 unless @zoom
     @latitude = pgh.latitude unless @latitude
     @longitude = pgh.longitude unless @longitude

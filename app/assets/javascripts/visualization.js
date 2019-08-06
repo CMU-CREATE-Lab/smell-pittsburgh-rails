@@ -32,7 +32,7 @@ if (at_city) {
   };
   user_city_zoom_mobile = at_city.zoom_level;
   user_city_name = at_city["name"];
-  user_city_state_codes = [at_city["state_codes"]];
+  user_city_state_codes = [at_city["state_code"]];
 }
 
 // Current user location
