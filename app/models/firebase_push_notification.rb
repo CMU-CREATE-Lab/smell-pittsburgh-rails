@@ -10,6 +10,10 @@ class FirebasePushNotification < ActiveRecord::Base
 		"GlobalTopic"
 	end
 
+	def self.SMC_REMINDER_TOPIC
+		"ReminderNotification"
+	end
+
 	def self.FIREBASE_URL
 		"https://fcm.googleapis.com/fcm/send"
 	end
@@ -112,11 +116,35 @@ class FirebasePushNotification < ActiveRecord::Base
 	end
 
 
+	def self.push_smc_reminder(title, body)
+		topic = self.TOPIC_PREFIX+self.SMC_REMINDER_TOPIC
+		self.send_push_notification(topic, title, body)
+	end
+
+
 	private
 
 
-	# TODO add options
 	def self.send_push_notification(to, title, body, options={})
+		# default to smell PGH
+		self.send_push_notification(FIREBASE_AUTH_KEY, to, title, body, options)
+	end
+
+
+	def self.send_smellpgh_notification(to, title, body, options={})
+		# default to smell PGH
+		self.send_push_notification(FIREBASE_AUTH_KEY, to, title, body, options)
+	end
+
+
+	def self.send_smc_notification(to, title, body, options={})
+		# default to smell PGH
+		self.send_push_notification(SMC_FIREBASE_AUTH_KEY, to, title, body, options)
+	end
+
+
+	# TODO add options
+	def self.send_push_notification(project_auth, to, title, body, options={})
 		# prepend to topics if we are on staging
 		if Rails.env == "staging"
 			to = self.TOPIC_PREFIX + "STAGING-" + to.split(self.TOPIC_PREFIX).last if to.split(self.TOPIC_PREFIX).size > 1
@@ -162,7 +190,7 @@ class FirebasePushNotification < ActiveRecord::Base
 
 		# HTTP request and response handler
 		request = "POST"
-		headers = '-H "Content-Type:application/json" -H "Authorization:key=' + FIREBASE_AUTH_KEY + '"'
+		headers = '-H "Content-Type:application/json" -H "Authorization:key=' + project_auth + '"'
 		url = self.FIREBASE_URL
 		data = json.to_json
 

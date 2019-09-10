@@ -28,4 +28,7 @@ Rails.application.routes.draw do
   get "/visualization" => "visualization#index"
   get "/summary" => "summary#index"
 
+  get "/firebase/test" => "firebase#test"
+  get "/firebase/notification/#{NOTIFICATION_URL_HASH}" => "firebase#send_notification"
+
 end
