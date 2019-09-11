@@ -127,24 +127,24 @@ class FirebasePushNotification < ActiveRecord::Base
 
 	def self.send_push_notification(to, title, body, options={})
 		# default to smell PGH
-		self.send_push_notification(FIREBASE_AUTH_KEY, to, title, body, options)
+		self.send_notification(FIREBASE_AUTH_KEY, to, title, body, options)
 	end
 
 
 	def self.send_smellpgh_notification(to, title, body, options={})
 		# default to smell PGH
-		self.send_push_notification(FIREBASE_AUTH_KEY, to, title, body, options)
+		self.send_notification(FIREBASE_AUTH_KEY, to, title, body, options)
 	end
 
 
 	def self.send_smc_notification(to, title, body, options={})
 		# default to smell PGH
-		self.send_push_notification(SMC_FIREBASE_AUTH_KEY, to, title, body, options)
+		self.send_notification(SMC_FIREBASE_AUTH_KEY, to, title, body, options)
 	end
 
 
 	# TODO add options
-	def self.send_push_notification(project_auth, to, title, body, options={})
+	def self.send_notification(project_auth, to, title, body, options)
 		# prepend to topics if we are on staging
 		if Rails.env == "staging"
 			to = self.TOPIC_PREFIX + "STAGING-" + to.split(self.TOPIC_PREFIX).last if to.split(self.TOPIC_PREFIX).size > 1
