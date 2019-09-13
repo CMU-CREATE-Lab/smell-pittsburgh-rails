@@ -118,7 +118,7 @@ class FirebasePushNotification < ActiveRecord::Base
 
 	def self.push_smc_reminder(title, body)
 		topic = self.TOPIC_PREFIX+self.SMC_REMINDER_TOPIC
-    self.send_smc_notification(topic, title, body)
+		self.send_smc_notification(topic, title, body)
 	end
 
 
