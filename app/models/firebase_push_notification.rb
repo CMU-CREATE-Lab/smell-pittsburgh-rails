@@ -173,6 +173,10 @@ class FirebasePushNotification < ActiveRecord::Base
 
     # TODO add more data
     json["data"] = {}
+    # Used by cordova-plugin-firebasex to display a system notification upon receiving the notification messages while the app is running in the foreground.
+    # If not set to true (default), it will NOT be displayed as a system notification. Instead the notification message payload will be passed to the
+    # onMessageReceived callback for the plugin to handle.
+    json["data"]["notification_foreground"] = "true"
     # used by cordova app to navigate user after clicking on notification
     json["data"]["open_with_page"] = options["open_with_page"].blank? ? "map" : options["open_with_page"]
     # used by cordova app to display a pop-up on first time explaining the prediction model
