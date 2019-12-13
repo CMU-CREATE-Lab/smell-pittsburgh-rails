@@ -119,15 +119,24 @@ var sensors_list;
 // Widgets
 var widgets = new edaplotjs.Widgets();
 
-function init() {
-  //getQueryStringData(); // set data coming from the query string
-  initGoogleMap();
-  if (app_id == app_id_smellmycity) {
-    setUserLatLngBoundingBox(); // compute and set the latlng bounding box for the current user location
-  }
+// Map city ids to home names
+var city_id_to_home_name;
 
-  // If there is a participating city
-  if (app_id == app_id_smellmycitywebsite) {
+// Cache of parsed query data in the URL
+var qs_cache;
+
+function init() {
+  var qs = getQueryStringData(); // set data coming from the query string
+
+  initGoogleMap();
+  //if (app_id == app_id_smellmycity) {
+  setUserLatLngBoundingBox(); // compute and set the latlng bounding box for the current user location
+  //}
+
+  if (qs["share"] == "true") { // If this is a share url
+    mode = "share";
+  } else if (app_id == app_id_smellmycitywebsite) {
+    // If there is a participating city
     mode = "all"; // default to the mode of all regions
   } else {
     if (at_city) {
@@ -155,14 +164,29 @@ function init() {
   });
 }
 
-function getQueryStringData() {
-  var query = window.location.search.slice(1).split("&");
-  for (var i = 0; i < query.length; i++) {
-    var queryVar = decodeURI(query[i]);
-    //if (queryVar.indexOf("exampleQueryString") != -1) {
-    //  example = queryVar.split("=")[1];
-    //}
+function unpackVars(str, keepNullOrUndefinedVars) {
+  var vars = {};
+  if (str) {
+    var keyvals = str.split(/[#?&]/);
+    for (var i = 0; i < keyvals.length; i++) {
+      var keyval = keyvals[i].split('=');
+      vars[keyval[0]] = keyval[1];
+    }
   }
+  // Delete keys with null/undefined values
+  if (!keepNullOrUndefinedVars) {
+    Object.keys(vars).forEach(function (key) {
+      return (vars[key] == null || key == "") && delete vars[key];
+    });
+  }
+  return vars;
+};
+
+function getQueryStringData() {
+  if (typeof qs_cache === "undefined") {
+    qs_cache = unpackVars(window.location.search);
+  }
+  return qs_cache;
 }
 
 function setUserLatLngBoundingBox() {
@@ -232,7 +256,7 @@ function setMode(desired_mode) {
   } else if (app_id == app_id_smellmycity || app_id == app_id_smellmycitywebsite) {
     setToSmellMyCity(mode);
   } else {
-    setToSmellPgh();
+    setToSmellPgh(mode);
   }
 }
 
@@ -266,9 +290,15 @@ function setToBayArea() {
 }
 
 // This is Smell Pittsburgh
-function setToSmellPgh() {
-  desired_city_ids = user_city_ids;
-  setDesiredLatLngZoomHome(pittsburgh_latlng, pittsburgh_zoom_mobile, pittsburgh_home);
+function setToSmellPgh(mode) {
+  if (mode == "share") {
+    var share_latlng_zoom = parseShareLatLngZoom();
+    desired_city_ids = user_city_ids;
+    setDesiredLatLngZoomHome(share_latlng_zoom["share_latlng"], share_latlng_zoom["share_zoom"], pittsburgh_home);
+  } else {
+    desired_city_ids = user_city_ids;
+    setDesiredLatLngZoomHome(pittsburgh_latlng, pittsburgh_zoom_mobile, pittsburgh_home);
+  }
 }
 
 // This is Smell My City
@@ -296,7 +326,45 @@ function setToSmellMyCity(mode) {
     desired_city_ids = user_city_ids;
     desired_latlng_bbox = undefined;
     //clearPolygonMaskOnMap(user_latlng_polygon);
+  } else if (mode == "share") {
+    // Want to display the shared view and date
+    var qs = getQueryStringData();
+    var share_latlng_zoom = parseShareLatLngZoom();
+    var share_city_ids = at_participating_cities.map(function (city) {
+      return city.id;
+    });
+    formatDataForHome(at_participating_cities);
+    var share_home = all_data_home;
+    if (typeof qs["city_id"] !== "undefined" && typeof city_id_to_home_name !== "undefined" && typeof city_id_to_home_name[qs["city_id"]] !== "undefined") {
+      share_city_ids = [qs["city_id"]];
+      share_home = city_id_to_home_name[qs["city_id"]];
+    }
+    setDesiredLatLngZoomHome(share_latlng_zoom["share_latlng"], share_latlng_zoom["share_zoom"], share_home);
+    desired_city_ids = share_city_ids
+    desired_latlng_bbox = user_latlng_bbox;
   }
+}
+
+function parseShareLatLngZoom() {
+  var qs = getQueryStringData();
+  var share_zoom = user_zoom_mobile;
+  if (typeof qs["zoom"] !== "undefined") {
+    share_zoom = parseInt(qs["zoom"]);
+  }
+  var share_latlng = user_latlng;
+  if (typeof qs["latlng"] !== "undefined") {
+    var s = qs["latlng"].split(",");
+    if (typeof s[0] !== "undefined" && typeof s[1] !== "undefined") {
+      share_latlng = {
+        "lat": parseFloat(s[0]),
+        "lng": parseFloat(s[1])
+      };
+    }
+  }
+  return {
+    "share_zoom": share_zoom,
+    "share_latlng": share_latlng
+  };
 }
 
 function drawPolygonMaskOnMap(polygon) {
@@ -393,11 +461,10 @@ function initGoogleMap() {
     featureType: "road.arterial",
     elementType: "geometry",
     stylers: [{
-        hue: "#00ffee"
-      }, {
-        saturation: 50
-      }
-    ]
+      hue: "#00ffee"
+    }, {
+      saturation: 50
+    }]
   }, {
     featureType: "poi.business",
     elementType: "labels",
@@ -919,6 +986,7 @@ function formatDataForHome(data) {
   // Get lng from data[i]["longitude"]
   // Get mobile zoom from data[i]["zoom_level"]
   // Desktop zoom = mobile zoom + 1
+  city_id_to_home_name = {};
   var cities = [];
   for (var i = 0; i < data.length; i++) {
     cities.push({
@@ -929,6 +997,7 @@ function formatDataForHome(data) {
       "zoom": data[i]['zoom_level'],
       "state_code": data[i]['state_code']
     });
+    city_id_to_home_name[data[i]['id']] = data[i]['name'];
   }
   return cities;
 }
