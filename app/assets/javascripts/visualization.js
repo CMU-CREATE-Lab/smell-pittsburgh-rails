@@ -122,9 +122,6 @@ var widgets = new edaplotjs.Widgets();
 // Map city ids to home names
 var city_id_to_home_name;
 
-// Cache of parsed query data in the URL
-var qs_cache;
-
 function init() {
   var qs = getQueryStringData(); // set data coming from the query string
 
@@ -183,10 +180,7 @@ function unpackVars(str, keepNullOrUndefinedVars) {
 };
 
 function getQueryStringData() {
-  if (typeof qs_cache === "undefined") {
-    qs_cache = unpackVars(window.location.search);
-  }
-  return qs_cache;
+  return unpackVars(window.location.search);
 }
 
 function setUserLatLngBoundingBox() {
@@ -329,12 +323,13 @@ function setToSmellMyCity(mode) {
   } else if (mode == "share") {
     // Want to display the shared view and date
     var qs = getQueryStringData();
-    var share_latlng_zoom = parseShareLatLngZoom();
+    var share_latlng_zoom = parseShareLatLngZoom(qs);
     var share_city_ids = at_participating_cities.map(function (city) {
       return city.id;
-    });
+    }); // default to all cities
     formatDataForHome(at_participating_cities);
-    var share_home = all_data_home;
+    var share_home = all_data_home; // default to all region
+    // Map the shared city id to the home name
     if (typeof qs["city_id"] !== "undefined" && typeof city_id_to_home_name !== "undefined" && typeof city_id_to_home_name[qs["city_id"]] !== "undefined") {
       share_city_ids = [qs["city_id"]];
       share_home = city_id_to_home_name[qs["city_id"]];
@@ -345,8 +340,46 @@ function setToSmellMyCity(mode) {
   }
 }
 
-function parseShareLatLngZoom() {
+// Set the share date
+// Return true if there is a valid share date
+// Return false if no valid share date
+function setShareDate() {
   var qs = getQueryStringData();
+  var ds = qs["date"];
+  if (typeof ds !== "undefined") {
+    var year = ds[0] + ds[1] + ds[2] + ds[3];
+    var month = ds[4] + ds[5];
+    var day = ds[6] + ds[7];
+    if (isValidDate(year + "-" + month + "-" + day)) {
+      var year = parseInt(year);
+      var month = parseInt(month); // from 1 to 12
+      var day = parseInt(day); // from 1 to 31
+      var selected_date_obj = new Date(year, month - 1, day);
+      if (selected_date_obj <= new Date() && selected_date_obj >= new Date(2016, 5, 1)) {
+        // Cannot be larger than the current date or less than the system launching date
+        // Update timeline
+        var start_time = firstDayOfCurrentMonth(selected_date_obj).getTime();
+        var end_time = firstDayOfNextMonth(selected_date_obj).getTime();
+        loadAndUpdateTimeLine(start_time, end_time, function () {
+          // Select the correct block
+          var max_num_days = daysInMonth(year, month);
+          if (isCurrentMonth(selected_date_obj)) { // this means that the timeline plots the current month in real-world time
+            max_num_days = (new Date()).getDate();
+          }
+          var index = max_num_days - selected_date_obj.getDate();
+          timeline.selectBlockByIndex(index);
+        });
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function parseShareLatLngZoom(qs) {
+  if (typeof qs === "undefined") {
+    qs = getQueryStringData();
+  }
   var share_zoom = user_zoom_mobile;
   if (typeof qs["zoom"] !== "undefined") {
     share_zoom = parseInt(qs["zoom"]);
@@ -770,11 +803,14 @@ function loadInitialTimeLine() {
   loadAndUpdateTimeLine(T["start_time"], T["end_time"]);
 }
 
-function loadAndUpdateTimeLine(start_time, end_time) {
+function loadAndUpdateTimeLine(start_time, end_time, callback) {
   loadTimelineData(start_time, end_time, function (data) {
     timeline.updateBlocks(formatDataForTimeline(data, new Date(end_time)));
     timeline.clearBlockSelection();
     timeline.selectLastBlock();
+    if (typeof callback === "function") {
+      callback();
+    }
   });
 }
 
@@ -1144,11 +1180,9 @@ function createTimeline(data) {
       $("#selected-day").html(String(new Date($e.data("epochtime_milisec"))).substr(4, 11));
       handleTimelineButtonSelected(parseInt($e.data("epochtime_milisec")));
     },
-    create: function (obj) {
-      obj.selectLastBlock();
-    },
     data: data,
     useColorQuantiles: true,
+    plotDataWhenCreated: false,
     //changes colorBin based on even division of data
     // 40 would not work as far to many days are over 40
     // like the whole bar would be black
@@ -1180,6 +1214,9 @@ function createTimeline(data) {
     leftArrowLabel: "More"
   };
   timeline = new edaplotjs.TimelineHeatmap("timeline-container", chart_settings);
+  if (!setShareDate()) {
+    timeline.selectLastBlock();
+  }
 
   // Add horizontal scrolling to the timeline
   // Needed because Android <= 4.4 won't scroll without this
