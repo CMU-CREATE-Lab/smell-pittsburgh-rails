@@ -336,7 +336,7 @@ function setToSmellMyCity(mode) {
     }
     setDesiredLatLngZoomHome(share_latlng_zoom["share_latlng"], share_latlng_zoom["share_zoom"], share_home);
     desired_city_ids = share_city_ids
-    desired_latlng_bbox = user_latlng_bbox;
+    desired_latlng_bbox = undefined;
   }
 }
 
@@ -345,6 +345,7 @@ function setToSmellMyCity(mode) {
 // Return false if no valid share date
 function setShareDate() {
   var qs = getQueryStringData();
+  if (typeof qs === "undefined" || typeof qs["share"] === "undefined" || qs["share"] != "true") return false;
   var ds = qs["date"];
   if (typeof ds !== "undefined") {
     var year = ds[0] + ds[1] + ds[2] + ds[3];
@@ -524,6 +525,10 @@ function initGoogleMap() {
     for (var i = 0; i < current_markers.length; i++) {
       current_markers[i].updateIconByZoomLevel(map.getZoom());
     }
+  });
+
+  map.addListener("idle", function () {
+    sendQueryStringToParent();
   });
 
   // Set information window
@@ -798,9 +803,9 @@ function getInitialTimeRange() {
   };
 }
 
-function loadInitialTimeLine() {
+function loadInitialTimeLine(callback) {
   var T = getInitialTimeRange();
-  loadAndUpdateTimeLine(T["start_time"], T["end_time"]);
+  loadAndUpdateTimeLine(T["start_time"], T["end_time"], callback);
 }
 
 function loadAndUpdateTimeLine(start_time, end_time, callback) {
@@ -814,7 +819,7 @@ function loadAndUpdateTimeLine(start_time, end_time, callback) {
   });
 }
 
-function loadAndCreateTimeline() {
+function loadAndCreateTimeline(callback) {
   // Create the timeline
   var T = getInitialTimeRange();
   loadTimelineData(T["start_time"], T["end_time"], function (data) {
@@ -979,7 +984,7 @@ function generateURL(domain, path, parameters) {
 function generateURLForSmellReports(parameters) {
   if (app_id == app_id_smellpgh || app_id == app_id_smellpghwebsite) {
     parameters["state_ids"] = [1];
-  } else if (typeof desired_city_ids !== "undefined" && desired_city_ids.length > 0 && mode == "city") {
+  } else if (typeof desired_city_ids !== "undefined" && desired_city_ids.length > 0 && ["city", "share"].indexOf(mode) >= 0) {
     parameters["city_ids"] = desired_city_ids.join(",");
   }
   return generateURL(window.location.origin, "/api/v2/smell_reports", parameters);
@@ -1175,10 +1180,11 @@ function createTimeline(data) {
     click: function ($e) {
       handleTimelineButtonClicked(parseInt($e.data("epochtime_milisec")));
     },
-    select: function ($e) {
+    select: function ($e, obj) {
       // Update selected day in the legend
       $("#selected-day").html(String(new Date($e.data("epochtime_milisec"))).substr(4, 11));
       handleTimelineButtonSelected(parseInt($e.data("epochtime_milisec")));
+      sendQueryStringToParent(obj);
     },
     data: data,
     useColorQuantiles: true,
@@ -1683,6 +1689,44 @@ function aggregateSensorData(data, info) {
 function safeGet(v, default_val) {
   if (typeof default_val === "undefined") default_val = "";
   return (typeof v === "undefined") ? default_val : v;
+}
+
+// Send the query string to the parent (e.g., the smell pgh website)
+function sendQueryStringToParent(timeline_obj) {
+  if (typeof timeline_obj === "undefined") {
+    timeline_obj = timeline;
+  }
+  var query = "?share=true";
+  if (typeof timeline_obj !== "undefined") {
+    var selected_block_data = timeline_obj.getSelectedBlockData();
+    var date = new Date(selected_block_data["epochtime_milisec"]);
+    date = date.toISOString().slice(0, 10);
+    date = date[0] + date[1] + date[2] + date[3] + date[5] + date[6] + date[8] + date[9];
+    query += "&date=" + date;
+  }
+  if (typeof map !== "undefined") {
+    var zoom = map.getZoom();
+    if (!isMobile()) {
+      zoom -= 1;
+    }
+    var center = map.getCenter();
+    var lat_lng = roundTo(center.lat(), 6) + "," + roundTo(center.lng(), 6);
+    query += "&zoom=" + zoom + "&latLng=" + lat_lng;
+  }
+  if (typeof desired_city_ids !== "undefined" && desired_city_ids.length == 1) {
+    query += "&city_id=" + desired_city_ids[0];
+  }
+  post("update-parent-query-url", query);
+}
+
+// Handles the sending of cross-domain iframe requests.
+function post(type, data) {
+  pm({
+    target: window.parent,
+    type: type,
+    data: data,
+    origin: document.referrer // TODO: Change this (and above) to explicity set a domain we'll be receiving requests from
+  });
 }
 
 $(function () {
