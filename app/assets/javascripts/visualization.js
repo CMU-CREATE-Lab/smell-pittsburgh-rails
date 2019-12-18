@@ -120,7 +120,7 @@ var sensors_list;
 var widgets = new edaplotjs.Widgets();
 
 // Map city ids to home names
-var city_id_to_home_name;
+var city_id_to_data;
 
 function init() {
   var qs = getQueryStringData(); // set data coming from the query string
@@ -256,7 +256,6 @@ function setMode(desired_mode) {
 
 function loadDataAndSetUI() {
   $home_text.text(desired_home);
-  centerMap();
 
   // Load calendar list
   loadAndDrawCalendar();
@@ -281,17 +280,18 @@ function loadDataAndSetUI() {
 function setToBayArea() {
   desired_city_ids = user_city_ids;
   setDesiredLatLngZoomHome(ba_latlng, ba_zoom_mobile, ba_home);
+  centerMap();
 }
 
 // This is Smell Pittsburgh
 function setToSmellPgh(mode) {
+  desired_city_ids = user_city_ids;
+  setDesiredLatLngZoomHome(pittsburgh_latlng, pittsburgh_zoom_mobile, pittsburgh_home);
   if (mode == "share") {
-    var share_latlng_zoom = parseShareLatLngZoom();
-    desired_city_ids = user_city_ids;
-    setDesiredLatLngZoomHome(share_latlng_zoom["share_latlng"], share_latlng_zoom["share_zoom"], pittsburgh_home);
+    var share_user_latlng_zoom = parseShareLatLngZoom(); // this is the location in the share url, not the city
+    centerMap(share_user_latlng_zoom["latlng"], share_user_latlng_zoom["zoom"]); // center map to share view
   } else {
-    desired_city_ids = user_city_ids;
-    setDesiredLatLngZoomHome(pittsburgh_latlng, pittsburgh_zoom_mobile, pittsburgh_home);
+    centerMap();
   }
 }
 
@@ -306,6 +306,7 @@ function setToSmellMyCity(mode) {
     });
     desired_latlng_bbox = undefined;
     //clearPolygonMaskOnMap(user_latlng_polygon);
+    centerMap();
   } else if (mode == "user") {
     // Want to show only the data near the current user location
     setDesiredLatLngZoomHome(user_latlng, user_zoom_mobile, user_home);
@@ -314,29 +315,40 @@ function setToSmellMyCity(mode) {
     });
     desired_latlng_bbox = user_latlng_bbox;
     //drawPolygonMaskOnMap(user_latlng_polygon);
+    centerMap();
   } else if (mode == "city") {
     // Want to show the data of the participating city (if any) at the user location
     setDesiredLatLngZoomHome(user_city_latlng, user_city_zoom_mobile, user_city_name);
     desired_city_ids = user_city_ids;
     desired_latlng_bbox = undefined;
     //clearPolygonMaskOnMap(user_latlng_polygon);
+    centerMap();
   } else if (mode == "share") {
     // Want to display the shared view and date
-    var qs = getQueryStringData();
-    var share_latlng_zoom = parseShareLatLngZoom(qs);
     var share_city_ids = at_participating_cities.map(function (city) {
       return city.id;
     }); // default to all cities
-    formatDataForHome(at_participating_cities);
-    var share_home = all_data_home; // default to all region
+    var share_city_home = all_data_home; // default to all region
+    var share_city_latlng = all_data_latlng; // default to all region
+    var share_city_zoom_mobile = all_data_zoom_mobile; // default to all region
     // Map the shared city id to the home name
-    if (typeof qs["city_id"] !== "undefined" && typeof city_id_to_home_name !== "undefined" && typeof city_id_to_home_name[qs["city_id"]] !== "undefined") {
+    formatDataForHome(at_participating_cities); // set the city_id_to_data variable
+    var qs = getQueryStringData();
+    if (typeof qs["city_id"] !== "undefined" && typeof city_id_to_data !== "undefined" && typeof city_id_to_data[qs["city_id"]] !== "undefined") {
       share_city_ids = [qs["city_id"]];
-      share_home = city_id_to_home_name[qs["city_id"]];
+      var city_data = city_id_to_data[qs["city_id"]];
+      share_city_home = city_data["name"];
+      share_city_latlng = {
+        "lat": city_data["lat"],
+        "lng": city_data["lng"]
+      };
+      share_city_zoom_mobile = city_data["zoom"];
     }
-    setDesiredLatLngZoomHome(share_latlng_zoom["share_latlng"], share_latlng_zoom["share_zoom"], share_home);
+    setDesiredLatLngZoomHome(share_city_latlng, share_city_zoom_mobile, share_city_home);
     desired_city_ids = share_city_ids
     desired_latlng_bbox = undefined;
+    var share_user_latlng_zoom = parseShareLatLngZoom(qs); // this is the location in the share url, not the city
+    centerMap(share_user_latlng_zoom["latlng"], share_user_latlng_zoom["zoom"]); // center map to share view
   }
 }
 
@@ -396,8 +408,8 @@ function parseShareLatLngZoom(qs) {
     }
   }
   return {
-    "share_zoom": share_zoom,
-    "share_latlng": share_latlng
+    "zoom": share_zoom,
+    "latlng": share_latlng
   };
 }
 
@@ -420,10 +432,10 @@ function setUserCityLatLngZoomHomeId($selected) {
   user_city_state_codes = [$selected.data("state_code")];
 }
 
-function setDesiredLatLngZoomHome(latlng, zoom, home) {
+function setDesiredLatLngZoomHome(latlng, zoom_mobile, home) {
   desired_latlng = latlng;
-  desired_zoom_mobile = zoom;
-  desired_zoom_desktop = zoom + 1;
+  desired_zoom_mobile = zoom_mobile;
+  desired_zoom_desktop = computeZoomDesktop(zoom_mobile);
   desired_home = home;
 }
 
@@ -1027,7 +1039,7 @@ function formatDataForHome(data) {
   // Get lng from data[i]["longitude"]
   // Get mobile zoom from data[i]["zoom_level"]
   // Desktop zoom = mobile zoom + 1
-  city_id_to_home_name = {};
+  city_id_to_data = {};
   var cities = [];
   for (var i = 0; i < data.length; i++) {
     cities.push({
@@ -1038,7 +1050,13 @@ function formatDataForHome(data) {
       "zoom": data[i]['zoom_level'],
       "state_code": data[i]['state_code']
     });
-    city_id_to_home_name[data[i]['id']] = data[i]['name'];
+    city_id_to_data[data[i]['id']] = {
+      "name": data[i]['name'],
+      "lat": data[i]['latitude'],
+      "lng": data[i]['longitude'],
+      "zoom": data[i]['zoom_level'],
+      "state_code": data[i]['state_code']
+    }
   }
   return cities;
 }
@@ -1056,9 +1074,16 @@ function drawHome(data) {
   $home_select.append($('<option value="' + all_data_home + '">' + all_data_home + '</option>'));
 }
 
-function centerMap() {
-  map.setCenter(desired_latlng);
-  map.setZoom(isMobile() ? desired_zoom_mobile : desired_zoom_desktop);
+function centerMap(latlng, zoom_mobile) {
+  latlng = safeGet(latlng, desired_latlng);
+  zoom_mobile = safeGet(zoom_mobile, desired_zoom_mobile);
+  var zoom_desktop = computeZoomDesktop(zoom_mobile);
+  map.setCenter(latlng);
+  map.setZoom(isMobile() ? zoom_mobile : zoom_desktop);
+}
+
+function computeZoomDesktop(zoom_mobile) {
+  return zoom_mobile + 1;
 }
 
 function formatDataForCalendar(data) {
