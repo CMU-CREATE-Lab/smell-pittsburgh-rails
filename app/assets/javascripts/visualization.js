@@ -107,6 +107,11 @@ var $home_dialog;
 var $home_select;
 var $home_text;
 
+// Share variables
+var $share_dialog;
+var $share_url;
+var $share_url_copy_prompt;
+
 // Timeline variables
 var timeline;
 
@@ -147,6 +152,7 @@ function init() {
   initTerrainBtn();
   initHomeBtn();
   initCalendarBtn();
+  initShareBtn();
   initAnimationUI();
   loadDataAndSetUI(); // load data from the server and set the UI
 
@@ -628,6 +634,7 @@ function initHomeBtn() {
   $home_dialog = widgets.createCustomDialog({
     selector: "#home-dialog",
     full_width_button: true,
+    show_cancel_btn: false,
     cancel_callback: function () {
       centerMap();
     }
@@ -655,7 +662,8 @@ function initCalendarBtn() {
   // Create the calendar dialog
   $calendar_dialog = widgets.createCustomDialog({
     selector: "#calendar-dialog",
-    full_width_button: true
+    full_width_button: true,
+    show_cancel_btn: false
   });
 
   // Add event to the calendar button
@@ -688,6 +696,41 @@ function initCalendarBtn() {
     $calendar_select.data("value", selected_value);
     // Have selector go back to showing default option
     $(this).prop("selectedIndex", 0);
+  });
+}
+
+function initShareBtn() {
+  $share_url_copy_prompt = $("#share-url-copy-prompt");
+
+  // Create the share dialog
+  $share_dialog = widgets.createCustomDialog({
+    selector: "#share-dialog",
+    full_width_button: true,
+    action_text: "Copy to clipboard",
+    close_dialog_on_action: false,
+    show_cancel_btn: false,
+    action_callback: function () {
+      widgets.copyText("share-url");
+      $share_url_copy_prompt.show();
+    }
+  });
+  $share_dialog.on("dialogclose", function () {
+    $share_url_copy_prompt.hide();
+  });
+
+  // Set the event of the share url textbox
+  $share_url = $("#share-url");
+  $share_url.focus(function () {
+    $(this).select();
+  }).click(function () {
+    $(this).select();
+  }).mouseup(function (e) {
+    e.preventDefault();
+  });
+
+  // Set the event of the share button
+  $("#share-btn").on("click", function () {
+    $share_dialog.dialog("open");
   });
 }
 
@@ -1716,8 +1759,8 @@ function safeGet(v, default_val) {
   return (typeof v === "undefined") ? default_val : v;
 }
 
-// Send the query string to the parent (e.g., the smell pgh website)
-function sendQueryStringToParent(timeline_obj) {
+// Get share query
+function getShareQuery(timeline_obj) {
   if (typeof timeline_obj === "undefined") {
     timeline_obj = timeline;
   }
@@ -1741,7 +1784,27 @@ function sendQueryStringToParent(timeline_obj) {
   if (typeof desired_city_ids !== "undefined" && desired_city_ids.length == 1) {
     query += "&city_id=" + desired_city_ids[0];
   }
+  return query;
+}
+
+// Send the query string to the parent (e.g., the smell pgh website)
+function sendQueryStringToParent(timeline_obj) {
+  var query = getShareQuery(timeline_obj);
   post("update-parent-query-url", query);
+  updateShareUrlTextbox(query);
+}
+
+// Update share url textbox
+function updateShareUrlTextbox(query) {
+  var url = "";
+  var href = window.location.href;
+  if (href.indexOf("client_token") >= 0) {
+    url += "https://smellmycity.org/visualization"
+  } else {
+    url += "https://smellpgh.org/visualization"
+  }
+  url += query;
+  $share_url.val(url);
 }
 
 // Handles the sending of cross-domain iframe requests.

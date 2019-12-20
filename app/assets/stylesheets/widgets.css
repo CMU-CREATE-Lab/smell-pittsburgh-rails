@@ -1,13 +1,13 @@
 /*************************************************************************
  * GitHub: https://github.com/yenchiah/project-website-template
- * Version: v2.0
+ * Version: v3.18
  * This CSS file has widgets for building interactive web applications
  * Use this file with widgets.js
  * If you want to keep this template updated, avoid modifying this file
  * Instead, add your own CSS in the index.css
  *************************************************************************/
 
- .custom-radio {
+.custom-radio {
   padding: 0;
   text-align: center;
   outline: none;
@@ -20,12 +20,12 @@
   border: 0;
   border-spacing: 0;
   display: inline-block;
-  -webkit-touch-callout: none; /* iOS Safari */
-  -webkit-user-select: none; /* Chrome/Safari/Opera */
-  -khtml-user-select: none; /* Konqueror */
-  -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */
-  user-select: none; /* Non-prefixed version, currently not supported by any browser */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .custom-radio:not(:disabled):hover {
@@ -37,23 +37,23 @@
   opacity: 0.4;
 }
 
-.custom-radio.custom-radio-left [type="radio"] + label {
+.custom-radio.custom-radio-left [type="radio"]+label {
   border-top-right-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
   border-right: 0 !important;
 }
 
-.custom-radio.custom-radio-right [type="radio"] + label {
+.custom-radio.custom-radio-right [type="radio"]+label {
   border-top-left-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
 }
 
-.custom-radio.custom-radio-middle [type="radio"] + label {
+.custom-radio.custom-radio-middle [type="radio"]+label {
   border-radius: 0 !important;
   border-right: 0 !important;
 }
 
-.custom-radio [type="radio"] + label {
+.custom-radio [type="radio"]+label {
   position: relative;
   padding: 7px 13px 6px 29px;
   cursor: pointer;
@@ -64,12 +64,12 @@
   border: 1px solid #bbbbbb;
   border-radius: 2px;
   font-family: 'Open Sans', Helvetica, Arial, sans-serif;
-  -webkit-touch-callout: none; /* iOS Safari */
-  -webkit-user-select: none; /* Chrome/Safari/Opera */
-  -khtml-user-select: none; /* Konqueror */
-  -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */
-  user-select: none; /* Non-prefixed version, currently not supported by any browser */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .custom-radio [type="radio"] {
@@ -77,13 +77,13 @@
   left: -9999px;
 }
 
-.custom-radio [type="radio"]:checked + label {
+.custom-radio [type="radio"]:checked+label {
   color: white;
   background-color: #007bff;
   border-color: #007bff;
 }
 
-.custom-radio [type="radio"] + label:before {
+.custom-radio [type="radio"]+label:before {
   content: '';
   position: absolute;
   left: 11px;
@@ -95,7 +95,7 @@
   background: #fff;
 }
 
-.custom-radio [type="radio"] + label:after {
+.custom-radio [type="radio"]+label:after {
   content: '';
   width: 8px;
   height: 8px;
@@ -108,13 +108,13 @@
   transition: all 0.1s ease;
 }
 
-.custom-radio [type="radio"]:not(:checked) + label:after {
+.custom-radio [type="radio"]:not(:checked)+label:after {
   opacity: 0;
   -webkit-transform: scale(0);
   transform: scale(0);
 }
 
-.custom-radio [type="radio"]:checked + label:after {
+.custom-radio [type="radio"]:checked+label:after {
   opacity: 1;
   -webkit-transform: scale(1);
   transform: scale(1);
@@ -124,15 +124,15 @@
   position: relative;
   display: block;
   cursor: pointer;
-  -webkit-touch-callout: none; /* iOS Safari */
-  -webkit-user-select: none; /* Chrome/Safari/Opera */
-  -khtml-user-select: none; /* Konqueror */
-  -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */
-  user-select: none; /* Non-prefixed version, currently not supported by any browser */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
-.custom-dropdown > a {
+.custom-dropdown>a {
   padding: 5px 26px 5px 8px;
   outline: none;
   border-radius: 2px;
@@ -149,7 +149,12 @@
   cursor: pointer;
 }
 
-.custom-dropdown > a > span {
+.custom-dropdown.large>a {
+  height: 37px;
+  padding: 5px 31px 5px 10px;
+}
+
+.custom-dropdown>a>span {
   text-align: left;
   font-size: 14px !important;
   line-height: 16px;
@@ -159,7 +164,12 @@
   text-overflow: ellipsis;
 }
 
-.custom-dropdown > a:after {
+.custom-dropdown.large>a>span {
+  font-size: 16px !important;
+  line-height: 25px;
+}
+
+.custom-dropdown>a:after {
   position: absolute;
   content: "";
   top: 13px;
@@ -170,7 +180,14 @@
   border-top-color: black;
 }
 
-.custom-dropdown > div {
+.custom-dropdown.large>a:after {
+  top: 17px;
+  right: 13px;
+  border: 5px solid transparent;
+  border-top-color: black;
+}
+
+.custom-dropdown>div {
   display: none;
   position: absolute;
   margin-top: -1px;
@@ -183,19 +200,19 @@
   min-width: 100%;
 }
 
-.custom-dropdown > a:focus {
+.custom-dropdown>a:focus {
   pointer-events: none;
 }
 
-.custom-dropdown > a:focus + div {
+.custom-dropdown>a:focus+div {
   display: block;
 }
 
-.custom-dropdown > div:hover {
+.custom-dropdown>div:hover {
   display: block;
 }
 
-.custom-dropdown > div > a {
+.custom-dropdown>div>a {
   color: black;
   padding: 5px 8px;
   text-decoration: none;
@@ -212,32 +229,42 @@
   box-sizing: border-box;
 }
 
-.custom-dropdown > div > a:hover {
+.custom-dropdown.large>div>a {
+  font-size: 16px !important;
+  line-height: 25px;
+  height: 35px;
+  padding: 5px 10px;
+}
+
+.custom-dropdown>div>a:hover {
   background-color: #e1e1e1;
   color: black;
 }
 
-.custom-dropdown > div.force-hide {
+.custom-dropdown>div.force-hide {
   display: none !important;
 }
 
 .custom-dialog-flat {
   font-size: 16px;
   font-family: 'Open Sans', Helvetica, Arial, sans-serif;
-  background: white;
+  background-color: white;
+  background-image: none;
   padding: 0;
   margin: 0;
   border-radius: 2px;
-  -webkit-touch-callout: none; /* iOS Safari */
-  -webkit-user-select: none; /* Chrome/Safari/Opera */
-  -khtml-user-select: none; /* Konqueror */
-  -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */
-  user-select: none; /* Non-prefixed version, currently not supported by any browser */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .custom-dialog-flat .ui-dialog-content {
-  padding: 0 1.2em 0 1.2em;
+  padding: 0 1.2em 1.2em 1.2em;
+  background-color: white;
+  background-image: none;
 }
 
 .custom-dialog-flat .ui-dialog-content p {
@@ -289,10 +316,14 @@
   border: 0;
 }
 
+.custom-dialog-flat .ui-dialog-titlebar .ui-dialog-titlebar-close .fa-lg {
+  vertical-align: -0.15em;
+}
+
 .custom-dialog-flat .ui-dialog-buttonpane {
   border-width: 0;
   margin: 0;
-  padding: 1.2em 1.2em 1.2em 1.2em;
+  padding: 0em 1.2em 1.2em 1.2em;
 }
 
 .custom-dialog-flat .ui-dialog-buttonpane .ui-dialog-buttonset {
@@ -301,11 +332,12 @@
 }
 
 .custom-dialog-flat .ui-dialog-buttonpane .ui-dialog-buttonset .ui-button {
+  font-family: 'Open Sans', Helvetica, Arial, sans-serif;
   border: 1px solid #7d7d7d;
   background: #7d7d7d none;
   color: white;
   border-radius: 2px;
-  margin: 0 0 0 0.7em;
+  margin: 0 0 0 1em;
   outline: none;
 }
 
@@ -314,8 +346,8 @@
 }
 
 .custom-dialog-flat .ui-dialog-buttonpane .ui-dialog-buttonset .ui-button.ui-action-button {
-  background-color: #dc3545;
-  border: 1px solid #dc3545;
+  background-color: #007bff;
+  border: 1px solid #007bff;
 }
 
 .custom-dialog-flat .ui-dialog-buttonpane .ui-dialog-buttonset .ui-button.full-width {
@@ -324,11 +356,11 @@
 }
 
 .custom-dialog-flat .ui-dialog-buttonpane .ui-dialog-buttonset .ui-button.full-width:not(:first-child) {
-  margin-top: 0.5em;
+  margin-top: 0.8em;
 }
 
 .ui-widget-overlay {
-  opacity: 0.6;
+  opacity: 0.7;
   background-image: none;
   background-color: black;
 }
@@ -343,4 +375,21 @@
 
 .control-group .custom-dropdown:not(:last-child) {
   margin-right: 15px;
+}
+
+.no-scroll {
+  overflow-x: hidden;
+  overflow-y: scroll;
+  position: fixed;
+  height: 100vh;
+}
+
+.fit-parent {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: auto;
+  height: auto;
 }
