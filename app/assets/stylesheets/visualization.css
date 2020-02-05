@@ -300,3 +300,30 @@
 #report-feed {
   display: none;
 }
+
+@media only screen and (max-width: 767px) {
+  .gm-ui-hover-effect:after {
+    content: '';
+    position: absolute;
+    top: -18px;
+    bottom: -18px;
+    left: -18px;
+    right: 0px;
+  }
+
+  .gm-ui-hover-effect {
+    top: 1px !important;
+    right: -6px !important;
+  }
+
+  .gm-ui-hover-effect img {
+    margin: 0px !important;
+    width: 18px !important;
+    height: 18px !important;
+    outline: none !important;
+  }
+
+  .gm-style-iw {
+    min-width: 250px !important;
+  }
+}
