@@ -94,7 +94,7 @@ GEM
     net-scp (2.0.0)
       net-ssh (>= 2.6.5, < 6.0.0)
     net-ssh (4.2.0)
-    nokogiri (1.9.1)
+    nokogiri (1.10.8)
       mini_portile2 (~> 2.4.0)
     rack (1.6.12)
     rack-test (0.6.3)
@@ -195,7 +195,7 @@ DEPENDENCIES
   jquery-rails
   mysql2 (= 0.4.10)
   net-ssh (= 4.2.0)
-  nokogiri (= 1.9.1)
+  nokogiri (= 1.10.8)
   rails (= 4.2.11.1)
   rvm1-capistrano3
   sass-rails (~> 5.0)
