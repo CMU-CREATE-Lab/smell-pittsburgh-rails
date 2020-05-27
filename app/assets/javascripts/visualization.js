@@ -893,6 +893,12 @@ function loadTimelineData(start_time, end_time, callback) {
     }),
     "success": function (data) {
       if (typeof callback === "function") {
+        if (isDictEmpty(data)) {
+          // Fill out data if empty
+          var dt = new Date(start_time);
+          var k = dt.getFullYear() + "-" + ("0" + (dt.getMonth() + 1)).slice(-2) + "-" + ("0" + dt.getDate()).slice(-2);
+          data[k] = 0;
+        }
         callback(data);
       }
     },
@@ -1274,15 +1280,9 @@ function createTimeline(data) {
       end_time = firstDayOfCurrentMonth(new Date(end_time)).getTime();
       var start_time = firstDayOfPreviousMonth(new Date(end_time)).getTime();
       loadTimelineData(start_time, end_time, function (data) {
-        if (!isDictEmpty(data)) {
-          obj.prependBlocks(formatDataForTimeline(data, new Date(end_time)));
-          obj.setLeftArrowOpacity(1);
-          obj.enableLeftArrow();
-        } else {
-          obj.setLeftArrowOpacity(1);
-          obj.enableLeftArrow();
-          obj.hideLeftArrow();
-        }
+        obj.prependBlocks(formatDataForTimeline(data, new Date(end_time)));
+        obj.setLeftArrowOpacity(1);
+        obj.enableLeftArrow();
       });
     },
     leftArrowLabel: "More"
