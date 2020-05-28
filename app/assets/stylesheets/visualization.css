@@ -1,6 +1,11 @@
 #page {
-  width: 100%;
-  height: 100%;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: auto;
+  height: auto;
   font-family: 'Open Sans', Helvetica, Arial, sans-serif;
 }
 
@@ -93,6 +98,27 @@
   top: 121px;
 }
 
+#share-btn {
+  position: absolute;
+  left: 9px;
+  top: 177px;
+}
+
+#share-url {
+  width: 100%;
+  -webkit-touch-callout: default !important;
+  -webkit-user-select: text !important;
+  -khtml-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+#share-url-copy-prompt {
+  display: none;
+  color: #007bff;
+}
+
 #calendar-btn {
   position: absolute;
   left: 9px;
@@ -173,7 +199,9 @@
   display: none;
 }
 
-#home-dialog, #calendar-dialog {
+#home-dialog,
+#calendar-dialog,
+#share-dialog {
   display: none;
 }
 
@@ -271,4 +299,31 @@
 
 #report-feed {
   display: none;
+}
+
+@media only screen and (max-width: 768px) {
+  .gm-ui-hover-effect:after {
+    content: '';
+    position: absolute;
+    top: -18px;
+    bottom: -18px;
+    left: -18px;
+    right: 0px;
+  }
+
+  .gm-ui-hover-effect {
+    top: 1px !important;
+    right: -6px !important;
+  }
+
+  .gm-ui-hover-effect img {
+    margin: 0px !important;
+    width: 18px !important;
+    height: 18px !important;
+    outline: none !important;
+  }
+
+  .gm-style-iw {
+    min-width: 250px !important;
+  }
 }

@@ -1,6 +1,6 @@
 /*************************************************************************
  * GitHub: https://github.com/yenchiah/timeline-heatmap
- * Version: v2.3.2
+ * Version: v2.4.0
  *************************************************************************/
 
 (function () {
@@ -48,9 +48,6 @@
     // The callback event that will be fired when a block is selected
     var select_event_callback = settings["select"];
 
-    // The callback event that will be fired when the chart is created for the first time
-    var create_event_callback = settings["create"];
-
     // The bin and range of the color that will be used to render the blocks
     var use_color_quantiles = safeGet(settings["useColorQuantiles"], false);
     var color_bin = safeGet(settings["colorBin"], [1, 2, 2.5, 3, 3.5]);
@@ -70,6 +67,9 @@
 
     // No color for the selected block
     var no_color_for_selected_block = safeGet(settings["noColorForSelectedBlock"], false);
+
+    // Plot the timeline when this object is created or not
+    var plot_data_when_created = safeGet(settings["plotDataWhenCreated"], true);
 
     // Cache DOM elements
     var $chart_container = $("#" + chart_container_id);
@@ -103,11 +103,8 @@
       $timeline_heatmap_label = $("#" + chart_container_id + " .timeline-heatmap-label");
 
       // Plot the timeline
-      plot(data);
-
-      // Callback event
-      if (typeof (create_event_callback) === "function") {
-        create_event_callback(this_obj);
+      if (plot_data_when_created) {
+        plot(data);
       }
     }
 
@@ -242,7 +239,10 @@
       });
 
       $block_click_region.on('touchstart', function (e) {
-        timeline_heatmap_touched_position = {x: e.originalEvent.touches[0].pageX, y: e.originalEvent.touches[0].pageY};
+        timeline_heatmap_touched_position = {
+          x: e.originalEvent.touches[0].pageX,
+          y: e.originalEvent.touches[0].pageY
+        };
         timeline_heatmap_touched = true;
       });
 
@@ -340,6 +340,9 @@
     this.clearBlockSelection = clearBlockSelection;
 
     var selectBlockByIndex = function (index) {
+      if ($blocks_click_region.length == 0) { // This means that data is not plotted
+        plot(data);
+      }
       selectBlock($($blocks_click_region.filter("div[data-index=" + index + "]")[0]), true);
     };
     this.selectBlockByIndex = selectBlockByIndex;
@@ -382,6 +385,9 @@
     this.selectFirstBlock = selectFirstBlock;
 
     var getBlockDataByIndex = function (index) {
+      if ($blocks_click_region.length == 0) { // This means that data is not plotted
+        plot(data);
+      }
       return $blocks_click_region.filter("div[data-index=" + index + "]").data();
     };
     this.getBlockDataByIndex = getBlockDataByIndex;

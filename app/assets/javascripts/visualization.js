@@ -107,6 +107,11 @@ var $home_dialog;
 var $home_select;
 var $home_text;
 
+// Share variables
+var $share_dialog;
+var $share_url;
+var $share_url_copy_prompt;
+
 // Timeline variables
 var timeline;
 
@@ -119,15 +124,21 @@ var sensors_list;
 // Widgets
 var widgets = new edaplotjs.Widgets();
 
-function init() {
-  //getQueryStringData(); // set data coming from the query string
-  initGoogleMap();
-  if (app_id == app_id_smellmycity) {
-    setUserLatLngBoundingBox(); // compute and set the latlng bounding box for the current user location
-  }
+// Map city ids to home names
+var city_id_to_data;
 
-  // If there is a participating city
-  if (app_id == app_id_smellmycitywebsite) {
+function init() {
+  var qs = getQueryStringData(); // set data coming from the query string
+
+  initGoogleMap();
+  //if (app_id == app_id_smellmycity) {
+  setUserLatLngBoundingBox(); // compute and set the latlng bounding box for the current user location
+  //}
+
+  if (qs["share"] == "true") { // If this is a share url
+    mode = "share";
+  } else if (app_id == app_id_smellmycitywebsite) {
+    // If there is a participating city
     mode = "all"; // default to the mode of all regions
   } else {
     if (at_city) {
@@ -141,6 +152,7 @@ function init() {
   initTerrainBtn();
   initHomeBtn();
   initCalendarBtn();
+  initShareBtn();
   initAnimationUI();
   loadDataAndSetUI(); // load data from the server and set the UI
 
@@ -155,14 +167,26 @@ function init() {
   });
 }
 
-function getQueryStringData() {
-  var query = window.location.search.slice(1).split("&");
-  for (var i = 0; i < query.length; i++) {
-    var queryVar = decodeURI(query[i]);
-    //if (queryVar.indexOf("exampleQueryString") != -1) {
-    //  example = queryVar.split("=")[1];
-    //}
+function unpackVars(str, keepNullOrUndefinedVars) {
+  var vars = {};
+  if (str) {
+    var keyvals = str.split(/[#?&]/);
+    for (var i = 0; i < keyvals.length; i++) {
+      var keyval = keyvals[i].split('=');
+      vars[keyval[0]] = keyval[1];
+    }
   }
+  // Delete keys with null/undefined values
+  if (!keepNullOrUndefinedVars) {
+    Object.keys(vars).forEach(function (key) {
+      return (vars[key] == null || key == "") && delete vars[key];
+    });
+  }
+  return vars;
+};
+
+function getQueryStringData() {
+  return unpackVars(window.location.search);
 }
 
 function setUserLatLngBoundingBox() {
@@ -232,13 +256,12 @@ function setMode(desired_mode) {
   } else if (app_id == app_id_smellmycity || app_id == app_id_smellmycitywebsite) {
     setToSmellMyCity(mode);
   } else {
-    setToSmellPgh();
+    setToSmellPgh(mode);
   }
 }
 
 function loadDataAndSetUI() {
   $home_text.text(desired_home);
-  centerMap();
 
   // Load calendar list
   loadAndDrawCalendar();
@@ -263,12 +286,19 @@ function loadDataAndSetUI() {
 function setToBayArea() {
   desired_city_ids = user_city_ids;
   setDesiredLatLngZoomHome(ba_latlng, ba_zoom_mobile, ba_home);
+  centerMap();
 }
 
 // This is Smell Pittsburgh
-function setToSmellPgh() {
+function setToSmellPgh(mode) {
   desired_city_ids = user_city_ids;
   setDesiredLatLngZoomHome(pittsburgh_latlng, pittsburgh_zoom_mobile, pittsburgh_home);
+  if (mode == "share") {
+    var share_user_latlng_zoom = parseShareLatLngZoom(); // this is the location in the share url, not the city
+    centerMap(share_user_latlng_zoom["latlng"], share_user_latlng_zoom["zoom"]); // center map to share view
+  } else {
+    centerMap();
+  }
 }
 
 // This is Smell My City
@@ -282,6 +312,7 @@ function setToSmellMyCity(mode) {
     });
     desired_latlng_bbox = undefined;
     //clearPolygonMaskOnMap(user_latlng_polygon);
+    centerMap();
   } else if (mode == "user") {
     // Want to show only the data near the current user location
     setDesiredLatLngZoomHome(user_latlng, user_zoom_mobile, user_home);
@@ -290,13 +321,102 @@ function setToSmellMyCity(mode) {
     });
     desired_latlng_bbox = user_latlng_bbox;
     //drawPolygonMaskOnMap(user_latlng_polygon);
+    centerMap();
   } else if (mode == "city") {
     // Want to show the data of the participating city (if any) at the user location
     setDesiredLatLngZoomHome(user_city_latlng, user_city_zoom_mobile, user_city_name);
     desired_city_ids = user_city_ids;
     desired_latlng_bbox = undefined;
     //clearPolygonMaskOnMap(user_latlng_polygon);
+    centerMap();
+  } else if (mode == "share") {
+    // Want to display the shared view and date
+    var share_city_ids = at_participating_cities.map(function (city) {
+      return city.id;
+    }); // default to all cities
+    var share_city_home = all_data_home; // default to all region
+    var share_city_latlng = all_data_latlng; // default to all region
+    var share_city_zoom_mobile = all_data_zoom_mobile; // default to all region
+    // Map the shared city id to the home name
+    formatDataForHome(at_participating_cities); // set the city_id_to_data variable
+    var qs = getQueryStringData();
+    if (typeof qs["city_id"] !== "undefined" && typeof city_id_to_data !== "undefined" && typeof city_id_to_data[qs["city_id"]] !== "undefined") {
+      share_city_ids = [qs["city_id"]];
+      var city_data = city_id_to_data[qs["city_id"]];
+      share_city_home = city_data["name"];
+      share_city_latlng = {
+        "lat": city_data["lat"],
+        "lng": city_data["lng"]
+      };
+      share_city_zoom_mobile = city_data["zoom"];
+    }
+    setDesiredLatLngZoomHome(share_city_latlng, share_city_zoom_mobile, share_city_home);
+    desired_city_ids = share_city_ids
+    desired_latlng_bbox = undefined;
+    var share_user_latlng_zoom = parseShareLatLngZoom(qs); // this is the location in the share url, not the city
+    centerMap(share_user_latlng_zoom["latlng"], share_user_latlng_zoom["zoom"]); // center map to share view
   }
+}
+
+// Set the share date
+// Return true if there is a valid share date
+// Return false if no valid share date
+function setShareDate() {
+  var qs = getQueryStringData();
+  if (typeof qs === "undefined" || typeof qs["share"] === "undefined" || qs["share"] != "true") return false;
+  var ds = qs["date"];
+  if (typeof ds !== "undefined") {
+    var year = ds[0] + ds[1] + ds[2] + ds[3];
+    var month = ds[4] + ds[5];
+    var day = ds[6] + ds[7];
+    if (isValidDate(year + "-" + month + "-" + day)) {
+      var year = parseInt(year);
+      var month = parseInt(month); // from 1 to 12
+      var day = parseInt(day); // from 1 to 31
+      var selected_date_obj = new Date(year, month - 1, day);
+      if (selected_date_obj <= new Date() && selected_date_obj >= new Date(2016, 5, 1)) {
+        // Cannot be larger than the current date or less than the system launching date
+        // Update timeline
+        var start_time = firstDayOfCurrentMonth(selected_date_obj).getTime();
+        var end_time = firstDayOfNextMonth(selected_date_obj).getTime();
+        loadAndUpdateTimeLine(start_time, end_time, function () {
+          // Select the correct block
+          var max_num_days = daysInMonth(year, month);
+          if (isCurrentMonth(selected_date_obj)) { // this means that the timeline plots the current month in real-world time
+            max_num_days = (new Date()).getDate();
+          }
+          var index = max_num_days - selected_date_obj.getDate();
+          timeline.selectBlockByIndex(index);
+        });
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function parseShareLatLngZoom(qs) {
+  if (typeof qs === "undefined") {
+    qs = getQueryStringData();
+  }
+  var share_zoom = user_zoom_mobile;
+  if (typeof qs["zoom"] !== "undefined") {
+    share_zoom = parseInt(qs["zoom"]);
+  }
+  var share_latlng = user_latlng;
+  if (typeof qs["latlng"] !== "undefined") {
+    var s = qs["latlng"].split(",");
+    if (typeof s[0] !== "undefined" && typeof s[1] !== "undefined") {
+      share_latlng = {
+        "lat": parseFloat(s[0]),
+        "lng": parseFloat(s[1])
+      };
+    }
+  }
+  return {
+    "zoom": share_zoom,
+    "latlng": share_latlng
+  };
 }
 
 function drawPolygonMaskOnMap(polygon) {
@@ -318,10 +438,10 @@ function setUserCityLatLngZoomHomeId($selected) {
   user_city_state_codes = [$selected.data("state_code")];
 }
 
-function setDesiredLatLngZoomHome(latlng, zoom, home) {
+function setDesiredLatLngZoomHome(latlng, zoom_mobile, home) {
   desired_latlng = latlng;
-  desired_zoom_mobile = zoom;
-  desired_zoom_desktop = zoom + 1;
+  desired_zoom_mobile = zoom_mobile;
+  desired_zoom_desktop = computeZoomDesktop(zoom_mobile);
   desired_home = home;
 }
 
@@ -393,11 +513,10 @@ function initGoogleMap() {
     featureType: "road.arterial",
     elementType: "geometry",
     stylers: [{
-        hue: "#00ffee"
-      }, {
-        saturation: 50
-      }
-    ]
+      hue: "#00ffee"
+    }, {
+      saturation: 50
+    }]
   }, {
     featureType: "poi.business",
     elementType: "labels",
@@ -424,6 +543,10 @@ function initGoogleMap() {
     for (var i = 0; i < current_markers.length; i++) {
       current_markers[i].updateIconByZoomLevel(map.getZoom());
     }
+  });
+
+  map.addListener("idle", function () {
+    sendQueryStringToParent();
   });
 
   // Set information window
@@ -511,6 +634,7 @@ function initHomeBtn() {
   $home_dialog = widgets.createCustomDialog({
     selector: "#home-dialog",
     full_width_button: true,
+    show_cancel_btn: false,
     cancel_callback: function () {
       centerMap();
     }
@@ -538,7 +662,8 @@ function initCalendarBtn() {
   // Create the calendar dialog
   $calendar_dialog = widgets.createCustomDialog({
     selector: "#calendar-dialog",
-    full_width_button: true
+    full_width_button: true,
+    show_cancel_btn: false
   });
 
   // Add event to the calendar button
@@ -571,6 +696,41 @@ function initCalendarBtn() {
     $calendar_select.data("value", selected_value);
     // Have selector go back to showing default option
     $(this).prop("selectedIndex", 0);
+  });
+}
+
+function initShareBtn() {
+  $share_url_copy_prompt = $("#share-url-copy-prompt");
+
+  // Create the share dialog
+  $share_dialog = widgets.createCustomDialog({
+    selector: "#share-dialog",
+    full_width_button: true,
+    action_text: "Copy to clipboard",
+    close_dialog_on_action: false,
+    show_cancel_btn: false,
+    action_callback: function () {
+      widgets.copyText("share-url");
+      $share_url_copy_prompt.show();
+    }
+  });
+  $share_dialog.on("dialogclose", function () {
+    $share_url_copy_prompt.hide();
+  });
+
+  // Set the event of the share url textbox
+  $share_url = $("#share-url");
+  $share_url.focus(function () {
+    $(this).select();
+  }).click(function () {
+    $(this).select();
+  }).mouseup(function (e) {
+    e.preventDefault();
+  });
+
+  // Set the event of the share button
+  $("#share-btn").on("click", function () {
+    $share_dialog.dialog("open");
   });
 }
 
@@ -698,20 +858,23 @@ function getInitialTimeRange() {
   };
 }
 
-function loadInitialTimeLine() {
+function loadInitialTimeLine(callback) {
   var T = getInitialTimeRange();
-  loadAndUpdateTimeLine(T["start_time"], T["end_time"]);
+  loadAndUpdateTimeLine(T["start_time"], T["end_time"], callback);
 }
 
-function loadAndUpdateTimeLine(start_time, end_time) {
+function loadAndUpdateTimeLine(start_time, end_time, callback) {
   loadTimelineData(start_time, end_time, function (data) {
     timeline.updateBlocks(formatDataForTimeline(data, new Date(end_time)));
     timeline.clearBlockSelection();
     timeline.selectLastBlock();
+    if (typeof callback === "function") {
+      callback();
+    }
   });
 }
 
-function loadAndCreateTimeline() {
+function loadAndCreateTimeline(callback) {
   // Create the timeline
   var T = getInitialTimeRange();
   loadTimelineData(T["start_time"], T["end_time"], function (data) {
@@ -730,6 +893,12 @@ function loadTimelineData(start_time, end_time, callback) {
     }),
     "success": function (data) {
       if (typeof callback === "function") {
+        if (isDictEmpty(data)) {
+          // Fill out data if empty
+          var dt = new Date(start_time);
+          var k = dt.getFullYear() + "-" + ("0" + (dt.getMonth() + 1)).slice(-2) + "-" + ("0" + dt.getDate()).slice(-2);
+          data[k] = 0;
+        }
         callback(data);
       }
     },
@@ -876,7 +1045,7 @@ function generateURL(domain, path, parameters) {
 function generateURLForSmellReports(parameters) {
   if (app_id == app_id_smellpgh || app_id == app_id_smellpghwebsite) {
     parameters["state_ids"] = [1];
-  } else if (typeof desired_city_ids !== "undefined" && desired_city_ids.length > 0 && mode == "city") {
+  } else if (typeof desired_city_ids !== "undefined" && desired_city_ids.length > 0 && ["city", "share"].indexOf(mode) >= 0) {
     parameters["city_ids"] = desired_city_ids.join(",");
   }
   return generateURL(window.location.origin, "/api/v2/smell_reports", parameters);
@@ -919,6 +1088,7 @@ function formatDataForHome(data) {
   // Get lng from data[i]["longitude"]
   // Get mobile zoom from data[i]["zoom_level"]
   // Desktop zoom = mobile zoom + 1
+  city_id_to_data = {};
   var cities = [];
   for (var i = 0; i < data.length; i++) {
     cities.push({
@@ -929,6 +1099,13 @@ function formatDataForHome(data) {
       "zoom": data[i]['zoom_level'],
       "state_code": data[i]['state_code']
     });
+    city_id_to_data[data[i]['id']] = {
+      "name": data[i]['name'],
+      "lat": data[i]['latitude'],
+      "lng": data[i]['longitude'],
+      "zoom": data[i]['zoom_level'],
+      "state_code": data[i]['state_code']
+    }
   }
   return cities;
 }
@@ -946,9 +1123,16 @@ function drawHome(data) {
   $home_select.append($('<option value="' + all_data_home + '">' + all_data_home + '</option>'));
 }
 
-function centerMap() {
-  map.setCenter(desired_latlng);
-  map.setZoom(isMobile() ? desired_zoom_mobile : desired_zoom_desktop);
+function centerMap(latlng, zoom_mobile) {
+  latlng = safeGet(latlng, desired_latlng);
+  zoom_mobile = safeGet(zoom_mobile, desired_zoom_mobile);
+  var zoom_desktop = computeZoomDesktop(zoom_mobile);
+  map.setCenter(latlng);
+  map.setZoom(isMobile() ? zoom_mobile : zoom_desktop);
+}
+
+function computeZoomDesktop(zoom_mobile) {
+  return zoom_mobile + 1;
 }
 
 function formatDataForCalendar(data) {
@@ -1070,16 +1254,15 @@ function createTimeline(data) {
     click: function ($e) {
       handleTimelineButtonClicked(parseInt($e.data("epochtime_milisec")));
     },
-    select: function ($e) {
+    select: function ($e, obj) {
       // Update selected day in the legend
       $("#selected-day").html(String(new Date($e.data("epochtime_milisec"))).substr(4, 11));
       handleTimelineButtonSelected(parseInt($e.data("epochtime_milisec")));
-    },
-    create: function (obj) {
-      obj.selectLastBlock();
+      sendQueryStringToParent(obj);
     },
     data: data,
     useColorQuantiles: true,
+    plotDataWhenCreated: false,
     //changes colorBin based on even division of data
     // 40 would not work as far to many days are over 40
     // like the whole bar would be black
@@ -1097,20 +1280,17 @@ function createTimeline(data) {
       end_time = firstDayOfCurrentMonth(new Date(end_time)).getTime();
       var start_time = firstDayOfPreviousMonth(new Date(end_time)).getTime();
       loadTimelineData(start_time, end_time, function (data) {
-        if (!isDictEmpty(data)) {
-          obj.prependBlocks(formatDataForTimeline(data, new Date(end_time)));
-          obj.setLeftArrowOpacity(1);
-          obj.enableLeftArrow();
-        } else {
-          obj.setLeftArrowOpacity(1);
-          obj.enableLeftArrow();
-          obj.hideLeftArrow();
-        }
+        obj.prependBlocks(formatDataForTimeline(data, new Date(end_time)));
+        obj.setLeftArrowOpacity(1);
+        obj.enableLeftArrow();
       });
     },
     leftArrowLabel: "More"
   };
   timeline = new edaplotjs.TimelineHeatmap("timeline-container", chart_settings);
+  if (!setShareDate()) {
+    timeline.selectLastBlock();
+  }
 
   // Add horizontal scrolling to the timeline
   // Needed because Android <= 4.4 won't scroll without this
@@ -1577,6 +1757,64 @@ function aggregateSensorData(data, info) {
 function safeGet(v, default_val) {
   if (typeof default_val === "undefined") default_val = "";
   return (typeof v === "undefined") ? default_val : v;
+}
+
+// Get share query
+function getShareQuery(timeline_obj) {
+  if (typeof timeline_obj === "undefined") {
+    timeline_obj = timeline;
+  }
+  var query = "?share=true";
+  if (typeof timeline_obj !== "undefined") {
+    var selected_block_data = timeline_obj.getSelectedBlockData();
+    var date = new Date(selected_block_data["epochtime_milisec"]);
+    date = date.toISOString().slice(0, 10);
+    date = date[0] + date[1] + date[2] + date[3] + date[5] + date[6] + date[8] + date[9];
+    query += "&date=" + date;
+  }
+  if (typeof map !== "undefined") {
+    var zoom = map.getZoom();
+    if (!isMobile()) {
+      zoom -= 1;
+    }
+    var center = map.getCenter();
+    var lat_lng = roundTo(center.lat(), 6) + "," + roundTo(center.lng(), 6);
+    query += "&zoom=" + zoom + "&latLng=" + lat_lng;
+  }
+  if (typeof desired_city_ids !== "undefined" && desired_city_ids.length == 1) {
+    query += "&city_id=" + desired_city_ids[0];
+  }
+  return query;
+}
+
+// Send the query string to the parent (e.g., the smell pgh website)
+function sendQueryStringToParent(timeline_obj) {
+  var query = getShareQuery(timeline_obj);
+  post("update-parent-query-url", query);
+  updateShareUrlTextbox(query);
+}
+
+// Update share url textbox
+function updateShareUrlTextbox(query) {
+  var url = "";
+  var href = window.location.href;
+  if (href.indexOf("client_token") >= 0) {
+    url += "https://smellmycity.org/visualization"
+  } else {
+    url += "https://smellpgh.org/visualization"
+  }
+  url += query;
+  $share_url.val(url);
+}
+
+// Handles the sending of cross-domain iframe requests.
+function post(type, data) {
+  pm({
+    target: window.parent,
+    type: type,
+    data: data,
+    origin: document.referrer // TODO: Change this (and above) to explicity set a domain we'll be receiving requests from
+  });
 }
 
 $(function () {

@@ -84,3 +84,31 @@ function firstDayOfPreviousMonth(date_obj) {
 function firstDayOfCurrentMonth(date_obj) {
   return new Date(date_obj.getFullYear(), date_obj.getMonth(), 1);
 }
+
+// Check if a string yyyy-mm-dd is a valid date
+function isValidDate(date_string) {
+  var reg_ex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!date_string.match(reg_ex)) return false; // invalid format
+  var d = new Date(date_string);
+  var d_time = d.getTime();
+  if (!d_time && d_time !== 0) return false; // NaN value, invalid date
+  return d.toISOString().slice(0, 10) === date_string;
+}
+
+// Month here is 1-indexed (January is 1, February is 2, etc). This is
+// because we are using 0 as the day so that it returns the last day
+// of the last month, so you have to add 1 to the month number
+// so it returns the correct amount of days
+function daysInMonth(year, month) {
+  return new Date(year, month, 0).getDate();
+}
+
+// Check if the date object is the current month in the real-world time
+function isCurrentMonth(date_obj) {
+  var now = new Date();
+  if (now.getFullYear() == date_obj.getFullYear() && now.getMonth() == date_obj.getMonth()) {
+    return true;
+  } else {
+    return false;
+  }
+}

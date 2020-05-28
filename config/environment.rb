@@ -1,6 +1,10 @@
 # Load the Rails application.
 require File.expand_path('../application', __FILE__)
 
+# NOTE: these constants appear before application init (since NOTIFICATION_URL_HASH is used in routes.db)
+# random hash for the URL to control notifications
+NOTIFICATION_URL_HASH = "DO-NOT-PUSH-ME"
+
 # Initialize the Rails application.
 Rails.application.initialize!
 
@@ -17,6 +21,8 @@ CLIENT_ID_SMELLMYCITYWEBSITE = 5
 #
 # Authorization Key for Google Firebase Push Notifications
 FIREBASE_AUTH_KEY = "DO-NOT-PUSH-ME"
+# for smell mycity
+SMC_FIREBASE_AUTH_KEY = "DO-NOT-PUSH-ME"
 # Auth Key for AirNow API
 AIRNOW_API_KEY = "DO-NOT-PUSH-ME"
 # the email address for who receives the ACHD Form mail
