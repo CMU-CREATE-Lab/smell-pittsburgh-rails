@@ -13,8 +13,8 @@ class PopulateBayAreaCaliforniaCity < ActiveRecord::Migration
           "smell_description_placeholder_text" => "e.g. fire/smoke, rotten-eggs, burnt-match, burning-tire",
           "feelings_symptoms_placeholder_text" => "e.g. difficulty breathing, headaches, eye irritation",
           "additional_notes_placeholder_text" => "e.g. suspected source, duration or recurrence of event, symptoms in pets and/or describe what you see - e.g. large or continuous flare, gunk on car, black dust on windowsill",
-          "side_menu_background_url" => "/img/app-images/side-menu-backgrounds/bayarea-ca.png",
-          "side_menu_background_color" => "#24bab1"
+          "side_menu_background_url" => "/img/app-images/side-menu-backgrounds/default.png",
+          "side_menu_background_color" => "#97c93c"
         }
       }
     ]
