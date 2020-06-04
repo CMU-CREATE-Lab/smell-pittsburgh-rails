@@ -10,7 +10,7 @@ class PopulateBayAreaCaliforniaCity < ActiveRecord::Migration
         #"region_ids" => [2],
         "zipcodes" =>  ["94801", "94804", "94805", "94806", "94510", "94525", "94547", "94553", "94564", "94569", "94572", "94590", "94591", "94592"],
         "app_metadata" => {
-          "smell_description_placeholder_text" => "e.g. fire/smoke, rotten-eggs, burnt-match, burning-tire",
+          "smell_description_placeholder_text" => "e.g. fire/smoke, rotten-eggs, burnt-match",
           "feelings_symptoms_placeholder_text" => "e.g. difficulty breathing, headaches, eye irritation",
           "additional_notes_placeholder_text" => "e.g. suspected source, duration or recurrence of event, symptoms in pets and/or describe what you see - e.g. large or continuous flare, gunk on car, black dust on windowsill",
           "side_menu_background_url" => "/img/app-images/side-menu-backgrounds/default.png",
