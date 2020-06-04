@@ -18,6 +18,8 @@ gem 'coffee-rails', '~> 4.1.0'
 gem 'therubyracer', platforms: :ruby
 # Until we go to >= Ruby 2.3 we need to max out at this version
 gem 'nokogiri', '1.9.1'
+# Until we go to >= Ruby 2.3 we need to max out at this version
+gem 'ffi', '1.12.2'
 
 # Use jquery as the JavaScript library
 gem 'jquery-rails'
