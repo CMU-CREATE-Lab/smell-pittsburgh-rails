@@ -68,8 +68,8 @@
     }
 
     function createSmellMarker() {
-      var feelings_symptoms = data["feelings_symptoms"] ? data["feelings_symptoms"] : "No data.";
-      var smell_description = data["smell_description"] ? data["smell_description"] : "No data.";
+      var feelings_symptoms = data["feelings_symptoms"] ? sanitize(data["feelings_symptoms"]) : "No data.";
+      var smell_description = data["smell_description"] ? sanitize(data["smell_description"]) : "No data.";
       var smell_value = data["smell_value"];
 
       // Create HTML content for the info window
@@ -236,6 +236,10 @@
 
     function padTimeString(str) {
       return ("0" + str).slice(-2);
+    }
+
+    function sanitize(str) {
+      return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
     function getRotatedMarker(image, degree) {
