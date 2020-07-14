@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20191117055600) do
+ActiveRecord::Schema.define(version: 20190219003935) do
 
   create_table "agencies", force: :cascade do |t|
     t.string   "name",       limit: 255
@@ -52,11 +52,11 @@ ActiveRecord::Schema.define(version: 20191117055600) do
     t.float    "longitude",    limit: 24
     t.integer  "zoom_level",   limit: 4
     t.string   "name",         limit: 255
+    t.string   "state_code",   limit: 255
     t.text     "description",  limit: 65535
     t.text     "app_metadata", limit: 65535
     t.datetime "created_at",                 null: false
     t.datetime "updated_at",                 null: false
-    t.integer  "state_id",     limit: 4
   end
 
   create_table "cities_regions", id: false, force: :cascade do |t|
@@ -137,12 +137,6 @@ ActiveRecord::Schema.define(version: 20191117055600) do
     t.integer "smell_report_id", limit: 4, null: false
   end
 
-  create_table "states", force: :cascade do |t|
-    t.string   "state_code", limit: 255
-    t.datetime "created_at",             null: false
-    t.datetime "updated_at",             null: false
-  end
-
   create_table "time_zones", force: :cascade do |t|
     t.string   "time_zone",  limit: 255
     t.datetime "created_at",             null: false
@@ -153,7 +147,6 @@ ActiveRecord::Schema.define(version: 20191117055600) do
     t.string   "zip",        limit: 10
     t.datetime "created_at",            null: false
     t.datetime "updated_at",            null: false
-    t.integer  "state_id",   limit: 4
   end
 
   add_index "zip_codes", ["zip"], name: "index_zip_codes_on_zip", using: :btree

@@ -73,6 +73,6 @@ class InitialPopulateStatesTable < ActiveRecord::Migration
         end
       end
     end
-    
+
   end
 end
