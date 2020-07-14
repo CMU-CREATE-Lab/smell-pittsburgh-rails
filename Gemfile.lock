@@ -65,6 +65,7 @@ GEM
     erubis (2.7.0)
     execjs (2.7.0)
     ffi (1.12.2)
+    ffi (1.12.2-x64-mingw32)
     geokit (1.13.1)
     geokit-rails (2.3.1)
       geokit (~> 1.5)
@@ -91,10 +92,13 @@ GEM
     mini_portile2 (2.4.0)
     minitest (5.14.0)
     mysql2 (0.4.10)
+    mysql2 (0.4.10-x64-mingw32)
     net-scp (2.0.0)
       net-ssh (>= 2.6.5, < 6.0.0)
     net-ssh (4.2.0)
     nokogiri (1.9.1)
+      mini_portile2 (~> 2.4.0)
+    nokogiri (1.9.1-x64-mingw32)
       mini_portile2 (~> 2.4.0)
     rack (1.6.13)
     rack-test (0.6.3)
@@ -183,6 +187,7 @@ GEM
 
 PLATFORMS
   ruby
+  x64-mingw32
 
 DEPENDENCIES
   byebug (= 10.0.2)
@@ -208,4 +213,4 @@ DEPENDENCIES
   web-console (~> 2.0)
 
 BUNDLED WITH
-   1.13.6
+   1.17.3
