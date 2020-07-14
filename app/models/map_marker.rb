@@ -1,8 +1,9 @@
 class MapMarker < ActiveRecord::Base
 
   belongs_to :city
+  belongs_to :region
 
-  validates :city, :latitude, :longitude, :data, :presence => true
+  validates :latitude, :longitude, :data, :presence => true
   validate :data_in_valid_json_format
 
 

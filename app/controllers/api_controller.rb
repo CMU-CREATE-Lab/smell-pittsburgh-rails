@@ -514,8 +514,10 @@ class ApiController < ApplicationController
   # "address" : String [FILTERED]
   #
   def smell_report_create_api2
+
     # check client
     client_token = params["client_token"].blank? ? "" : params["client_token"]
+
     client = Client.find_by_secret_token(client_token)
     unless client
       response = {
@@ -539,11 +541,13 @@ class ApiController < ApplicationController
 
     # drop/avoid spam reports
     last_smell_report_from_user = SmellReport.where(:user_hash => smell_report.user_hash).order("created_at").last
-    if (last_smell_report_from_user and (Time.now.to_i - last_smell_report_from_user.created_at.to_i) <= 5)
+    if (last_smell_report_from_user and (Time.now.to_i - last_smell_report_from_user.created_at.to_i) <= 300)
       Rails.logger.info("(ApiController::smell_report_create) ignoring smell report from user_hash=#{smell_report.user_hash} because time from last report is too soon")
-      # sending reports too fast (within 5 seconds of previous)
+      # sending reports too fast (within 5 minutes of previous)
       response = {
-        :error => "failed to create smell report from submitted form."
+        #Changed client to check if error field is empty for the response
+        #If it's nonempty client will call an alert window with the contents of the error field
+        :error => "Report submitted within 5 minutes, please try again later"
       }
       render :json => response, :layout => false
       return
@@ -556,7 +560,6 @@ class ApiController < ApplicationController
       render :json => response, :layout => false
       return
     end
-
     # mark custom fields when included
     smell_report.custom_location = (not params["custom_location"].blank? and params["custom_location"] == "true") ? true : false
     smell_report.custom_time = (not params["custom_time"].blank? and params["custom_time"] == "true") ? true : false
