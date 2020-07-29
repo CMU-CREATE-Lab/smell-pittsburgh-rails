@@ -8,6 +8,9 @@ class SmellReport < ActiveRecord::Base
   # feelings_symptoms :text
   # send_form_to_agency :boolean
   # additional_comments :text
+  # original_description :text
+  # original_symptoms:text
+  # original_comments :text
   # observed_at :integer (epoch time)
   # custom_time :boolean
   # custom_location :boolean

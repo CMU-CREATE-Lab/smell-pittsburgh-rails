@@ -488,6 +488,11 @@ class ApiController < ApplicationController
   end
 
 
+  def find_matching_words(text, filename)
+    targets = File.open(filename, 'r') { |file| file.readlines.collect { |line| line.chomp } }
+    #Check that if any words in the array of all words in text exactly match words in our file (badwords.txt)
+    return targets.select { |x| x if text.include?(x) }
+  end
   # POST /api/v2/smell_reports
   #
   # PARAMS (required fields denoted by asterisk)
@@ -614,6 +619,36 @@ class ApiController < ApplicationController
       smell_report.time_zone_id = time_zone.id
     end
 
+    #Filter out bad language. List of bad words is located at /lib/assets/badwords.txt
+    root = Dir.pwd
+    modified_description = smell_report.smell_description.to_s.downcase.gsub(/[[:punct:]]/,"").split
+    smell_report.original_description = smell_report.smell_description
+    matches = find_matching_words(modified_description, "#{root}/lib/assets/badwords.txt")
+    if matches.count > 0
+      matches.each { |match|
+         smell_report.smell_description = smell_report.smell_description.to_s.gsub(/\b#{match}\b/i, "#{match}".gsub(/[aeiouAEIOU]/, "*"))
+      }
+    end
+
+    modified_symptoms= smell_report.feelings_symptoms.to_s.gsub(/[[:punct:]]/,"").split
+    smell_report.original_symptoms = smell_report.feelings_symptoms
+    matches =  find_matching_words(modified_symptoms, "#{root}/lib/assets/badwords.txt")
+    if matches.count > 0
+      matches.each { |match|
+         smell_report.feelings_symptoms = smell_report.feelings_symptoms.to_s.gsub(/\#{match}\b/i, "#{match}".gsub(/[aeiouAEIOU]/, "*"))
+      }
+    end
+
+    modified_comments = smell_report.additional_comments.to_s.gsub(/[[:punct:]]/,"").split
+    smell_report.original_comments = smell_report.additional_comments
+    matches = find_matching_words(modified_comments, "#{root}/lib/assets/badwords.txt")
+    if matches.count > 0
+      matches.each { |match|
+         smell_report.additional_comments = smell_report.additional_comments.to_s.gsub(/\#{match}\b/i, "#{match}".gsub(/[aeiouAEIOU]/, "*"))
+      }
+    end
+
+
     if smell_report.save
       # success
       response = {
@@ -623,7 +658,10 @@ class ApiController < ApplicationController
         :smell_value => smell_report.smell_value,
         :smell_description => smell_report.smell_description,
         :feelings_symptoms => smell_report.feelings_symptoms,
-        :additional_comments => smell_report.additional_comments
+        :additional_comments => smell_report.additional_comments,
+        :original_description => smell_report.original_description,  
+        :original_symptoms => smell_report.original_symptoms,
+        :original_comments => smell_report.original_comments,
       }
 
       # NOTE: we have removed the smell report trackers, which pushed notifications for smell values at or above 3
@@ -658,7 +696,6 @@ class ApiController < ApplicationController
 
     render :json => response, :layout => false
   end
-
 
   # GET /api/v2/smell_reports
   #
