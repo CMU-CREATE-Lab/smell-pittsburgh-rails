@@ -2,7 +2,10 @@ source 'https://rubygems.org'
 
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-gem 'rails', '4.2.11.1'
+# Note: We are locked to the following gems when using Rails 4.2
+#  rack 1.6.x
+#  json 1.8.x
+gem 'rails', '4.2.11.3'
 # Until we go to >= Ruby 2.2.6 we need to max out at this version
 gem 'net-ssh', '4.2.0'
 # Use mysql2 as the database for Active Record
