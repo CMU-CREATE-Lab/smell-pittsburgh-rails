@@ -84,12 +84,12 @@ class ApiController < ApplicationController
     end
 
     last_smell_report_from_user = SmellReport.where(user_hash: smell_report.user_hash).order("created_at").last
-    # 5 seconds
-    if (last_smell_report_from_user and (Time.now.to_i - last_smell_report_from_user.created_at.to_i) <= 5)
+    # 2 minutes
+    if (last_smell_report_from_user and (Time.now.to_i - last_smell_report_from_user.created_at.to_i) <= 120)
       Rails.logger.info("(ApiController::smell_report_create) ignoring smell report from user_hash=#{smell_report.user_hash} because time from last report is too soon")
       # sending reports too fast
       response = {
-        :error => "failed to create smell report from submitted form."
+        :error => "Too many reports submitted in a short timespan. Please try again later."
       }
     elsif BannedUserHash.where(:user_hash => smell_report.user_hash).size > 0
       Rails.logger.info("(ApiController::smell_report_create) ignoring smell report with banned user_hash=#{smell_report.user_hash}")
@@ -539,11 +539,11 @@ class ApiController < ApplicationController
 
     # drop/avoid spam reports
     last_smell_report_from_user = SmellReport.where(:user_hash => smell_report.user_hash).order("created_at").last
-    if (last_smell_report_from_user and (Time.now.to_i - last_smell_report_from_user.created_at.to_i) <= 5)
+    if (last_smell_report_from_user and (Time.now.to_i - last_smell_report_from_user.created_at.to_i) <= 120)
       Rails.logger.info("(ApiController::smell_report_create) ignoring smell report from user_hash=#{smell_report.user_hash} because time from last report is too soon")
-      # sending reports too fast (within 5 seconds of previous)
+      # sending reports too fast (within 2 minutes of previous)
       response = {
-        :error => "failed to create smell report from submitted form."
+        :error => "Too many reports submitted in a short timespan. Please try again later."
       }
       render :json => response, :layout => false
       return
