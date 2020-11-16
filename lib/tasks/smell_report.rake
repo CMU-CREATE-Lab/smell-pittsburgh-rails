@@ -2,6 +2,13 @@ require 'csv'
 
 namespace :smell_report do
 
+  task :filter_for_swear_words => :environment do
+    SmellReport.all.each do |report|
+      report.filter_fields_for_swear_words
+      report.save!
+    end
+  end
+
 
   task :add_zip_codes => :environment do
     SmellReport.all.each do |report|

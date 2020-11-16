@@ -25,6 +25,7 @@ class SmellReport < ActiveRecord::Base
 
   before_create :generate_perturbed_coordinates
   before_create :determine_client_for_deprecated_apis
+  before_create :filter_fields_for_swear_words
   after_destroy :handle_destroy
 
   scope :in_pittsburgh, -> { where("real_latitude < 40.916992 AND real_latitude > 40.102992 AND real_longitude < -79.428193 AND real_longitude > -80.471694") }
@@ -74,6 +75,35 @@ class SmellReport < ActiveRecord::Base
       return true
     end
     return false
+  end
+
+
+  def filter_fields_for_swear_words
+    swear_word_file = Rails.root.join('lib', 'assets', 'badwords.txt')
+    list_of_swear_words = File.open(swear_word_file, 'r') { |file| file.readlines.collect { |line| line.chomp } }
+
+    self.real_smell_description = self.smell_description
+    self.real_feelings_symptoms = self.feelings_symptoms
+    self.real_additional_comments = self.additional_comments
+
+    fields_to_filter = {
+      'smell_description' => self.smell_description,
+      'feelings_symptoms' => self.feelings_symptoms,
+      'additional_comments' => self.additional_comments
+    }
+
+    fields_to_filter.each do |key, txt|
+      modified_txt = txt.to_s.downcase.gsub(/[[:punct:]]/,"").split
+      # Check that if any words in the array of all words in text exactly match words in our sear words file
+      matches = list_of_swear_words.select { |x| x if modified_txt.include?(x) }
+      if matches.count > 0
+        matches.each { |match|
+          self[key] = txt.gsub(/\b#{match}\b/i, "#{match}".gsub(/[aeiouAEIOU]/, "*"))
+        }
+      end
+    end
+
+    return true
   end
 
 
