@@ -48,7 +48,9 @@
     // Private methods
     //
     function init() {
-      if (marker_type == "smell") {
+      if (marker_type == "WIND_ONLY") {
+        createWindOnlyMarker();
+      } else if (marker_type == "smell") {
         createSmellMarker();
       } else if (marker_type == "PM25") {
         createPM25Marker();
@@ -126,6 +128,40 @@
       return path + smell_icon;
     }
 
+    function createWindOnlyMarker() {
+      var wind_speed = data["wind_speed"];
+
+      // Create HTML content for the info window
+      html_content = "";
+      html_content += "<b>Name:</b> " + data["name"] + "<br>";
+      if (data["is_current_day"]) {
+        if (typeof wind_speed !== "undefined") {
+          var wind_txt = (isNaN(wind_speed) || wind_speed < 0) ? no_data_txt : wind_speed + " MPH";
+          var wind_time = new Date(data["wind_data_time"]);
+          var wind_time_txt = " at time " + padTimeString(wind_time.getHours() + 1) + ":" + padTimeString(wind_time.getMinutes() + 1);
+          html_content += '<b>Latest Wind Speed:</b> ' + wind_txt + wind_time_txt;
+        }
+      }
+      var wind_direction = data["wind_direction"];
+      var image = new Image();
+      // Create google map marker
+      image.addEventListener("load", function () {
+        google_map_marker = new google.maps.Marker({
+          position: new google.maps.LatLng({lat: data["latitude"], lng: data["longitude"]}),
+          icon: generateWindOnlySensorIcon(image, wind_direction),
+          zIndex: 200,
+          opacity: marker_default_opacity,
+          shape: {coords: [50, 50, 12.5], type: "circle"} // Modify click region
+        });
+        addMarkerEvent();
+        // Fire complete event
+        if (typeof (complete_event_callback) == "function") {
+          complete_event_callback(this_obj);
+        }
+      });
+      image.src = '/img/wind_only_sensor.png';
+    }
+
     function createPM25Marker() {
       // TODO: no_data_txt should be different for current day and previous day cases
       var no_data_txt = "No data in last hour";
@@ -175,6 +211,30 @@
         }
       });
       image.src = getPM25SensorIconURL(sensor_icon_idx, (typeof wind_direction != "undefined"));
+    }
+
+    function generateWindOnlySensorIcon(image, wind_direction) {
+      var icon_size = 100;
+      var icon_size_half = 50;
+
+      var rotation_degree;
+      if (typeof wind_direction != "undefined") {
+        // The direction given by ACHD is the direction _from_ which the wind is coming.
+        // We reverse it to show where the wind is going to. (+180)
+        // Also, the arrow we start with is already rotated 90 degrees, so we need to account for this. (-90)
+        // This means we add 90 to the wind direction value for the correct angle of the wind arrow.
+        rotation_degree = wind_direction + 90;
+      } else {
+        rotation_degree = 0;
+      }
+
+      return {
+        url: getRotatedMarker(image, rotation_degree),
+        scaledSize: new google.maps.Size(icon_size, icon_size),
+        size: new google.maps.Size(icon_size, icon_size),
+        anchor: new google.maps.Point(icon_size_half, icon_size_half),
+        origin: new google.maps.Point(0, 0)
+      };
     }
 
     function generatePM25SensorIcon(image, wind_direction) {

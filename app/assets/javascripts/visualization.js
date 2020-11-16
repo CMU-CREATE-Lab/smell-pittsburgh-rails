@@ -1399,7 +1399,7 @@ function parseSensorMarkerData(data, is_current_day, info, i) {
     "name": info["name"],
     "latitude": info["latitude"],
     "longitude": info["longitude"],
-    "feed_id": info["sensors"][sensor_type]["sources"][0]["feed"]
+    "feed_id": sensor_type == "WIND_ONLY" ? info["sensors"]["wind_direction"]["sources"][0]["feed"] : info["sensors"][sensor_type]["sources"][0]["feed"]
   };
 
   if (is_current_day) {
@@ -1411,7 +1411,7 @@ function parseSensorMarkerData(data, is_current_day, info, i) {
     var d = data["data"][i];
     if (typeof d === "undefined") return marker_data;
     // For PM25 or VOC (these two types cannot both show up in info)
-    if (typeof d[sensor_type] !== "undefined") {
+    if (typeof d[sensor_type] !== "undefined" && sensor_type != "WIND_ONLY") {
       if (typeof d[sensor_type] === "object") {
         marker_data["sensor_value"] = roundTo(d[sensor_type]["value"], 2);
         marker_data["sensor_data_time"] = d[sensor_type]["time"] * 1000;
@@ -1439,6 +1439,7 @@ function parseSensorMarkerData(data, is_current_day, info, i) {
       }
     }
   } else {
+    if (sensor_type == "WIND_ONLY") return null;
     ///////////////////////////////////////////////////////////////////////////////
     // If the selected day is not the current day, use the max
     var data_max = data["summary"]["max"];
@@ -1455,7 +1456,7 @@ function handleSensorMarkerClicked(marker) {
   infowindow_smell.close();
 
   var marker_type = marker.getMarkerType();
-  if (marker_type == "PM25") {
+  if (marker_type == "PM25" || marker_type == "WIND_ONLY") {
     infowindow_VOC.close();
     infowindow_PM25.setContent(marker.getContent());
     infowindow_PM25.open(map, marker.getGoogleMapMarker());
@@ -1510,7 +1511,9 @@ function createSensorMarkerForAnimation(marker_data, epochtime_milisec, info, i,
 
 function getSensorType(info) {
   var sensor_type;
-  if (Object.keys(info["sensors"]).indexOf("PM25") > -1) {
+  if (Object.keys(info["sensors"]).indexOf("wind_direction") > -1 && Object.keys(info["sensors"]).indexOf("PM25") == -1) {
+    sensor_type = "WIND_ONLY";
+  } else if (Object.keys(info["sensors"]).indexOf("PM25") > -1) {
     sensor_type = "PM25";
   } else if (Object.keys(info["sensors"]).indexOf("VOC") > -1) {
     sensor_type = "VOC";
@@ -1713,7 +1716,7 @@ function rollSensorData(data, info) {
 // For faster sampling rates, we need to aggregate data points
 function aggregateSensorData(data, info) {
   var sensor_type = getSensorType(info);
-  if (sensor_type == "PM25") {
+  if (sensor_type == "PM25" || sensor_type == "WIND_ONLY") {
     return data;
   }
   if (data["data"].length <= 1) {
