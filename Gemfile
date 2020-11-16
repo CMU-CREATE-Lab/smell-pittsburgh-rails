@@ -6,8 +6,7 @@ source 'https://rubygems.org'
 #  rack 1.6.x
 #  json 1.8.x
 gem 'rails', '4.2.11.3'
-# Until we go to >= Ruby 2.2.6 we need to max out at this version
-gem 'net-ssh', '4.2.0'
+gem 'net-ssh'
 # Use mysql2 as the database for Active Record
 # Going past this version requires Rails >= 5.x
 gem 'mysql2', '0.4.10'
@@ -19,10 +18,8 @@ gem 'uglifier', '>= 1.3.0'
 gem 'coffee-rails', '~> 4.1.0'
 # See https://github.com/rails/execjs#readme for more supported runtimes
 gem 'therubyracer', platforms: :ruby
-# Until we go to >= Ruby 2.3 we need to max out at this version
-gem 'nokogiri', '1.9.1'
-# Until we go to >= Ruby 2.3 we need to max out at this version
-gem 'ffi', '1.12.2'
+gem 'nokogiri'
+gem 'ffi'
 
 # Use jquery as the JavaScript library
 gem 'jquery-rails'
@@ -41,8 +38,7 @@ gem 'sdoc', '~> 0.4.0', group: :doc
 
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
-  # Until we go to >= Ruby 2.3 we need to max out at this version
-  gem 'byebug', '10.0.2'
+  gem 'byebug'
 end
 
 group :development do
