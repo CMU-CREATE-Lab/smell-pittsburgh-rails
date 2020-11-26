@@ -16,6 +16,7 @@ class GenericMailer < ApplicationMailer
     @name = form.name.blank? ? client.name + " User (id: #{@smell_report.anonymized_user_hash})" : form.name
     @address = form.address
     @client = client
+    @gmaps_link = "https://google.com/maps/search/" + @smell_report.real_latitude.to_s + "," + @smell_report.real_longitude.to_s
     mail(:to => to_address,:subject => "Smell Report")
   end
 end
