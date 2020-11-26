@@ -1,12 +1,12 @@
 Dear <%= @agency_name %>,
 
 <% if @smell_report.smell_value == 1 %>
-I wanted to report that the air smells fine right now (<%= @time.strftime("%I:%M %p %Z") %>) at <% if @street_address.blank? %>zipcode: <%= @zipcode %><% else %><%= @street_address %>, <%= @zipcode %><% end %> (lat/lon: <%= @smell_report.real_latitude %>,<%= @smell_report.real_longitude %>)[<%= @gmaps_link %>] on <%= @time.strftime("%d %B %Y") %>.
+I wanted to report that the air smells fine right now (<%= @time.strftime("%I:%M %p %Z") %>) at <% if @street_address.blank? %>zipcode: <%= @zipcode %><% else %><%= @street_address %>, <%= @zipcode %><% end %> (lat/lon: <%= @gmaps_link %>) on <%= @time.strftime("%d %B %Y") %>.
 <% else %>
 <% if @street_address.blank? %>
-I noticed an unusual smell at zipcode: <%= @zipcode %> (lat/lon: <%= @smell_report.real_latitude %>,<%= @smell_report.real_longitude %>)[<%= @gmaps_link %>] on <%= @time.strftime("%d %B %Y") %> at <%= @time.strftime("%I:%M %p %Z") %>.
+I noticed an unusual smell at zipcode: <%= @zipcode %> (lat/lon: <%= @gmaps_link %>) on <%= @time.strftime("%d %B %Y") %> at <%= @time.strftime("%I:%M %p %Z") %>.
 <% else %>
-I noticed an unusual smell at <%= @street_address %>, <%= @zipcode %> (lat/lon: <%= @smell_report.real_latitude %>,<%= @smell_report.real_longitude %>)[<%= @gmaps_link %>] on <%= @time.strftime("%d %B %Y") %> at <%= @time.strftime("%I:%M %p %Z") %>.
+I noticed an unusual smell at <%= @street_address %>, <%= @zipcode %> (lat/lon: <%= @gmaps_link %>) on <%= @time.strftime("%d %B %Y") %> at <%= @time.strftime("%I:%M %p %Z") %>.
 <% end %>
 
 I'd rate the smell <%= @smell_report.smell_value %> on a scale of 1 to 5, with 5 being the worst odor.
