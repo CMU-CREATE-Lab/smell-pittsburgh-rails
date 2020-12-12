@@ -98,7 +98,7 @@ class SmellReport < ActiveRecord::Base
       matches = list_of_swear_words.select { |x| x if modified_txt.include?(x) }
       if matches.count > 0
         matches.each { |match|
-          self[key] = txt.gsub(/\b#{match}\b/i, "#{match}".gsub(/[aeiouAEIOU]/, "*"))
+          self[key] = self[key].gsub(/\b#{match}\b/i, "#{match}".gsub(/[aeiouAEIOU]/, "*"))
         }
       end
     end
