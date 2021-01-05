@@ -7,7 +7,7 @@ class AddAchdMarkers < ActiveRecord::Migration
         -79.86806
       ],
       [
-        {"name":"County AQ Monitor - Lawrenceville","sensors":{"wind_speed":{"sources":[{"feed":26,"channel":"SONICWS_MPH"}]},"wind_direction":{"sources":[{"feed":26,"channel":"SONICWD_DEG"}]},"PM25":{"sources":[{"feed":26,"channel":"PM25B_UG_M3"}]}}},
+        {"name":"County AQ Monitor - Lawrenceville","sensors":{"wind_speed":{"sources":[{"feed":26,"channel":"SONICWS_MPH"}]},"wind_direction":{"sources":[{"feed":26,"channel":"SONICWD_DEG"}]},"PM25":{"sources":[{"feed":26,"channel":"PM25B_UG_M3"},{"feed":26,"channel":"PM25T_UG_M3"}]}}},
         40.46542,
         -79.960757
       ],

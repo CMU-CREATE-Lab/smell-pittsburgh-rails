@@ -13,7 +13,7 @@ class PopulateCitiesFirstTime < ActiveRecord::Migration
         "app_metadata" => {
           "side_menu_background_url" => "/img/app-images/side-menu-backgrounds/pittsburgh-pa.png",
           "side_menu_background_color" => "#97c93c",
-          "smell_description_placeholder_text" => "industrial, woodsmoke, rotten-eggs"
+          "smell_description_placeholder_text" => "e.g. industrial, woodsmoke, rotten-eggs"
         }
       },
       {
@@ -28,7 +28,7 @@ class PopulateCitiesFirstTime < ActiveRecord::Migration
         "app_metadata" => {
           "side_menu_background_url" => "/img/app-images/side-menu-backgrounds/louisville-ky.png",
           "side_menu_background_color" => "#24bab1",
-          "smell_description_placeholder_text" => "chemical, sewer-like, flowery, burnt"
+          "smell_description_placeholder_text" => "e.g. chemical, sewer-like, flowery, burnt"
         }
       }
     ]
