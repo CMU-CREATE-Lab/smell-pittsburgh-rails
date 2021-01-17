@@ -233,11 +233,9 @@ class FirebasePushNotification < ActiveRecord::Base
     data = json.to_json
 
     # only push on production
-    # if Rails.env == "production" or Rails.env == "staging"
-    if true
+    if Rails.env == "production" or Rails.env == "staging"
       # do not send any notifications from 9 PM until 5 AM
-      # if current_hour.between?(21,24) or current_hour.between?(0,4)
-      if false
+      if current_hour.between?(21,24) or current_hour.between?(0,4)
         # TODO make this error message reflect when it's Pacific time
         Rails.logger.info("Refusing to send push notification at hour=#{current_hour}; info was: headers=#{headers}, url=#{url}, data=#{data}")
       else
