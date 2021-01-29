@@ -331,9 +331,7 @@ function setToSmellMyCity(mode) {
     centerMap();
   } else if (mode == "share") {
     // Want to display the shared view and date
-    var share_city_ids = at_participating_cities.map(function (city) {
-      return city.id;
-    }); // default to all cities
+    var share_city_ids;
     var share_city_home = all_data_home; // default to all region
     var share_city_latlng = all_data_latlng; // default to all region
     var share_city_zoom_mobile = all_data_zoom_mobile; // default to all region
