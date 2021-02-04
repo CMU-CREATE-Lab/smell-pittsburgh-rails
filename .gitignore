@@ -26,3 +26,9 @@
 
 # Capistrano files on deployment
 /REVISION
+
+#Ignore secret key files
+/config/*.pem
+
+#Ignore access token files
+/config/*.txt
