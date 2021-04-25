@@ -2,6 +2,9 @@ require 'openssl'
 require 'base64'
 require 'date'
 
+
+# Todo: Implement multi-topic notifications (i.e. PGH + RMD for pittsbugh and reminder notifications)
+# Currently uses pghaqi for backcompatability for Pittsburgh, consider keeping backcompatability for some time?
 class FirebasePushNotification < ActiveRecord::Base
 
   # for some reason, Firebase API insists on prepending "/topics/" despite not using this when subscribing.
@@ -23,24 +26,46 @@ class FirebasePushNotification < ActiveRecord::Base
     "https://oauth2.googleapis.com/token"
   end
 
+  # Identifier for service account for project
+  # (It's the phrase between @ and .com in the email)
+  #i.e. smell-my-citya12345
   def self.SMC_SERVICE_ACCOUNT
     "DO NOT PUSH"
   end
   
+  # Name of service account for project
+  # (It's the phrase before @ in the the email)
+  #i.e. smell-my-city-account
+  def self.SMC_SERVICE_ACCOUNT_NAME
+    "DO NOT PUSH"
+  end
+
+  # Note SMC key.json should be named "smc_service_account.json"
   def self.SMC_SERVICE_ACCOUNT_PRIVATE_KEY
-    "#{Dir.pwd}/config/smc_service_account.pem"
+    "#{Dir.pwd}/config/smc_service_account.json"
   end  
 
   def self.SMC_FIREBASE_ACCESS_TOKEN
     "#{Dir.pwd}/config/smc_access_token.txt"
   end
    
+  # Identifier for service account for project
+  # (It's the phrase between @ and .com in the email)
+  #i.e. smell-my-citya12345   
   def self.PGH_SERVICE_ACCOUNT
-    "DO NOT PUSH"
+    "smctesting-a933b"
   end
 
+  # Name of service account for project
+  # (It's the phrase before @ in the the email)
+  #i.e. smell-my-city-account
+  def self.PGH_SERVICE_ACCOUNT_NAME
+    "validation" 
+  end
+
+  # Note SMC key.json should be named "pgh_service_account.pem"
   def self.PGH_SERVICE_ACCOUNT_PRIVATE_KEY
-    "#{Dir.pwd}/config/pgh_service_account.pem"
+    "#{Dir.pwd}/config/pgh_service_account.json"
   end  
 
   def self.PGH_FIREBASE_ACCESS_TOKEN
@@ -52,8 +77,8 @@ class FirebasePushNotification < ActiveRecord::Base
   end
 
 
-  def self.getServiceAccountEmail(service_account)
-    "smc-fmctest@#{service_account}.iam.gserviceaccount.com"
+  def self.getServiceAccountEmail(account_name,service_account)
+    "#{account_name}@#{service_account}.iam.gserviceaccount.com"
   end 
 
   # pushes to those subscribed to Pittsburgh AQI notifications
@@ -164,22 +189,22 @@ class FirebasePushNotification < ActiveRecord::Base
 
   def self.send_push_notification(conditions, title, body, options={})
     # default to smell PGH
-    self.send_notification(self.PGH_SERVICE_ACCOUNT, self.PGH_SERVICE_ACCOUNT_PRIVATE_KEY, self.PGH_FIREBASE_ACCESS_TOKEN, conditions, title, body, options)
+    self.send_notification(self.PGH_SERVICE_ACCOUNT_NAME,self.PGH_SERVICE_ACCOUNT, self.PGH_SERVICE_ACCOUNT_PRIVATE_KEY, self.PGH_FIREBASE_ACCESS_TOKEN, conditions, title, body, options)
   end
 
 
   def self.send_smellpgh_notification(conditions, title, body, options={})
     # default to smell PGH
-    self.send_notification(self.PGH_SERVICE_ACCOUNT, self.PGH_SERVICE_ACCOUNT_PRIVATE_KEY, self.PGH_FIREBASE_ACCESS_TOKEN, conditions, title, body, options)
+    self.send_notification(self.PGH_SERVICE_ACCOUNT_NAME,self.PGH_SERVICE_ACCOUNT, self.PGH_SERVICE_ACCOUNT_PRIVATE_KEY, self.PGH_FIREBASE_ACCESS_TOKEN, conditions, title, body, options)
   end
 
 
   def self.send_smc_notification(conditions, title, body, options={})
     # default to smell PGH
-    self.send_notification(self.SMC_SERVICE_ACCOUNT, self.SMC_SERVICE_ACCOUNT_PRIVATE_KEY, self.SMC_FIREBASE_ACCESS_TOKEN, conditions, title, body, options)
+    self.send_notification(self.SMC_SERVICE_ACCOUNT_NAME,self.SMC_SERVICE_ACCOUNT, self.SMC_SERVICE_ACCOUNT_PRIVATE_KEY, self.SMC_FIREBASE_ACCESS_TOKEN, conditions, title, body, options)
   end
 
-  def self.send_notification(serviceAccount,privateKeyLoc, accessTokenLoc,conditions, title, body, options)
+  def self.send_notification(accountName,serviceAccount,privateKeyLoc, accessTokenLoc,conditions, title, body, options)
     # prepend to topics if we are on staging
     if Rails.env == "staging"
       conditions.map!{|s| "STAGING-#{s}"}
@@ -233,16 +258,19 @@ class FirebasePushNotification < ActiveRecord::Base
     data = json.to_json
 
     # only push on production
-    if Rails.env == "production" or Rails.env == "staging"
+    if true
+    # if Rails.env == "production" or Rails.env == "staging"
       # do not send any notifications from 9 PM until 5 AM
       if current_hour.between?(21,24) or current_hour.between?(0,4)
         # TODO make this error message reflect when it's Pacific time
+        headers = '-H "Content-Type:application/json" -H "Authorization: Bearer ' + File.read(accessTokenLoc) + '"'
+        url = self.getFirebaseNotificationURL(serviceAccount)
         Rails.logger.info("Refusing to send push notification at hour=#{current_hour}; info was: headers=#{headers}, url=#{url}, data=#{data}")
       else
 
         # Windows cURL compatability
         data = data.gsub('"','\"')
-        self.trySendNotification(serviceAccount,privateKeyLoc,accessTokenLoc,data,conditions,options,false)
+        self.trySendNotification(accountName,serviceAccount,privateKeyLoc,accessTokenLoc,data,conditions,options,false)
       end
     else
       Rails.logger.info("FirebasePushNotification (non-production): curl -X POST #{headers} #{url} -d '#{data}'")
@@ -250,11 +278,12 @@ class FirebasePushNotification < ActiveRecord::Base
   end
 
   # Attempts to send notification, refreshes access token if the attempt fails
-  def self.trySendNotification(serviceAccount,privateKeyLoc,accessTokenLoc,data,conditions,options,refreshed)
+  def self.trySendNotification(accountName,serviceAccount,privateKeyLoc,accessTokenLoc,data,conditions,options,refreshed)
 
     # Generate new access token if none exists
     unless File.exist?(accessTokenLoc)
-      self.requestAccessToken(self.getServiceAccountEmail(serviceAccount),privateKeyLoc, accessTokenLoc)
+      Rails.logger.info("No previous auth token exists, requesting new token at time=#{DateTime.now.to_i}")
+      self.requestAccessToken(self.getServiceAccountEmail(accountName,serviceAccount),privateKeyLoc, accessTokenLoc)
     end  
     headers = '-H "Content-Type:application/json" -H "Authorization: Bearer ' + File.read(accessTokenLoc) + '"'
     url = self.getFirebaseNotificationURL(serviceAccount)
@@ -274,8 +303,9 @@ class FirebasePushNotification < ActiveRecord::Base
 
         # Request failed try to get a new access token
         unless refreshed
-          self.requestAccessToken(self.getServiceAccountEmail(serviceAccount),privateKeyLoc, accessTokenLoc)
-          self.trySendNotification(serviceAccount,privateKeyLoc, accessTokenLoc,data,conditions,options,true)
+          Rails.logger.info("Notification request failed, requesting new token at time=#{DateTime.now.to_i}")
+          self.requestAccessToken(self.getServiceAccountEmail(accountName,serviceAccount),privateKeyLoc, accessTokenLoc)
+          self.trySendNotification(accountName,serviceAccount,privateKeyLoc, accessTokenLoc,data,conditions,options,true)
         end 
       end 
     end  
@@ -302,7 +332,7 @@ class FirebasePushNotification < ActiveRecord::Base
     root = Dir.pwd
 
     # Service Account Secret Key (Don't push should be in .gitignore)
-    key = OpenSSL::PKey::RSA.new(File.read(privateKeyLoc))
+    key = OpenSSL::PKey::RSA.new(JSON.parse(File.read(privateKeyLoc))["private_key"])
 
     # Google only accepts this header
     head = {}
@@ -341,6 +371,8 @@ class FirebasePushNotification < ActiveRecord::Base
     unless json_response["access_token"].blank?
       Rails.logger.info("Obtained new access token: #{json_response["access_token"]}")
       File.write(accessTokenLoc, json_response["access_token"])
+    else
+      Rails.logger.info("Failed to obtain new access token")
     end
 
   end
