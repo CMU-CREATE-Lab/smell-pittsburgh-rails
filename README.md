@@ -3,7 +3,7 @@ Smell Pittsburgh Rails Server
 
 A simple API for sending and receiving Smell Reports, powered by Rails.
 
-Runs on **rails 4.2.10** using **ruby v2.2.5**.
+Runs on **rails 4.2.10** using **ruby v2.3.x**.
 
 ## Requesting Smell Reports
 
