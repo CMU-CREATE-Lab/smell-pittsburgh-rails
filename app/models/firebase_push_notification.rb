@@ -53,7 +53,7 @@ class FirebasePushNotification < ActiveRecord::Base
   # (It's the phrase between @ and .com in the email)
   #i.e. smell-my-citya12345   
   def self.PGH_SERVICE_ACCOUNT
-    "smctesting-a933b"
+    "DO NOT PUSH"
   end
 
   # Name of service account for project
@@ -258,8 +258,7 @@ class FirebasePushNotification < ActiveRecord::Base
     data = json.to_json
 
     # only push on production
-    if true
-    # if Rails.env == "production" or Rails.env == "staging"
+    if Rails.env == "production" or Rails.env == "staging"
       # do not send any notifications from 9 PM until 5 AM
       if current_hour.between?(21,24) or current_hour.between?(0,4)
         # TODO make this error message reflect when it's Pacific time
