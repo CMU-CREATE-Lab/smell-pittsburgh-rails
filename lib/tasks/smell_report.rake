@@ -47,12 +47,11 @@ namespace :smell_report do
 
   task :summary_notifications => :environment do
     ["PGH","BA"].each do |area|
+      right_now = ApplicationHelper.get_time_by_alias(area)
       if area == "PGH"
-        right_now = DateTime.now
         report_tracker = SmellReportTracker
         in_area_bounds = :in_pittsburgh
       elsif area == "BA"
-        right_now = (DateTime.now.to_time - 3.hours).to_datetime
         report_tracker = BASmellReportTracker
         in_area_bounds = :in_bay_area
       end

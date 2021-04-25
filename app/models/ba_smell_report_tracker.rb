@@ -9,7 +9,7 @@ class BASmellReportTracker < ActiveRecord::Base
     if Rails.cache.read("listening_for_ba_smell_reports").nil?
       # depending on the hour of the day, we should either be listening or not listening by default
       #convert to Pacific Time (accounts for DST)
-      hour = (Time.now - 3 * 60 * 60).hour
+      hour = ApplicationHelper.get_time_by_alias("BA")
       is_listening = (hour >= 7 and hour < 14)
       Rails.cache.write("listening_for_ba_smell_reports", is_listening)
     end

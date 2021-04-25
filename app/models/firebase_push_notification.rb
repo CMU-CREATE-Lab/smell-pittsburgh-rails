@@ -214,11 +214,7 @@ class FirebasePushNotification < ActiveRecord::Base
       end
     end
 
-    if options["area"] == "BA"
-      current_hour = (Time.now - 3 * 60 * 60).hour
-    else
-      current_hour = Time.now.hour
-    end
+    current_hour = ApplicationHelper.get_time_by_alias(options["area"])
 
     Rails.logger.info("FirebasePushNotification(#{DateTime.now}): Sending notification with conditions: condition=#{conditions}, title=#{title}, body=#{body}")
     json = {}
