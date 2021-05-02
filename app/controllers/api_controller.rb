@@ -832,4 +832,8 @@ class ApiController < ApplicationController
     end
   end
 
+  # Get /api/v2/cities/hashes
+  def cities_hashes
+    render :json => City.all.to_json(:only => [:name, :id, :hashed])
+  end
 end

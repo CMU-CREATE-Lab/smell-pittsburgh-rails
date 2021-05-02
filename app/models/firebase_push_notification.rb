@@ -19,7 +19,8 @@ class FirebasePushNotification < ActiveRecord::Base
   end
 
   def self.SMC_REMINDER_TOPIC
-    "ReminderNotification"
+    # "ReminderNotification"
+    "RMD"
   end
 
   def self.TOKEN_URL
@@ -60,7 +61,7 @@ class FirebasePushNotification < ActiveRecord::Base
   # (It's the phrase before @ in the the email)
   #i.e. smell-my-city-account
   def self.PGH_SERVICE_ACCOUNT_NAME
-    "validation" 
+    "DO NOT PUSH" 
   end
 
   # Note SMC key.json should be named "pgh_service_account.pem"
@@ -84,7 +85,10 @@ class FirebasePushNotification < ActiveRecord::Base
   # pushes to those subscribed to Pittsburgh AQI notifications
   # aqi_has_increased: true indicates increase, false indicates decrease (if neither increase/decrease, the function should not be called)
   def self.push_aqi_pittsburgh_change(aqi_has_increased,cities,pittsburgh)
-    topic = ["pghaqi"]
+    # topic = ["pghaqi"]
+    topic = []
+    topic.push(City.find_by_name("Pittsburgh").hashed)
+    topic.push("AQI")
     title = ""
     body = ""
 
@@ -101,7 +105,10 @@ class FirebasePushNotification < ActiveRecord::Base
 
 
   def self.push_aqi_pittsburgh_green
-    topic = ["pghaqi"]
+    # topic = ["pghaqi"]
+    topic = []
+    topic.push(City.find_by_name("Pittsburgh").hashed)
+    topic.push("AQI")
     title = "Does it smell better?"
     body = "Pittsburgh AQI just improved"
 
@@ -110,14 +117,17 @@ class FirebasePushNotification < ActiveRecord::Base
 
 
   def self.push_aqi_pittsburgh_notgood
-    topic = ["pghaqi"]
+    # topic = ["pghaqi"]
+    topic = []
+    topic.push(City.find_by_name("Pittsburgh").hashed)
+    topic.push("AQI")
     title = "PGH Air Quality Notification"
     body = "AQI has been over 50 for last 2 hrs"
 
     self.send_push_notification(topic,title,body, {"analytics_category" => "push_notification_aqi_worse"})
   end
 
-
+  # Todo: Fix Function after 5/3 conversation
   # pushes to those subscribed to smell reports on the same level as smell_report
   def self.push_smell_report(smell_report, area=nil)
     topic = [self.getTopicFromArea(area)]
@@ -128,7 +138,7 @@ class FirebasePushNotification < ActiveRecord::Base
     self.send_push_notification(topic,title,body,{"area"=>area})
   end
 
-
+  # Todo: Fix Function after 5/3 conversation
   # list: list of smell reports
   def self.push_smell_report_daily_summary(list, area=nil)
     topic = [self.getTopicFromArea(area)]
@@ -144,7 +154,7 @@ class FirebasePushNotification < ActiveRecord::Base
     self.send_push_notification(topic,title,body,{"area"=>area})
   end
 
-
+  # Todo: Fix Function after 5/3 conversation
   def self.push_smell_report_hourly_summary(list, area=nil)
     topic = [self.getTopicFromArea(area)]
 
@@ -312,7 +322,8 @@ class FirebasePushNotification < ActiveRecord::Base
     conditions.map!{|s| "'#{s}' in topics"}
     return conditions.join(" and ")
   end
-   
+  
+  # Todo: Fix Function after 5/3 conversation
   def self.getTopicFromArea(area)
     if not area.nil? and area != "PGH"
       topic = area+"SmellReports"
