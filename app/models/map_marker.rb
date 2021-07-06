@@ -7,7 +7,7 @@ class MapMarker < ActiveRecord::Base
 
 
   def to_api
-    model_json_string = self.to_json(:only => [:latitude, :longitude, :marker_type, :id])
+    model_json_string = self.to_json(:only => [:latitude, :longitude, :marker_type, :id, :decommissioned_date])
     return JSON(self.data).merge(JSON(model_json_string))
   end
 
