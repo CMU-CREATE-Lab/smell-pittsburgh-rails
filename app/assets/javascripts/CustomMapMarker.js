@@ -76,15 +76,19 @@
 
       // Create HTML content for the info window
       current_icon_size = zoom_level_to_icon_size[init_zoom_level];
+      var d = new Date(correctTimestamp(data["observed_at"] * 1000, false, getTimezoneString()));
       html_content = "";
-      html_content += "<b>Date:</b> " + (new Date(data["observed_at"] * 1000)).toLocaleString() + "<br>";
+      html_content += "<b>Date:</b> " + d.toLocaleString() + " " + moment.tz(d, getTimezoneString()).zoneAbbr() + "<br>";
       html_content += "<b>Smell Rating:</b> " + smell_value + " (" + smell_value_to_text[smell_value - 1] + ")<br>";
       html_content += "<b>Symptoms:</b> " + feelings_symptoms + "<br>";
       html_content += "<b>Smell Description:</b> " + smell_description;
 
       // Create google map marker
       google_map_marker = new google.maps.Marker({
-        position: new google.maps.LatLng({lat: data["latitude"], lng: data["longitude"]}),
+        position: new google.maps.LatLng({
+          lat: data["latitude"],
+          lng: data["longitude"]
+        }),
         icon: generateSmellIcon(smell_value, init_zoom_level, current_icon_size),
         zIndex: smell_value,
         opacity: marker_default_opacity
@@ -137,8 +141,9 @@
       if (data["is_current_day"]) {
         if (typeof wind_speed !== "undefined") {
           var wind_txt = (isNaN(wind_speed) || wind_speed < 0) ? no_data_txt : wind_speed + " MPH";
-          var wind_time = new Date(data["wind_data_time"]);
+          var wind_time = new Date(correctTimestamp(data["wind_data_time"], false, getTimezoneString()));
           var wind_time_txt = " at time " + padTimeString(wind_time.getHours() + 1) + ":" + padTimeString(wind_time.getMinutes() + 1);
+          wind_time_txt += " " + moment.tz(wind_time, getTimezoneString()).zoneAbbr();
           html_content += '<b>Latest Wind Speed:</b> ' + wind_txt + wind_time_txt;
         }
       }
@@ -147,11 +152,17 @@
       // Create google map marker
       image.addEventListener("load", function () {
         google_map_marker = new google.maps.Marker({
-          position: new google.maps.LatLng({lat: data["latitude"], lng: data["longitude"]}),
+          position: new google.maps.LatLng({
+            lat: data["latitude"],
+            lng: data["longitude"]
+          }),
           icon: generateWindOnlySensorIcon(image, wind_direction),
           zIndex: 200,
           opacity: marker_default_opacity,
-          shape: {coords: [50, 50, 12.5], type: "circle"} // Modify click region
+          shape: {
+            coords: [50, 50, 12.5],
+            type: "circle"
+          } // Modify click region
         });
         addMarkerEvent();
         // Fire complete event
@@ -166,7 +177,7 @@
       // TODO: no_data_txt should be different for current day and previous day cases
       var no_data_txt = "No data in last hour";
       var sensor_value = data["sensor_value"];
-      var sensor_data_time = data["sensor_data_time"];
+      var sensor_data_time = correctTimestamp(data["sensor_data_time"], false, getTimezoneString());
       var sensor_time_txt = "";
       var wind_speed = data["wind_speed"];
       var has_sensor = !(isNaN(sensor_value) || sensor_value < 0);
@@ -174,6 +185,7 @@
       if (typeof sensor_data_time !== "undefined" && has_sensor) {
         var sensor_time = new Date(sensor_data_time);
         sensor_time_txt = " at time " + padTimeString(sensor_time.getHours() + 1) + ":" + padTimeString(sensor_time.getMinutes() + 1);
+        sensor_time_txt += " " + moment.tz(sensor_time, getTimezoneString()).zoneAbbr();
       }
 
       // Create HTML content for the info window
@@ -183,8 +195,9 @@
         html_content += "<b>Latest PM<sub>2.5</sub>:</b> " + sensor_txt + sensor_time_txt + "<br>";
         if (typeof wind_speed !== "undefined") {
           var wind_txt = (isNaN(wind_speed) || wind_speed < 0) ? no_data_txt : wind_speed + " MPH";
-          var wind_time = new Date(data["wind_data_time"]);
+          var wind_time = new Date(correctTimestamp(data["wind_data_time"], false, getTimezoneString()));
           var wind_time_txt = " at time " + padTimeString(wind_time.getHours() + 1) + ":" + padTimeString(wind_time.getMinutes() + 1);
+          wind_time_txt += " " + moment.tz(wind_time, getTimezoneString()).zoneAbbr();
           html_content += '<b>Latest Wind Speed:</b> ' + wind_txt + wind_time_txt;
         }
       } else {
@@ -198,11 +211,17 @@
       // Create google map marker
       image.addEventListener("load", function () {
         google_map_marker = new google.maps.Marker({
-          position: new google.maps.LatLng({lat: data["latitude"], lng: data["longitude"]}),
+          position: new google.maps.LatLng({
+            lat: data["latitude"],
+            lng: data["longitude"]
+          }),
           icon: generatePM25SensorIcon(image, wind_direction),
           zIndex: sensor_icon_idx + 5,
           opacity: marker_default_opacity,
-          shape: {coords: [50, 50, 12.5], type: "circle"} // Modify click region
+          shape: {
+            coords: [50, 50, 12.5],
+            type: "circle"
+          } // Modify click region
         });
         addMarkerEvent();
         // Fire complete event
@@ -324,13 +343,14 @@
       // TODO: no_data_txt should be different for current day and previous day cases
       var no_data_txt = "No data in last hour";
       var sensor_value = data["sensor_value"];
-      var sensor_data_time = data["sensor_data_time"];
+      var sensor_data_time = correctTimestamp(data["sensor_data_time"], false, getTimezoneString());
       var sensor_time_txt = "";
       var has_sensor = !(isNaN(sensor_value) || sensor_value < 0);
       var sensor_txt = has_sensor ? sensor_value + " ppb" : no_data_txt;
       if (typeof sensor_data_time !== "undefined" && has_sensor) {
         var sensor_time = new Date(sensor_data_time);
         sensor_time_txt = " at time " + padTimeString(sensor_time.getHours() + 1) + ":" + padTimeString(sensor_time.getMinutes() + 1);
+        sensor_time_txt += " " + moment.tz(sensor_time, getTimezoneString()).zoneAbbr();
       }
 
       // Create HTML content for the info window
@@ -346,7 +366,10 @@
 
       // Create google map marker
       google_map_marker = new google.maps.Marker({
-        position: new google.maps.LatLng({lat: data["latitude"], lng: data["longitude"]}),
+        position: new google.maps.LatLng({
+          lat: data["latitude"],
+          lng: data["longitude"]
+        }),
         icon: generateVOCSensorIcon(sensor_icon_idx, 24),
         zIndex: sensor_icon_idx + 5,
         opacity: marker_default_opacity

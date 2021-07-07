@@ -85,6 +85,69 @@ function firstDayOfCurrentMonth(date_obj) {
   return new Date(date_obj.getFullYear(), date_obj.getMonth(), 1);
 }
 
+// Correct the timestamp based on time zone differences
+function correctTimestamp(original_timestamp_in_millisec, reverse, timezone_string) {
+  // We need to consider the timezone offset difference between the browser and the US Eastern Time.
+  // We want to show the data in Eastern Time (Pittsburgh).
+  // But without the timezone offset correction, the data is displayed based on the browser's timezone.
+  // For example, when Yen-Chia ran the animation on 7/7/2020 data in Pittsburgh (EST time zone), a lot of smell reports showed up in the morning.
+  // But when he is in Taiwan, which is the UTC+8 time zone, a lot of the smell reports showed in the evening instead.
+  // This is because there is a 13 hour difference between EST time and Taiwan time.
+  var d = new Date(original_timestamp_in_millisec);
+  timezone_string = safeGet(timezone_string, "America/New_York"); // default to US Eastern Time
+  reverse = safeGet(reverse, false); // reverse offset direction or not
+  d = moment.tz(d, timezone_string);
+
+  // Daylight saving is automatically converted in JavaScript
+  // We need to check if the browser's user is in a timezone that has daylight saving
+  // And also if the original timestamp has daylight saving
+  // If they both have or do not have daylight saving, then we are good
+  // If one has daylight saving and another one does not have daylight saving, then we need to do extra offset
+  // Notice that we only need to do the offset if the browser's user is in a place that enables daylight saving
+  var jan_offset = moment({
+    M: 0,
+    d: 1
+  }).utcOffset();
+  var jul_offset = moment({
+    M: 6,
+    d: 1
+  }).utcOffset();
+  if (jan_offset != jul_offset) { // this means that the browser's user is in a place that enables daylight saving
+    var is_browser_timezone_dst = moment().isDST();
+    var is_original_timezone_dst = d.isDST();
+    if (reverse) {
+      if (!is_browser_timezone_dst && is_original_timezone_dst) {
+        original_timestamp_in_millisec += 3600000;
+      }
+      if (is_browser_timezone_dst && !is_original_timezone_dst) {
+        original_timestamp_in_millisec -= 3600000;
+      }
+    } else {
+      if (!is_browser_timezone_dst && is_original_timezone_dst) {
+        original_timestamp_in_millisec -= 3600000;
+      }
+      if (is_browser_timezone_dst && !is_original_timezone_dst) {
+        original_timestamp_in_millisec += 3600000;
+      }
+    }
+  }
+
+  // Compute the time zone offset difference and make the correction
+  var original_timezone_offset_in_min = d.utcOffset();
+  var browser_timezone_offset_in_min = moment().utcOffset();
+  var diff_timezone_offset_in_min = original_timezone_offset_in_min - browser_timezone_offset_in_min;
+  if (reverse) {
+    return original_timestamp_in_millisec - diff_timezone_offset_in_min * 60000;
+  } else {
+    return original_timestamp_in_millisec + diff_timezone_offset_in_min * 60000;
+  }
+}
+
+// Correct the date object by timezone
+function correctDateObj(original_date_obj, reverse, timezone_string) {
+  return new Date(correctTimestamp(original_date_obj.getTime(), reverse, timezone_string));
+}
+
 // Check if a string yyyy-mm-dd is a valid date
 function isValidDate(date_string) {
   var reg_ex = /^\d{4}-\d{2}-\d{2}$/;

@@ -153,7 +153,11 @@
         var opacity = infobox["boxStyle_"]["opacity"];
         if (opacity > 0) {
           opacity -= 0.05;
-          infobox.setOptions({boxStyle: {opacity: opacity}});
+          infobox.setOptions({
+            boxStyle: {
+              opacity: opacity
+            }
+          });
           fadeInfoBox(infobox, time);
         } else {
           infobox.setVisible(false);
@@ -224,7 +228,7 @@
             for (var i = smell_idx; i < smell_markers.length; i++) {
               var smell_m = smell_markers[i];
               var smell_m_data = smell_m.getData();
-              var smell_epochtime_milisec = smell_m_data["observed_at"] * 1000;
+              var smell_epochtime_milisec = correctTimestamp(smell_m_data["observed_at"] * 1000, false, getTimezoneString());
               if (smell_epochtime_milisec <= (current_epochtime_milisec + elapsed_milisec)) {
                 showMarker(smell_m, map);
                 if (animate_smell_text) showText(smell_m, map);
@@ -245,9 +249,9 @@
               var sensor_m_data = sensor_m.getData();
               var sensor_epochtime_milisec;
               if (typeof sensor_m_data["sensor_data_time"] != "undefined") {
-                sensor_epochtime_milisec = sensor_m_data["sensor_data_time"];
+                sensor_epochtime_milisec = correctTimestamp(sensor_m_data["sensor_data_time"], false, getTimezoneString());
               } else {
-                sensor_epochtime_milisec = sensor_m_data["wind_data_time"];
+                sensor_epochtime_milisec = correctTimestamp(sensor_m_data["wind_data_time"], false, getTimezoneString());
               }
               if (sensor_epochtime_milisec <= (current_epochtime_milisec + elapsed_milisec)) {
                 // Show current sensor marker
