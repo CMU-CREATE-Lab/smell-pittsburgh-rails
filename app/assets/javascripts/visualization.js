@@ -993,6 +993,11 @@ function handleSmellMarkerClicked(marker) {
     "metric1": marker_data["smell_value"]
   };
   addGoogleAnalyticEvent("smell", "click", label);
+  // Remove highlight of popup close button
+  // Apparently need a slight delay to allow for the button to initially be focused
+  setTimeout(function() {
+    document.activeElement.blur();
+  }, 50);
 }
 
 function hideSmellMarkersByTime(epochtime_milisec) {
@@ -1484,6 +1489,11 @@ function handleSensorMarkerClicked(marker) {
     "metric2": sensor_value
   };
   addGoogleAnalyticEvent("sensor", "click", label);
+  // Remove highlight of popup close button
+  // Apparently need a slight delay to allow for the button to initially be focused
+  setTimeout(function() {
+    document.activeElement.blur();
+  }, 50);
 }
 
 function createMarkerTableFromSensorData(data, epochtime_milisec, info, i) {
