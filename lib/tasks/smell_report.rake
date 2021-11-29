@@ -122,4 +122,36 @@ namespace :smell_report do
     puts rows
   end
 
+  task :email_end_of_day_csv_report => :environment do
+    ["PGH"].each do |area|
+      if area == "PGH"
+        Time.zone = "America/New_York"
+        client = {"name" => "Smell PGH", "website" => "https://smellpgh.org"}
+        agency_name = "Allegheny County Health Department"
+        in_area_bounds = :in_pittsburgh
+        email_recipients = ACHD_BULK_EMAIL_RECIPIENTS.join(",")
+      end
+
+      smell_reports = SmellReport.where(:created_at => DateTime.now.beginning_of_day..DateTime.now.end_of_day).from_app(area).send(in_area_bounds)
+
+      csv_rows = []
+      csv_rows.push ["epoch time","date & time","anonymized user hash","smell value","latitude","longitude","zipcode","street name","smell description","symptoms","additional comments"].to_csv
+      smell_reports.each do |report|
+        csv_rows.push [report.observed_at,Time.zone.at(report.observed_at).to_datetime.strftime("%m/%d/%Y %H:%M:%S %Z"),report.anonymized_user_hash,report.smell_value,report.real_latitude,report.real_longitude,report.zip_code.zip,report.street_name,report.smell_description,report.feelings_symptoms,report.additional_comments].to_csv
+      end
+
+      root_tmp_path = "#{Rails.root}/tmp/reports"
+      report_name = "#{Date.today.to_s.gsub("-","")}_#{area.downcase}_smell_reports.csv"
+      full_report_path = "#{root_tmp_path}/#{report_name}"
+      subject = "Daily smell reports for #{area}"
+
+      # Clear out tmp report directory
+      FileUtils.rm_f(Dir.glob("#{root_tmp_path}/*"))
+
+      File.open("#{full_report_path}", 'w') { |file| file.write(csv_rows.join("")) }
+
+      GenericMailer.email_with_daily_csv_report(email_recipients, subject, client, agency_name, full_report_path).deliver
+    end
+  end
+
 end

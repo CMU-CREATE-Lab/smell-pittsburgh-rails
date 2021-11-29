@@ -19,4 +19,13 @@ class GenericMailer < ApplicationMailer
     @gmaps_link = "https://google.com/maps/search/" + @smell_report.real_latitude.to_s + "," + @smell_report.real_longitude.to_s
     mail(:to => to_address,:subject => "Smell Report")
   end
+
+  def email_with_daily_csv_report(to, subject, client, agency_name, file_path)
+    @client = client
+    @agency_name = agency_name
+    file_name = File.basename(file_path)
+    attachments[file_name] = File.read(file_path)
+    mail(:to => to, :subject => subject)
+  end
+
 end
