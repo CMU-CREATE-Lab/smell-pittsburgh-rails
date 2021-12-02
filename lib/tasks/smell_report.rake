@@ -145,8 +145,13 @@ namespace :smell_report do
       full_report_path = "#{root_tmp_path}/#{report_name}"
       subject = "Daily smell reports for #{area}"
 
-      # Clear out tmp report directory
-      FileUtils.rm_f(Dir.glob("#{root_tmp_path}/*"))
+      if Dir.exist?(root_tmp_path)
+        # Clear out tmp report directory
+        FileUtils.rm_f(Dir.glob("#{root_tmp_path}/*"))
+      else
+        # Create tmp report directory
+        FileUtils.mkdir_p(root_tmp_path)
+      end
 
       File.open("#{full_report_path}", 'w') { |file| file.write(csv_rows.join("")) }
 
