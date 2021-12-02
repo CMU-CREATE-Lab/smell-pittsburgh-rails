@@ -20,9 +20,10 @@ class GenericMailer < ApplicationMailer
     mail(:to => to_address,:subject => "Smell Report")
   end
 
-  def email_with_daily_csv_report(to, subject, client, agency_name, file_path)
+  def email_with_daily_csv_report(to, subject, client, agency_name, file_path, date_of_report)
     @client = client
     @agency_name = agency_name
+    @date_of_report = date_of_report
     file_name = File.basename(file_path)
     attachments[file_name] = File.read(file_path)
     mail(:to => to, :subject => subject)

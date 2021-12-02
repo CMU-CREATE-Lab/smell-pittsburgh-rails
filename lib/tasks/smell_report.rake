@@ -132,7 +132,12 @@ namespace :smell_report do
         email_recipients = ACHD_BULK_EMAIL_RECIPIENTS.join(",")
       end
 
-      smell_reports = SmellReport.where(:created_at => DateTime.now.beginning_of_day..DateTime.now.end_of_day).from_app(area).send(in_area_bounds)
+      start_time = DateTime.now.prev_day.beginning_of_day
+      end_time = DateTime.now.prev_day.end_of_day
+      date_of_report = Date.yesterday.to_s
+      file_date = date_of_report.gsub("-","")
+
+      smell_reports = SmellReport.where(:created_at => start_time..end_time).from_app(area).send(in_area_bounds)
 
       csv_rows = []
       csv_rows.push ["epoch time","date & time","anonymized user hash","smell value","latitude","longitude","zipcode","street name","smell description","symptoms","additional comments"].to_csv
@@ -141,7 +146,7 @@ namespace :smell_report do
       end
 
       root_tmp_path = "#{Rails.root}/tmp/reports"
-      report_name = "#{Date.today.to_s.gsub("-","")}_#{area.downcase}_smell_reports.csv"
+      report_name = "#{file_date}_#{area.downcase}_smell_reports.csv"
       full_report_path = "#{root_tmp_path}/#{report_name}"
       subject = "Daily smell reports for #{area}"
 
@@ -155,7 +160,7 @@ namespace :smell_report do
 
       File.open("#{full_report_path}", 'w') { |file| file.write(csv_rows.join("")) }
 
-      GenericMailer.email_with_daily_csv_report(email_recipients, subject, client, agency_name, full_report_path).deliver
+      GenericMailer.email_with_daily_csv_report(email_recipients, subject, client, agency_name, full_report_path, date_of_report).deliver
     end
   end
 
