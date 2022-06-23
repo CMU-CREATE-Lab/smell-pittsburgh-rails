@@ -6,6 +6,9 @@ source 'https://rubygems.org'
 #  rack 1.6.x
 #  json 1.8.x
 gem 'rails', '4.2.11.3'
+gem 'rack', git: 'https://github.com/rails-lts/rack.git', branch: 'lts-1-6-stable'
+gem 'json', '1.8.6'
+
 gem 'net-ssh'
 # Use mysql2 as the database for Active Record
 # Going past this version requires Rails >= 5.x
