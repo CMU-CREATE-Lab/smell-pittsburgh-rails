@@ -142,7 +142,7 @@ namespace :smell_report do
       csv_rows = []
       csv_rows.push ["epoch time","date & time","anonymized user hash","smell value","latitude","longitude","zipcode","street name","smell description","symptoms","additional comments"].to_csv
       smell_reports.each do |report|
-        csv_rows.push [report.observed_at,Time.zone.at(report.observed_at).to_datetime.strftime("%m/%d/%Y %H:%M:%S %Z"),report.anonymized_user_hash,report.smell_value,report.real_latitude,report.real_longitude,report.zip_code.zip,report.street_name,report.smell_description,report.feelings_symptoms,report.additional_comments].to_csv
+        csv_rows.push [report.observed_at,Time.zone.at(report.observed_at).to_datetime.strftime("%m/%d/%Y %H:%M:%S %Z"),report.anonymized_user_hash,report.smell_value,report.real_latitude,report.real_longitude,report.zip_code.zip,report.street_name,report.smell_description,report.feelings_symptoms,report.additional_comments].to_csv if report and report.zip_code
       end
 
       root_tmp_path = "#{Rails.root}/tmp/reports"
