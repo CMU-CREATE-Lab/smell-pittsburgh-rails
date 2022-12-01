@@ -127,6 +127,12 @@ var widgets = new edaplotjs.Widgets();
 // Map city ids to home names
 var city_id_to_data;
 
+// Timezone of the current city location
+// For example, Pittsburgh and Louisville should be "America/New_York"
+// Bay Area and Portland should be "America/Los_Angeles"
+// All Regions should be the browser's timezone, which is moment.tz.guess(true)
+var timezone_string = "America/New_York";
+
 function init() {
   var qs = getQueryStringData(); // set data coming from the query string
 
@@ -258,6 +264,24 @@ function setMode(desired_mode) {
   } else {
     setToSmellPgh(mode);
   }
+  if (typeof desired_city_ids !== "undefined" && desired_city_ids.length == 1) {
+    if (desired_city_ids[0] == 1) {
+      // Pittsburgh
+      timezone_string = "America/New_York";
+    } else if (desired_city_ids[0] == 2) {
+      // Louisville
+      timezone_string = "America/New_York";
+    } else if (desired_city_ids[0] == 3) {
+      // Portland
+      timezone_string = "America/Los_Angeles";
+    } else if (desired_city_ids[0] == 4) {
+      // Bay Area
+      timezone_string = "America/Los_Angeles";
+    }
+  } else {
+    // All Regions
+    timezone_string = moment.tz.guess(true);
+  }
 }
 
 function loadDataAndSetUI() {
@@ -377,6 +401,8 @@ function setShareDate() {
         // Update timeline
         var start_time = firstDayOfCurrentMonth(selected_date_obj).getTime();
         var end_time = firstDayOfNextMonth(selected_date_obj).getTime();
+        start_time = correctTimestamp(start_time, true, timezone_string);
+        end_time = correctTimestamp(end_time, true, timezone_string) - 10;
         loadAndUpdateTimeLine(start_time, end_time, function () {
           // Select the correct block
           var max_num_days = daysInMonth(year, month);
@@ -684,7 +710,9 @@ function initCalendarBtn() {
       if (selected_value == -1) {
         loadInitialTimeLine();
       } else {
-        loadAndUpdateTimeLine(selected_time, firstDayOfNextMonth(selected_date_obj).getTime());
+        var corrected_s = correctTimestamp(selected_time, true, timezone_string);
+        var corrected_e = correctTimestamp(firstDayOfNextMonth(selected_date_obj).getTime(), true, timezone_string) - 10;
+        loadAndUpdateTimeLine(corrected_s, corrected_e);
       }
       addGoogleAnalyticEvent("calendar", "click", {
         "dimension5": selected_time.toString()
@@ -847,7 +875,7 @@ function loadAndDrawCalendar() {
 function getInitialTimeRange() {
   var date_obj = firstDayOfPreviousMonth(new Date());
   // The starting time is the first day of the last month
-  var start_time = date_obj.getTime();
+  var start_time = correctTimestamp(date_obj.getTime(), true, timezone_string);
   // The ending time is the current time
   var end_time = Date.now();
   return {
@@ -863,7 +891,7 @@ function loadInitialTimeLine(callback) {
 
 function loadAndUpdateTimeLine(start_time, end_time, callback) {
   loadTimelineData(start_time, end_time, function (data) {
-    timeline.updateBlocks(formatDataForTimeline(data, new Date(end_time)));
+    timeline.updateBlocks(formatDataForTimeline(data, end_time));
     timeline.clearBlockSelection();
     timeline.selectLastBlock();
     if (typeof callback === "function") {
@@ -876,7 +904,7 @@ function loadAndCreateTimeline(callback) {
   // Create the timeline
   var T = getInitialTimeRange();
   loadTimelineData(T["start_time"], T["end_time"], function (data) {
-    createTimeline(formatDataForTimeline(data, new Date(T["end_time"])));
+    createTimeline(formatDataForTimeline(data, T["end_time"]));
   });
 }
 
@@ -934,7 +962,7 @@ function loadAndCreateSmellMarkers(epochtime_milisec) {
   // generate start and end times from epochtime_milisec
   var date_obj = new Date(epochtime_milisec);
   date_obj.setHours(0, 0, 0, 0);
-  var start_time = parseInt(date_obj.getTime() / 1000);
+  var start_time = parseInt(correctTimestamp(date_obj.getTime(), true, timezone_string) / 1000);
   var end_time = start_time + 86399; // one day after the starting time
   $.ajax({
     "url": generateURLForSmellReports({
@@ -1027,7 +1055,7 @@ function generateURL(domain, path, parameters) {
     parameters["latlng_bbox"] = desired_latlng_bbox;
   }
   if (typeof parameters["timezone_string"] === "undefined") {
-    parameters["timezone_string"] = encodeURIComponent(moment.tz.guess(true));
+    parameters["timezone_string"] = timezone_string;
   }
   var api_params = "";
   var parameter_list = [];
@@ -1170,11 +1198,14 @@ function drawCalendar(data) {
   }
 }
 
-function formatDataForTimeline(data, pad_to_date_obj) {
-  var current_date_obj = new Date();
-  if (pad_to_date_obj.getTime() > current_date_obj.getTime()) {
-    pad_to_date_obj = current_date_obj;
+function formatDataForTimeline(data, pad_to_date_timestamp) {
+  var current_date_timestamp = new Date().getTime();
+  current_date_timestamp = correctTimestamp(current_date_timestamp, false, timezone_string);
+  pad_to_date_timestamp = correctTimestamp(pad_to_date_timestamp, false, timezone_string);
+  if (pad_to_date_timestamp > current_date_timestamp) {
+    pad_to_date_timestamp = current_date_timestamp;
   }
+  var pad_to_date_obj = new Date(pad_to_date_timestamp);
   var batch_3d = []; // 3D batch data
   var batch_2d = []; // the inner small 2D batch data for batch_3d
   var sorted_day_str = Object.keys(data).sort();
@@ -1182,7 +1213,7 @@ function formatDataForTimeline(data, pad_to_date_obj) {
 
   // If no data, need to add the current day to the list
   if (sorted_day_str.length == 0) {
-    sorted_day_str = [dataObjectToString(new Date())];
+    sorted_day_str = [dataObjectToString(new Date(current_date_timestamp))];
   }
 
   // If the first one is not the first day of the month, we need to insert it
@@ -1282,8 +1313,10 @@ function createTimeline(data) {
       var end_time = safeGet(first_block_data["epochtime_milisec"], new Date().getTime());
       end_time = firstDayOfCurrentMonth(new Date(end_time)).getTime();
       var start_time = firstDayOfPreviousMonth(new Date(end_time)).getTime();
+      start_time = correctTimestamp(start_time, true, timezone_string);
+      end_time = correctTimestamp(end_time, true, timezone_string) - 10;
       loadTimelineData(start_time, end_time, function (data) {
-        obj.prependBlocks(formatDataForTimeline(data, new Date(end_time)));
+        obj.prependBlocks(formatDataForTimeline(data, end_time));
         obj.setLeftArrowOpacity(1);
         obj.enableLeftArrow();
       });
@@ -1556,6 +1589,7 @@ function hideSensorMarkersByTime(epochtime_milisec) {
 
 function generateSensorDataUrlList(epochtime_milisec, info) {
   var esdr_root_url = "https://esdr.cmucreatelab.org/api/v1/";
+  epochtime_milisec = correctTimestamp(epochtime_milisec, true, timezone_string);
   var epochtime = parseInt(epochtime_milisec / 1000);
   var time_range_url_part = "/export?format=json&from=" + epochtime + "&to=" + (epochtime + 86399);
 
@@ -1829,6 +1863,10 @@ function post(type, data) {
     data: data,
     origin: document.referrer // TODO: Change this (and above) to explicity set a domain we'll be receiving requests from
   });
+}
+
+function getTimezoneString() {
+  return timezone_string;
 }
 
 $(function () {
