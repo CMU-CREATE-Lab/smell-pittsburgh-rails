@@ -1349,11 +1349,13 @@ function showSensorMarkersByTime(epochtime_milisec) {
       "markers": [],
       "marker_table": []
     };
+    var counter = 0;
     for (var i = 0; i < sensors_list.length; i++) {
       if (sensors_list[i].decommissioned_date && sensors_list[i].decommissioned_date < epochtime_milisec) {
         continue;
       }
-      loadAndCreateSensorMarkers(epochtime_milisec, sensors_list[i], is_current_day, i);
+      loadAndCreateSensorMarkers(epochtime_milisec, sensors_list[i], is_current_day, counter);
+      counter++;
     }
   }
 }

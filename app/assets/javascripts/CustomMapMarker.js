@@ -138,7 +138,7 @@
         if (typeof wind_speed !== "undefined") {
           var wind_txt = (isNaN(wind_speed) || wind_speed < 0) ? no_data_txt : wind_speed + " MPH";
           var wind_time = new Date(data["wind_data_time"]);
-          var wind_time_txt = " at time " + padTimeString(wind_time.getHours() + 1) + ":" + padTimeString(wind_time.getMinutes() + 1);
+          var wind_time_txt = " at time " + padTimeString(wind_time.getHours()) + ":" + padTimeString(wind_time.getMinutes());
           html_content += '<b>Latest Wind Speed:</b> ' + wind_txt + wind_time_txt;
         }
       }
@@ -173,7 +173,7 @@
       var sensor_txt = has_sensor ? sensor_value + " &mu;g/m<sup>3</sup>" : no_data_txt;
       if (typeof sensor_data_time !== "undefined" && has_sensor) {
         var sensor_time = new Date(sensor_data_time);
-        sensor_time_txt = " at time " + padTimeString(sensor_time.getHours() + 1) + ":" + padTimeString(sensor_time.getMinutes() + 1);
+        sensor_time_txt = " at time " + padTimeString(sensor_time.getHours()) + ":" + padTimeString(sensor_time.getMinutes());
       }
 
       // Create HTML content for the info window
@@ -184,7 +184,7 @@
         if (typeof wind_speed !== "undefined") {
           var wind_txt = (isNaN(wind_speed) || wind_speed < 0) ? no_data_txt : wind_speed + " MPH";
           var wind_time = new Date(data["wind_data_time"]);
-          var wind_time_txt = " at time " + padTimeString(wind_time.getHours() + 1) + ":" + padTimeString(wind_time.getMinutes() + 1);
+          var wind_time_txt = " at time " + padTimeString(wind_time.getHours()) + ":" + padTimeString(wind_time.getMinutes());
           html_content += '<b>Latest Wind Speed:</b> ' + wind_txt + wind_time_txt;
         }
       } else {
@@ -330,7 +330,7 @@
       var sensor_txt = has_sensor ? sensor_value + " ppb" : no_data_txt;
       if (typeof sensor_data_time !== "undefined" && has_sensor) {
         var sensor_time = new Date(sensor_data_time);
-        sensor_time_txt = " at time " + padTimeString(sensor_time.getHours() + 1) + ":" + padTimeString(sensor_time.getMinutes() + 1);
+        sensor_time_txt = " at time " + padTimeString(sensor_time.getHours()) + ":" + padTimeString(sensor_time.getMinutes());
       }
 
       // Create HTML content for the info window
