@@ -1,5 +1,6 @@
 class PopulateClientIdForSmellpghWebsite < ActiveRecord::Migration
   def up
+    Client.reset_column_information
     time = Time.now.to_i.to_s
     token = Digest::MD5.hexdigest time+rand.to_s
     client = Client.new

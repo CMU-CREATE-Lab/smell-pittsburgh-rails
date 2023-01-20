@@ -1,5 +1,9 @@
 class InitialPopulateStatesTable < ActiveRecord::Migration
   def change
+    State.reset_column_information
+    City.reset_column_information
+    SmellReport.reset_column_information
+    ZipCode.reset_column_information
     initial_states = ["PA", "KY"]
 
     initial_states.each_with_index do |state_code, i|

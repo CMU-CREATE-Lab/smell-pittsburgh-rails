@@ -34,7 +34,7 @@ class AddAchdMarkers < ActiveRecord::Migration
       m.data = item[0].to_json
       m.latitude = item[1]
       m.longitude = item[2]
-      m.save!
+      m.save! :validate => false
     end
   end
 end

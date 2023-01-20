@@ -54,6 +54,17 @@ Then issue the curl command:
 
 The fields **user_hash**, **latitude**, **longitude**, and **smell_value** are required fields.
 
+## Developer Environment
+
+As of publication of this section (Jan 19, 2023) the most recent codebase uses `Rails 4.2.11.3` on `ruby-2.3.8`. Setting up the environment follows the standard process for a Rails application powered by a database, which looks something like this from the command line:
+
+1. `bundle install`
+2. `rake db:create`
+3. `rake db:migrate`
+
+For the `geokit-rails` gem, you may need to update the Google api key defined in `config/initializers/geokit.rb`, otherwise some migrations may fail when trying to reverse geocode.
+
+
 ## Capistrano and Deployment
 
 This repository uses the **capistrano** rubygem for deployment. The version number (3.5.0) was chosen for consistency with other repositories that use older ruby versions (ruby-1.9.3).

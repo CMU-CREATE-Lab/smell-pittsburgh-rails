@@ -227,6 +227,7 @@ class InitialSmellReportsForJeffersonCounty < ActiveRecord::Migration
         }
       ]
 
+      SmellReport.skip_callback(:create, :before, :filter_fields_for_swear_words)
       reports.each do |report|
         geo = Geokit::Geocoders::GoogleGeocoder.reverse_geocode( "#{report['Latitude']}, #{report['Longitude']}" )
         smell_report = SmellReport.create({

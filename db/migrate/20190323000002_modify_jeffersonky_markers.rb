@@ -1,5 +1,6 @@
 class ModifyJeffersonkyMarkers < ActiveRecord::Migration
   def up
+    MapMarker.reset_column_information
     markers = [
       [{
         "name":"Near Road AirNow",
