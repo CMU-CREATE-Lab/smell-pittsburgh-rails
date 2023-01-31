@@ -66,3 +66,6 @@ gem 'capistrano-sudo', require: false
 gem 'rvm1-capistrano3', require: false
 # terminal input-hiding for capistrano
 gem 'highline', require: false
+
+# stuff for bcamp
+gem 'sqlite3', '~> 1.3.6'
