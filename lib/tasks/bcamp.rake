@@ -292,8 +292,8 @@ namespace :bcamp do
             else
               # Finally, if Return Threshold event never happened, we check for Sustained Threshold
               if last_sustain.nil?
-                from = most_recent_data.sampledate.to_datetime.to_i
-                to = DATETIME_NOW.to_i
+                from = last_above.event_at.to_datetime.to_i
+                to = most_recent_data.sampledate.to_datetime.to_i
                 if ( (to-from) / 3600 ) >= 6
                   # (Sustained Threshold)
                   event = BcampEvent.new(:pollutant_id => p.id, :event_code => EVENT_CODE_SUSTAIN, :event_at => most_recent_data.sampledate)
@@ -371,6 +371,11 @@ namespace :bcamp do
 
 
   task :send_email_bcamp, [:email_body] => :environment do |t, args|
+    if args[:email_body].blank?
+      STDERR.puts "(print usage here)"
+      exit
+    end
+    email_body = args[:email_body]
     EmailSubscription.where(:subscribe_bcamp => true).map(&:email).each do |email|
       ActionMailer::Base.mail(
         from: "smellpgh-reports@cmucreatelab.org",
@@ -383,6 +388,11 @@ namespace :bcamp do
 
 
   task :send_email_admin, [:email_body] => :environment do |t, args|
+    if args[:email_body].blank?
+      STDERR.puts "(print usage here)"
+      exit
+    end
+    email_body = args[:email_body]
     EmailSubscription.where(:subscribe_admin => true).map(&:email).each do |email|
       ActionMailer::Base.mail(
         from: "smellpgh-reports@cmucreatelab.org",
