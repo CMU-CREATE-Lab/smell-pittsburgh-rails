@@ -371,6 +371,10 @@ namespace :bcamp do
 
 
   task :send_email_bcamp, [:email_body] => :environment do |t, args|
+    # NOTE: when invoking with Rake::Task["name:space"].invoke, the connection does not default back to mysql2,
+    # so we have to tell it to remove the (sqlite3) connection, then re-establish the default (mysql2) connection.
+    ActiveRecord::Base.remove_connection
+    ActiveRecord::Base.establish_connection
     if args[:email_body].blank?
       STDERR.puts "(print usage here)"
       exit
@@ -388,6 +392,10 @@ namespace :bcamp do
 
 
   task :send_email_admin, [:email_body] => :environment do |t, args|
+    # NOTE: when invoking with Rake::Task["name:space"].invoke, the connection does not default back to mysql2,
+    # so we have to tell it to remove the (sqlite3) connection, then re-establish the default (mysql2) connection.
+    ActiveRecord::Base.remove_connection
+    ActiveRecord::Base.establish_connection
     if args[:email_body].blank?
       STDERR.puts "(print usage here)"
       exit
