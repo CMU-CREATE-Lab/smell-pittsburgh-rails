@@ -14,7 +14,7 @@ class EmailSubscriptionsController < ApplicationController
     skip_mailer = @subscription.nil? ? false : @subscription.subscribe_bcamp
     if @subscription.nil?
       @subscription = EmailSubscription.new
-      @subscription.email = params[:email_subscription]
+      @subscription.email = @email
     end
     @subscription.subscribe_bcamp = true
     if @subscription.save
