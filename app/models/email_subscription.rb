@@ -1,8 +1,12 @@
 class EmailSubscription < ActiveRecord::Base
+
   validates :email, :uniqueness => true
+  # TODO confirm formatting?
+  validates_format_of :email, :with => /\A(\S+)@(.+)\.(\S+)\z/
   validates :token_to_unsubscribe, :uniqueness => true
 
-  before_save :generate_token_to_unsubscribe
+  before_create :generate_token_to_unsubscribe
+
 
   # static variable avoids duplicate UIDs being created at same time
   @@uid_iterator = 0

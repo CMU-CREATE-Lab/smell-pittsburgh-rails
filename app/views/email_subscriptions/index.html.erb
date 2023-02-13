@@ -1,0 +1,24 @@
+<% content_for :css do %>
+  <%= stylesheet_link_tag "https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css" %>
+  <%= stylesheet_link_tag "https://use.fontawesome.com/releases/v5.2.0/css/all.css" %>
+  <%= stylesheet_link_tag "https://fonts.googleapis.com/css?family=Open+Sans:400,700" %>
+  <%= stylesheet_link_tag "https://fonts.googleapis.com/css?family=Raleway:400,700" %>
+<% end %>
+
+<% content_for :js do %>
+  <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js" %>
+  <%= javascript_include_tag "https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js" %>
+<% end %>
+
+<% content_for :body do %>
+  <h2>Subscribe to BCAMP Email Notifications</h2>
+
+  <p>The Benicia Community Air Monitoring Program (BCAMP) monitors local air quality. By subscribing to these notifications, you will receive emails whenever pollutants exceed exposure levels established by the California Office of Environmental Health Hazard Assessment (OEHHA).</p>
+
+  <p>We send notifications for the following pollutants: Benzene, Black Carbon, Ozone, PM2.5, Sulfur Dioxide, Toluene, Xylene.</p>
+
+  <p><a href="/bcamp/subscribe/new">Click Here</a> to subscribe by email.</p>
+
+  <br/>
+  <p><i>Learn more about The Benicia Community Air Monitoring Program (BCAMP): <a target="_blank" href="https://www.fenceline.org/bcamp/">https://www.fenceline.org/bcamp/</a></i></p>
+<% end %>

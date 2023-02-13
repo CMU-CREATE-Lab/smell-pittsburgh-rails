@@ -334,7 +334,7 @@ namespace :bcamp do
     body_email_bcamp = ""
     body_email_admin = ""
     events.each do |e|
-      datetime = e.event_at.strftime("%H:%M %p")
+      datetime = e.event_at.strftime("%I:%M %p")
       case e.event_code
         when EVENT_CODE_TEST
           event_str = "(admin) A test event occurred at #{datetime}.\n"
@@ -342,7 +342,7 @@ namespace :bcamp do
         when EVENT_CODE_ABOVE
           pollutant = e.bcamp_pollutant
           datapoint = BcampDataPoint.where(:pollutant_id => pollutant.id, :sampledate => e.event_at).first
-          event_str = "At #{datetime}, the measurement for the '#{pollutant.name}' pollutant was #{datapoint.value}, which is above the threshold of #{pollutant.threshold} #{pollutant.measurement_units}.\n"
+          event_str = "At #{datetime}, the measurement for '#{pollutant.name}' was #{datapoint.value}, which is above the threshold of #{pollutant.threshold} #{pollutant.measurement_units}.\n"
           body_email_admin += event_str
           body_email_bcamp += event_str
         when EVENT_CODE_RETURN
@@ -353,7 +353,7 @@ namespace :bcamp do
         when EVENT_CODE_SUSTAIN
           pollutant = e.bcamp_pollutant
           datapoint = BcampDataPoint.where(:pollutant_id => pollutant.id, :sampledate => e.event_at).first
-          event_str = "As of #{datetime}, The measurement for the '#{pollutant.name}' pollutant has remained above the threshold of #{pollutant.threshold} #{pollutant.measurement_units} for at least 6 hours.\n"
+          event_str = "As of #{datetime}, The measurement for '#{pollutant.name}' has remained above the threshold of #{pollutant.threshold} #{pollutant.measurement_units} for at least 6 hours.\n"
           body_email_admin += event_str
           body_email_bcamp += event_str
         when EVENT_CODE_UNKNOWN
