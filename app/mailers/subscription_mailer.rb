@@ -6,12 +6,33 @@ class SubscriptionMailer < ApplicationMailer
 
   def welcome(subscription)
     @subscription = subscription
-    # TODO get actual domain/url?
-    domain = "https://api.smellpittsburgh.org"
-    @url = "#{domain}/bcamp/unsubscribe/#{@subscription.token_to_unsubscribe}"
+    @url = generate_unsubscribe_url(@subscription.token_to_unsubscribe)
     mail(:to => @subscription.email, :subject => "Welcome")
   end
 
-  # TODO email helpers for BCAMP, admin (will replace calls to ActionMailer::Base.mail in raketask)
+
+  def notify_bcamp(subscription, list_notifications)
+    @subscription = subscription
+    @url = generate_unsubscribe_url(@subscription.token_to_unsubscribe)
+    @list = list_notifications
+    mail(:to => @subscription.email, :subject => "BCAMP Events Notification")
+  end
+
+
+  def notify_admin(subscription, list_notifications)
+    @subscription = subscription
+    @url = generate_unsubscribe_url(@subscription.token_to_unsubscribe)
+    @list = list_notifications
+    mail(:to => @subscription.email, :subject => "BCAMP Admin Notification")
+  end
+
+
+  private
+
+    def generate_unsubscribe_url(token)
+      # TODO get actual domain/url?
+      domain = "https://api.smellpittsburgh.org"
+      return "#{domain}/bcamp/unsubscribe/#{token}"
+    end
 
 end

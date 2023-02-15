@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
+  </head>
+  <body>
+    <h2>BCAMP Admin Notification</h2>
+    <p>We are notifying you of the following events:</p>
+    <ul>
+      <% @list.each do |item| %>
+      <li><%= item %></li>
+      <% end %>
+    </ul>
+    <br/>
+    <br/>
+    <p><i><a href="<%= @url%>">click here to unsubscribe.</a></i></p>
+  </body>
+</html>

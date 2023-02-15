@@ -331,45 +331,57 @@ namespace :bcamp do
 
     event_ids = args[:event_ids].split(":")
     events = BcampEvent.where(:id => event_ids)
-    body_email_bcamp = ""
-    body_email_admin = ""
+    list_notify_bcamp = []
+    list_notify_admin = []
     events.each do |e|
       datetime = e.event_at.strftime("%I:%M %p")
       case e.event_code
         when EVENT_CODE_TEST
-          event_str = "(admin) A test event occurred at #{datetime}.\n"
-          body_email_admin += event_str
+          event_str = "(admin) A test event occurred at #{datetime}."
         when EVENT_CODE_ABOVE
           pollutant = e.bcamp_pollutant
           datapoint = BcampDataPoint.where(:pollutant_id => pollutant.id, :sampledate => e.event_at).first
-          event_str = "At #{datetime}, the measurement for '#{pollutant.name}' was #{datapoint.value}, which is above the threshold of #{pollutant.threshold} #{pollutant.measurement_units}.\n"
-          body_email_admin += event_str
-          body_email_bcamp += event_str
+          event_str = "At #{datetime}, the measurement for '#{pollutant.name}' was #{datapoint.value}, which is above the threshold of #{pollutant.threshold} #{pollutant.measurement_units}."
+          list_notify_admin.push event_str
+          list_notify_bcamp.push event_str
         when EVENT_CODE_RETURN
           pollutant = e.bcamp_pollutant
           datapoint = BcampDataPoint.where(:pollutant_id => pollutant.id, :sampledate => e.event_at).first
-          event_str = "(admin reported for verbosity) At #{datetime}, the '#{pollutant.name}' pollutant dropped to #{datapoint.value}, which is below the threshold of #{pollutant.threshold} #{pollutant.measurement_units}.\n"
-          body_email_admin += event_str
+          event_str = "(admin reported for verbosity) At #{datetime}, the '#{pollutant.name}' pollutant dropped to #{datapoint.value}, which is below the threshold of #{pollutant.threshold} #{pollutant.measurement_units}."
+          list_notify_admin.push event_str
         when EVENT_CODE_SUSTAIN
           pollutant = e.bcamp_pollutant
           datapoint = BcampDataPoint.where(:pollutant_id => pollutant.id, :sampledate => e.event_at).first
-          event_str = "As of #{datetime}, The measurement for '#{pollutant.name}' has remained above the threshold of #{pollutant.threshold} #{pollutant.measurement_units} for at least 6 hours.\n"
-          body_email_admin += event_str
-          body_email_bcamp += event_str
+          event_str = "As of #{datetime}, The measurement for '#{pollutant.name}' has remained above the threshold of #{pollutant.threshold} #{pollutant.measurement_units} for at least 6 hours."
+          list_notify_admin.push event_str
+          list_notify_bcamp.push event_str
         when EVENT_CODE_UNKNOWN
-          event_str = "(admin) An unknown event occurred at #{datetime}.\n"
-          body_email_admin += event_str
+          event_str = "(admin) An unknown event occurred at #{datetime}."
+          list_notify_admin.push event_str
         else
-          event_str = "(admin) An unknown event occurred at #{datetime}.\n"
-          body_email_admin += event_str
+          event_str = "(admin) An unknown event occurred at #{datetime}."
+          list_notify_admin.push event_str
       end
     end
 
-    Rake::Task["bcamp:send_email_bcamp"].invoke(body_email_bcamp) unless body_email_bcamp.blank?
-    Rake::Task["bcamp:send_email_admin"].invoke(body_email_admin) unless body_email_admin.blank?
+    # Remove the (sqlite3) connection, then re-establish the default (mysql2) connection.
+    ActiveRecord::Base.remove_connection
+    ActiveRecord::Base.establish_connection
+
+    unless list_notify_bcamp.empty?
+      EmailSubscription.where(:subscribe_bcamp => true).each do |subscription|
+        SubscriptionMailer.notify_bcamp(subscription, list_notify_bcamp).deliver_now
+      end
+    end
+    unless list_notify_admin.empty?
+      EmailSubscription.where(:subscribe_bcamp => true).each do |subscription|
+        SubscriptionMailer.notify_admin(subscription, list_notify_admin).deliver_now
+      end
+    end
   end
 
 
+  # TODO deprecated task to be deleted
   task :send_email_bcamp, [:email_body] => :environment do |t, args|
     # NOTE: when invoking with Rake::Task["name:space"].invoke, the connection does not default back to mysql2,
     # so we have to tell it to remove the (sqlite3) connection, then re-establish the default (mysql2) connection.
@@ -391,6 +403,7 @@ namespace :bcamp do
   end
 
 
+  # TODO deprecated task to be deleted
   task :send_email_admin, [:email_body] => :environment do |t, args|
     # NOTE: when invoking with Rake::Task["name:space"].invoke, the connection does not default back to mysql2,
     # so we have to tell it to remove the (sqlite3) connection, then re-establish the default (mysql2) connection.
