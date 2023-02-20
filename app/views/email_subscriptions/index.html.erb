@@ -17,7 +17,11 @@
 
   <p>We send notifications for the following pollutants: Benzene, Black Carbon, Ozone, PM2.5, Sulfur Dioxide, Toluene, Xylene.</p>
 
-  <p><a href="/bcamp/subscribe/new">Click Here</a> to subscribe by email.</p>
+  <%= form_for @subscription, :url => {action: "subscribe"} do |f| %>
+    <%= f.label :email %>
+    <%= f.text_field :email %>
+    <%= f.submit "Subscribe" %>
+  <% end %>
 
   <br/>
   <p><i>Learn more about The Benicia Community Air Monitoring Program (BCAMP): <a target="_blank" href="https://www.fenceline.org/bcamp/">https://www.fenceline.org/bcamp/</a></i></p>

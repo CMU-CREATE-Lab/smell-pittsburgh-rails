@@ -31,9 +31,12 @@ Rails.application.routes.draw do
   get "/firebase/test" => "firebase#test"
   get "/firebase/notification/#{NOTIFICATION_URL_HASH}" => "firebase#send_notification"
 
-  get "/bcamp/subscribe" => "email_subscriptions#index"
-  get "/bcamp/subscribe/new" => "email_subscriptions#new"
-  post "/bcamp/subscribe" => "email_subscriptions#create"
-  get "/bcamp/unsubscribe/:token_id" => "email_subscriptions#unsubscribe"
+  get "/notifications/subscribe" => "email_subscriptions#index"
+  post "/notifications/subscribe" => "email_subscriptions#subscribe"
+  get "/notifications/unsubscribe/:token_id" => "email_subscriptions#unsubscribe"
+  # json/api
+  get "/notifications/subscribe/status/:token_id" => "email_subscriptions#get_subscription_status"
+  post "/notifications/subscribe/:sub_id" => "email_subscriptions#api_subscribe_with_id"
+  delete "/notifications/unsubscribe/:sub_id" => "email_subscriptions#api_unsubscribe"
 
 end

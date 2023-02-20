@@ -78,6 +78,7 @@ Rails.application.configure do
   config.active_record.dump_schema_after_migration = false
 
   # environment variables (defined for production)
+  BASE_URL_UNSUBSCRIBE = "https://api.smellpittsburgh.org"
 
   # Authorization Key for Google Firebase Push Notifications
   FIREBASE_AUTH_KEY = "DO-NOT-PUSH-ME"

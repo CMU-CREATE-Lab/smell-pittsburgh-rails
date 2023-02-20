@@ -374,53 +374,9 @@ namespace :bcamp do
       end
     end
     unless list_notify_admin.empty?
-      EmailSubscription.where(:subscribe_bcamp => true).each do |subscription|
+      EmailSubscription.where(:subscribe_admin => true).each do |subscription|
         SubscriptionMailer.notify_admin(subscription, list_notify_admin).deliver_now
       end
-    end
-  end
-
-
-  # TODO deprecated task to be deleted
-  task :send_email_bcamp, [:email_body] => :environment do |t, args|
-    # NOTE: when invoking with Rake::Task["name:space"].invoke, the connection does not default back to mysql2,
-    # so we have to tell it to remove the (sqlite3) connection, then re-establish the default (mysql2) connection.
-    ActiveRecord::Base.remove_connection
-    ActiveRecord::Base.establish_connection
-    if args[:email_body].blank?
-      STDERR.puts "(print usage here)"
-      exit
-    end
-    email_body = args[:email_body]
-    EmailSubscription.where(:subscribe_bcamp => true).map(&:email).each do |email|
-      ActionMailer::Base.mail(
-        from: "smellpgh-reports@cmucreatelab.org",
-        to: email,
-        subject: "BCAMP Events Notification",
-        body: email_body
-      ).deliver_now
-    end
-  end
-
-
-  # TODO deprecated task to be deleted
-  task :send_email_admin, [:email_body] => :environment do |t, args|
-    # NOTE: when invoking with Rake::Task["name:space"].invoke, the connection does not default back to mysql2,
-    # so we have to tell it to remove the (sqlite3) connection, then re-establish the default (mysql2) connection.
-    ActiveRecord::Base.remove_connection
-    ActiveRecord::Base.establish_connection
-    if args[:email_body].blank?
-      STDERR.puts "(print usage here)"
-      exit
-    end
-    email_body = args[:email_body]
-    EmailSubscription.where(:subscribe_admin => true).map(&:email).each do |email|
-      ActionMailer::Base.mail(
-        from: "smellpgh-reports@cmucreatelab.org",
-        to: email,
-        subject: "Admin Events Notification",
-        body: email_body
-      ).deliver_now
     end
   end
 

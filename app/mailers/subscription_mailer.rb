@@ -30,9 +30,9 @@ class SubscriptionMailer < ApplicationMailer
   private
 
     def generate_unsubscribe_url(token)
-      # TODO get actual domain/url?
-      domain = "https://api.smellpittsburgh.org"
-      return "#{domain}/bcamp/unsubscribe/#{token}"
+      # NOTE: You can only call `request.base_url` from within a controller, so we have to manually define the domain in environments
+      domain = BASE_URL_UNSUBSCRIBE
+      return "#{domain}/notifications/unsubscribe/#{token}"
     end
 
 end
