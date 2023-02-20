@@ -28,7 +28,8 @@ class AirnowAqi < ActiveRecord::Base
 
 
   def self.request_aqi_from_zipcode(zipcode)
-    response = `curl "#{self.AIRNOW_API_URL}/aq/observation/zipCode/current/?format=application/json&zipCode=#{zipcode}&distance=25&API_KEY=#{AIRNOW_API_KEY}"`
+    # Need 'L' to follow redirects
+    response = `curl -L "#{self.AIRNOW_API_URL}/aq/observation/zipCode/current/?format=application/json&zipCode=#{zipcode}&distance=25&API_KEY=#{AIRNOW_API_KEY}"`
     begin
       json = JSON.parse(response)
       results = []
@@ -41,8 +42,8 @@ class AirnowAqi < ActiveRecord::Base
         results.push( { "date" => date, "param" => param, "value" => value} )
       end
       return results
-    rescue
-      Rails.logger.info("AirnowAqi.request_aqi_from_zipcode Failed with zipcode=#{zipcode}")
+    rescue Exception => e
+      Rails.logger.info("AirnowAqi.request_aqi_from_zipcode Failed with zipcode=#{zipcode} from error #{e}")
       return []
     end
   end
