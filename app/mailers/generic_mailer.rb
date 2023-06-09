@@ -16,7 +16,9 @@ class GenericMailer < ApplicationMailer
     @name = form.name.blank? ? client.name + " User (id: #{@smell_report.anonymized_user_hash})" : form.name
     @address = form.address
     @client = client
-    @gmaps_link = "https://google.com/maps/search/" + @smell_report.real_latitude.to_s + "," + @smell_report.real_longitude.to_s
+    # URL escape the comma between the lat and lon. Some mail clients can break on the comma and not properly hyperlink.
+    # Another path is to make these emails be html, but that could open a different can of worms.
+    @gmaps_link = "https://google.com/maps/search/" + @smell_report.real_latitude.to_s + "%2C" + @smell_report.real_longitude.to_s
     mail(:to => to_address,:subject => "Smell Report")
   end
 
