@@ -342,6 +342,7 @@ namespace :bcamp do
       case e.event_code
         when EVENT_CODE_TEST
           event_str = "(admin) A test event occurred at #{datetime}."
+          list_notify_admin.push event_str
         when EVENT_CODE_ABOVE
           pollutant = e.bcamp_pollutant
           datapoint = BcampDataPoint.where(:pollutant_id => pollutant.id, :sampledate => e.event_at).first
