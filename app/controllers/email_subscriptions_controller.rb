@@ -6,12 +6,16 @@ class EmailSubscriptionsController < ApplicationController
 
 
   def index
+    response.headers.delete('X-Frame-Options')
+
     @subscription = EmailSubscription.new
   end
 
 
   # html+json accessible
   def subscribe
+    response.headers.delete('X-Frame-Options')
+
     # handles both regular form data (priority) and web form
     if params[:email].blank? and (params[:email_subscription].blank? or params[:email_subscription][:email].blank?)
       respond_to do |format|
