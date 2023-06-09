@@ -267,6 +267,10 @@ namespace :bcamp do
       most_recent_data = p.bcamp_data_points.order(:sampledate).last
 
       unless most_recent_data.nil?
+        ## Status 1 means that the reading is correct and all the internal instrument checks have passed.
+        ## Other statuses indicate a fault of some sort (5 = maintenance mode, 4 = instrument fault, 8 = low signal or offline)
+        next if (most_recent_data.status != 1)
+
         if most_recent_data.value < p.threshold
           # we only want to register the "Return Threshold" event whenever the most recent data is below threshold
           # AND there does not already exist a return threshold event, following a prior above threshold event
