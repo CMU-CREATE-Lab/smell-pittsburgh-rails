@@ -388,7 +388,7 @@ class ApiController < ApplicationController
 
 
   def cities_index
-    render :json => City.all.to_json(:except => [:description])
+    render :json => City.all.to_json(:except => [:description, :api_key])
   end
 
 
@@ -689,6 +689,33 @@ class ApiController < ApplicationController
     timezone_string = params["timezone_string"].blank? ? "UTC" : CGI::unescape(params["timezone_string"])
     zipcodes = params["zipcodes"].blank? ? [] : params["zipcodes"].split(",")
     format_as = ["csv","json","geojson"].index(params["format"]).nil? ? "json" : params["format"]
+    api_key = params["api_key"].blank? ? nil : params["api_key"]
+
+    use_real_lat_lon = false
+
+    if api_key
+      if city_ids.length == 1
+        # If a user passed in an api_key and is requesting a single city, then do a lookup
+        city_with_api_key = City.where(id: city_ids, api_key: api_key)
+        use_real_lat_lon = !city_with_api_key.blank?
+      elsif zipcodes
+        # If a user passed in a bunch of zipcodes, make sure all these zip codes are
+        # part of the city the api_key is associated with
+        city_with_api_key = City.where(api_key: api_key)
+        unless city_with_api_key.blank?
+          city_zips = City.find(city_with_api_key.first.id).zip_codes.map(&:zip)
+          use_real_lat_lon = zipcodes.all? { |e| city_zips.include?(e) }
+        end
+      end
+    end
+
+    if use_real_lat_lon
+      latitude_col = :real_latitude
+      longitude_col = :real_longitude
+    else
+      latitude_col = :latitude
+      longitude_col = :longitude
+    end
 
     Time.zone = timezone_string
 
@@ -729,7 +756,7 @@ class ApiController < ApplicationController
       lat_ranges = (latlng_bbox[0] > latlng_bbox[2]) ? [latlng_bbox[2]..latlng_bbox[0]] : [-90..latlng_bbox[0], latlng_bbox[2]..90]
       long_ranges = (latlng_bbox[1] < latlng_bbox[3]) ? [latlng_bbox[1]..latlng_bbox[3]] : [latlng_bbox[1]..180, -180..latlng_bbox[3]]
       # we are bounding on the perturbed lat/long
-      results.map!{|i| i.where(:latitude => lat_ranges).where(:longitude => long_ranges)}
+      results.map!{|i| i.where(latitude_col => lat_ranges).where(longitude_col => long_ranges)}
     end
     #
     # 6. group_by and aggregate
@@ -737,7 +764,7 @@ class ApiController < ApplicationController
     if group_by.blank? or format_as == "csv"
       results = results.flatten.sort_by{|u| u["observed_at"]}
       # format as json
-      results = results.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :smell_description, :additional_comments, :observed_at, :zip_code_id])
+      results = results.as_json(:only => [latitude_col, longitude_col, :smell_value, :feelings_symptoms, :smell_description, :additional_comments, :observed_at, :zip_code_id])
       # plus zipcode
       results.each do |json|
         json["zipcode"] = id_zip_hash[json["zip_code_id"]]
@@ -766,7 +793,7 @@ class ApiController < ApplicationController
       else
         # format grouped values as json
         results.each do |key,value|
-          results[key] = value.as_json(:only => [:latitude, :longitude, :smell_value, :feelings_symptoms, :smell_description, :observed_at, :zip_code_id])
+          results[key] = value.as_json(:only => [latitude_col, longitude_col, :smell_value, :feelings_symptoms, :smell_description, :observed_at, :zip_code_id])
         end
         # plus zipcode
         results.values.flatten.each do |json|
