@@ -7,7 +7,7 @@ set :deploy_to, "/var/www/rails-apps/#{fetch(:application)}/#{fetch(:stage)}"
 
 # shared resources
 set :linked_dirs, %w(log public/system tmp/cache)
-set :linked_files, %w(config/database.yml config/secrets.yml config/environment.rb config/environments/production.rb)
+set :linked_files, %w(config/database.yml config/secrets.yml config/environment.rb config/environments/production.rb db/bcamp_data.sqlite3)
 
 # git/version control info
 set :scm, :git
