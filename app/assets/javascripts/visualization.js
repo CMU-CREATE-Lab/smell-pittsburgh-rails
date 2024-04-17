@@ -577,7 +577,7 @@ function initTerrainBtn() {
   $("#terrain-btn").on("click", function () {
     var $this = $(this);
     var label = {
-      "dimension5": current_epochtime_milisec.toString()
+      "dataTimestamp": current_epochtime_milisec.toString()
     };
     if ($this.hasClass("button-pressed")) {
       map.setMapTypeId("roadmap");
@@ -622,7 +622,7 @@ function initHomeBtn() {
         centerMap();
       }
       addGoogleAnalyticEvent("home", "click", {
-        "dimension5": current_epochtime_milisec.toString()
+        "dataTimestamp": current_epochtime_milisec.toString()
       });
       $(this).prop("selectedIndex", 0);
     });
@@ -687,7 +687,7 @@ function initCalendarBtn() {
         loadAndUpdateTimeLine(selected_time, firstDayOfNextMonth(selected_date_obj).getTime());
       }
       addGoogleAnalyticEvent("calendar", "click", {
-        "dimension5": selected_time.toString()
+        "dataTimestamp": selected_time.toString()
       });
     }
     // Save the current selected index
@@ -739,7 +739,7 @@ function initAnimationUI() {
 
   $playback_button.on("click", function () {
     var label = {
-      "dimension5": current_epochtime_milisec.toString()
+      "dataTimestamp": current_epochtime_milisec.toString()
     };
     if (animator.isPlaying()) {
       if (animator.isPaused()) {
@@ -762,7 +762,7 @@ function initAnimationUI() {
 
   $stop_button.on("click", function () {
     var label = {
-      "dimension5": current_epochtime_milisec.toString()
+      "dataTimestamp": current_epochtime_milisec.toString()
     };
     if (animator.isPlaying()) {
       animator.stopAnimation();
@@ -989,8 +989,8 @@ function handleSmellMarkerClicked(marker) {
   // Add google analytics event
   var marker_data = marker.getData();
   var label = {
-    "dimension5": (marker_data["observed_at"] * 1000).toString(),
-    "metric1": marker_data["smell_value"]
+    "dataTimestamp": (marker_data["observed_at"] * 1000).toString(),
+    "smellValue": marker_data["smell_value"]
   };
   addGoogleAnalyticEvent("smell", "click", label);
   // Remove highlight of popup close button
@@ -1303,7 +1303,7 @@ function createTimeline(data) {
 function handleTimelineButtonClicked(epochtime_milisec) {
   // Add google analytics
   var label = {
-    "dimension5": epochtime_milisec.toString()
+    "dataTimestamp": epochtime_milisec.toString()
   };
   addGoogleAnalyticEvent("timeline", "click", label);
 }
@@ -1486,9 +1486,9 @@ function handleSensorMarkerClicked(marker) {
   }
   var sensor_value = marker_data["sensor_value"];
   var label = {
-    "dimension5": sensor_data_time,
-    "dimension6": feed_id,
-    "metric2": sensor_value
+    "dataTimestamp": sensor_data_time,
+    "esdrFeedId": feed_id,
+    "pm25": sensor_value
   };
   addGoogleAnalyticEvent("sensor", "click", label);
   // Remove highlight of popup close button
