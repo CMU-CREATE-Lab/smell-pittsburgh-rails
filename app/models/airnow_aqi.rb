@@ -35,7 +35,7 @@ class AirnowAqi < ActiveRecord::Base
       results = []
       json.each do |row|
         # YYYY-MM-DD HH:00 EST => Unix time
-        date = "#{row['DateObserved']}#{row['HourObserved']}:00 #{row['LocalTimeZone']}".to_datetime.to_i
+        date = "#{row['DateObserved']} #{row['HourObserved']}:00 #{row['LocalTimeZone']}".to_datetime.to_i
         param = row["ParameterName"]
         value = row["AQI"]
         # add row
