@@ -77,6 +77,18 @@ namespace :bcamp do
       :measurement_units => "ppb",
       :threshold => 5142.0
     },
+    {
+      :name => "Hydrogen Sulfide Concentration",
+      :pmtr => "h2s",
+      :measurement_units => "ppb",
+      :threshold => 30.0
+    },
+    {
+      :name => "PM10 Concentration",
+      :pmtr => "pm10",
+      :measurement_units => "ug/m3",
+      :threshold => 150.0
+    },
   ]
 
   # NOTE: all timestamps in the BCAMP API indicate UTC but are actually in west coast time?
